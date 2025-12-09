@@ -182,21 +182,159 @@ const commutator = configureCommutator({
   },
   remoteGetterNodes: {
     [CustomDataType.User]: {
-      state: { type: CommonDataType.Number, name: "ID Пользователя" },
-      search: (text) =>
-        fetch(`https://jsonplaceholder.typicode.com/users?search=${text}`).then(
+      keys: {
+        id: { type: CommonDataType.Number, name: "ID Пользователя" },
+      },
+      state: CustomDataType.User,
+      // load подгружает сущность в ноду, если она ещё не загружена
+      load: (keys) =>
+        fetch(`https://jsonplaceholder.typicode.com/user/${keys.id}`).then(
           (r) => r.json()
         ),
-      get: (state) =>
-        fetch(`https://jsonplaceholder.typicode.com/users/${state}`).then((r) =>
-          r.json()
-        ),
-      set: (state, user) => user.id,
+      // Устанавливает keys геттера, которые потом позволят загрузить сущность
+      set: (id) => {
+        id: id;
+      },
     },
   },
 });
+
+const remoteGetter = commutator.createRemoteGetterNode({
+  type: CustomDataType.User,
+});
+
+remoteGetter.set({ id: 1 });
+
+// Загружает юзера в память геттерНоды, после чего возвращает её
+const user = await remoteGetter.get();
 ```
 
 ### Macros
 
-Макрос фактически является набором 
+Макрос фактически является набором из скрытых стейтов, публичных стейтов, приёмщиков, хендлера и триггера. У него может быть вообще любая структура, единственное ограничение - хендлер и триггер может быть только один. А может и не быть.
+
+```ts
+import {
+  configureCommutator,
+  CommonDataType,
+  commonDataTypes,
+  commonMacros,
+} from "@all-mentors/commutator";
+
+const CustomDataType = {
+  User: "User",
+} as const;
+
+const CustomMacros = {
+  CreateEntity: "CreateEntity",
+} as const;
+
+const commutator = configureCommutator({
+  dataTypes: {
+    ...commonDataTypes,
+    [CustomDataType.User]: {
+      name: "Пользователь",
+      type: CommonDataType.Object,
+      properties: {
+        id: { type: CommonDataType.Number, name: "ID Пользователя" },
+        points: {
+          type: CommonDataType.Number,
+          name: "Баллы",
+        },
+        roles: {
+          type: CommonDataType.Array,
+          name: "Роли",
+          itemType: {
+            type: CommonDataType.StringEnum,
+            values: ["Админ", "Пользователь"],
+          },
+        },
+      },
+    },
+  },
+  macros: {
+    ...commonMacros,
+    [CustomMacros.CreateUser]: {
+      // Скрытый стейт нужен для хранения каких-либо данных, которые не будут показываться публично
+      // и которые будут использоваться только во внутренних обработчиках макроса.
+      // Меняются только выполнением хендлера. HiddenState нельзя сконнектить с другими полями
+      hiddenStates: {
+        isCreated: { type: CommonDataType.Boolean, name: "Создан" },
+      },
+      // Публичный стейт, который изменяется при выполнении хендлера.
+      // Публичный стейт можно соединить с консюмерами, как будто это GetterNode.
+      sharedStates: {
+        user: CustomDataType.User,
+      },
+      // Ноды, которые принимают какие-то значения. При запуске хендлера происходит
+      // ленивое вычисление их состояния, а в хендлер передаётся результат этого вычисления
+      consumers: {
+        name: { type: CommonDataType.String, name: "Имя" },
+      },
+      // Хендлер вызывается в момент триггера
+      handler: async ({ hiddenStates, sharedStates, consumers, api, self }) => {
+        const userResponse = await fetch(
+          "https://jsonplaceholder.typicode.com/user",
+          {
+            method: "POST",
+            data: { name: consumers.name, createdFromMacros: self.id },
+          }
+        );
+
+        hiddenStates.isCreated = true;
+        sharedStates.user = await userResponse.json();
+      },
+      // Сразу триггерим событие после резолва хендлера
+      onHandlerResolved: ({
+        hiddenStates,
+        sharedStates,
+        consumers,
+        api,
+        self,
+      }) => self.trigger(),
+      // Если хендлер не зарезолвился то кидаем ошибку в логгер и можем например совершить какие-то роллбек действия
+      onHandlerCatched: ({
+        hiddenStates,
+        sharedStates,
+        consumers,
+        api,
+        self,
+        error,
+      }) => fetch("https://sentry.io/logger", { data: error.message }),
+      // Можно ли затриггерить ноду
+      triggerable: true,
+    },
+  },
+});
+
+// Триггерим макросы с типом CreateUser где isCreated false и user =
+commutator.triggerMacrosWhere({
+  type: CustomMacros.CreateUser,
+  hiddenStates: {
+    isCreated: false,
+  },
+});
+
+// Ищем все макросы по стейтам
+const allCreateUserMacrosThatNotCalled = commutator.findMacrosWhere({
+  type: CustomMacros.CreateUser,
+  hiddenStates: {
+    isCreated: false,
+  },
+});
+
+// Триггерим макрос напрямую
+allCreateUserMacrosThatNotCalled[0].trigger();
+```
+
+### Загрузка состояния
+
+Бывают ситуации, когда коммутатор надо восстановить из каких-то уже существующих данных. Для этого в configureCommutator есть специальное поле preloadedState.
+
+```ts
+import { configureCommutator } from "@all-mentors/commutator";
+
+const commutator = configureCommutator({
+  preloadedState: { macros: [], remoteGetterNodes: [], staticGetterNodes: [] },
+});
+```
