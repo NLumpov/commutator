@@ -1,4 +1,4 @@
-import { CommonDataType } from "./data-types";
+import type { CommonDataType } from ".";
 
 export type Field<DataTypes extends Record<string, Field<DataTypes>>> = {
   name?: string;
@@ -20,38 +20,52 @@ export type Field<DataTypes extends Record<string, Field<DataTypes>>> = {
       values: number[];
     }
   | {
-      type: CommonDataType | string;
+      type:
+        | keyof DataTypes
+        | Exclude<
+            CommonDataType,
+            | CommonDataType.Object
+            | CommonDataType.Array
+            | CommonDataType.StringEnum
+            | CommonDataType.NumberEnum
+          >;
     }
 );
 
 export type FieldValue<
   TField extends Field<DataTypes>,
   DataTypes extends Record<string, Field<DataTypes>>
-> = TField extends {
-  type: CommonDataType.Object;
-  properties: infer Props;
-}
-  ? Props extends Record<string, Field<DataTypes>>
-    ? { [K in keyof Props]: FieldValue<Props[K], DataTypes> }
+> = TField["type"] extends CommonDataType
+  ? TField extends { type: CommonDataType.Object; properties: infer Properties }
+    ? Properties extends Record<string, Field<DataTypes>>
+      ? { [K in keyof Properties]: FieldValue<Properties[K], DataTypes> }
+      : never
+    : TField extends { type: CommonDataType.Array; itemType: infer ItemType }
+    ? ItemType extends Field<DataTypes>
+      ? FieldValue<ItemType, DataTypes>[]
+      : never
+    : TField extends { type: CommonDataType.StringEnum; values: infer Values }
+    ? Values extends readonly string[]
+      ? Values[number]
+      : never
+    : TField extends { type: CommonDataType.NumberEnum; values: infer Values }
+    ? Values extends readonly number[]
+      ? Values[number]
+      : never
+    : TField["type"] extends CommonDataType.String
+    ? string
+    : TField["type"] extends CommonDataType.Number
+    ? number
+    : TField["type"] extends CommonDataType.Boolean
+    ? boolean
+    : TField["type"] extends CommonDataType.Date
+    ? number
     : never
-  : TField extends { type: CommonDataType.Array; itemType: infer ItemType }
-  ? ItemType extends Field<DataTypes>
-    ? FieldValue<ItemType, DataTypes>[]
-    : never
-  : TField extends { type: CommonDataType.StringEnum; values: infer Values }
-  ? Values extends readonly string[]
-    ? Values[number]
-    : never
-  : TField extends { type: CommonDataType.NumberEnum; values: infer Values }
-  ? Values extends readonly number[]
-    ? Values[number]
-    : never
-  : DataTypes[TField["type"]]["type"] extends CommonDataType.String
-  ? string
-  : DataTypes[TField["type"]]["type"] extends CommonDataType.Number
-  ? number
-  : DataTypes[TField["type"]]["type"] extends CommonDataType.Boolean
-  ? boolean
-  : DataTypes[TField["type"]]["type"] extends CommonDataType.Date
-  ? Date
+  : TField["type"] extends keyof DataTypes
+  ? FieldValue<DataTypes[TField["type"]], DataTypes>
   : never;
+
+export type FieldRecordValues<
+  RecordFields extends Record<string, Field<DataTypes>>,
+  DataTypes extends Record<string, Field<DataTypes>>
+> = { [Key in keyof RecordFields]: FieldValue<RecordFields[Key], DataTypes> };

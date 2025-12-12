@@ -1,90 +1,143 @@
-import {
-  CommonDataType,
-  commonDataTypes,
-  type ExcludeNonPrimitiveDataTypes,
-  type Field,
-  type FieldValue,
-} from "./data-types";
-import { NodeableType, type Nodeable } from "./data-types/nodeable";
-import type { StaticGetterNode } from "./nodes";
-import { v7 as uuid } from "uuid";
+import { CommonDataType, type Field, type Macros } from "./data-types";
+import type { RemoteGetterNode } from "./data-types/remote-getter-node";
 
-export function createCommutator<
-  const Config extends {
-    dataTypes: Record<string, Field<Config["dataTypes"]>>;
-    preloadedState?: {
-      staticGetterNodes: StaticGetterNode<any, Config["dataTypes"]>[];
-    };
-    onNodeMoved?: (
-      node: Nodeable,
-      coordinates: { x: number; y: number }
-    ) => Promise<void> | void;
-  }
->(config: Config) {
-  type StaticGetterNodeDataTypes = ExcludeNonPrimitiveDataTypes<
-    Config["dataTypes"]
+type Commutator<
+  DataTypes extends Record<string, Field<DataTypes>> = {},
+  MacrosConfigurations extends Record<string, any> = {},
+  Api extends Record<string, Record<string, any>> = {},
+  RemoteGetterNodes extends Record<
+    string,
+    RemoteGetterNode<Api, DataTypes, any, any>
+  > = {}
+> = {
+  defineDataType<
+    const Name extends string,
+    const DataType extends Field<DataTypes>
+  >(
+    name: Name extends keyof DataTypes | keyof typeof CommonDataType
+      ? never
+      : Name,
+    dataType: Name extends keyof DataTypes | keyof typeof CommonDataType
+      ? never
+      : DataType
+  ): Commutator<
+    DataTypes & { [K in Name]: DataType },
+    MacrosConfigurations,
+    Api
   >;
 
-  const nodes = new Map<string, StaticGetterNode<any, Config["dataTypes"]>>(
-    config.preloadedState?.staticGetterNodes.map((node) => [node.uuid, node])
-  );
+  defineMacros<
+    const Name extends string,
+    const HiddenStates extends Record<string, Field<DataTypes>>,
+    const SharedStates extends Record<string, Field<DataTypes>>,
+    const Consumers extends Record<string, Field<DataTypes>>
+  >(
+    name: Name extends keyof MacrosConfigurations ? never : Name,
+    macrosConfiguration: Macros<
+      Api,
+      DataTypes,
+      HiddenStates,
+      SharedStates,
+      Consumers
+    >
+  ): Commutator<
+    DataTypes,
+    MacrosConfigurations & {
+      [K in Name]: Macros<
+        Api,
+        DataTypes,
+        HiddenStates,
+        SharedStates,
+        Consumers
+      >;
+    },
+    Api,
+    RemoteGetterNodes
+  >;
+
+  defineApiModule<
+    const Name extends string,
+    const ApiModule extends Record<string, any>
+  >(
+    name: Name extends keyof Api ? never : Name,
+    apiModule: ApiModule
+  ): Commutator<
+    DataTypes,
+    MacrosConfigurations,
+    Api & { [K in Name]: ApiModule },
+    RemoteGetterNodes
+  >;
+
+  defineRemoteGetterNode<
+    const Name extends string,
+    const Keys extends Record<string, Field<DataTypes>>,
+    const Value extends Field<DataTypes>
+  >(
+    name: Name extends keyof RemoteGetterNodes ? never : Name,
+    remoteGetterNode: RemoteGetterNode<Api, DataTypes, Keys, Value>
+  ): Commutator<
+    DataTypes,
+    MacrosConfigurations,
+    Api,
+    RemoteGetterNodes & {
+      [K in Name]: RemoteGetterNode<Api, DataTypes, Keys, Value>;
+    }
+  >;
+};
+
+export function createCommutator(): Commutator<{}, {}, {}, {}> {
+  const dataTypes: Record<string, Field<any>> = {};
+  const macros = [];
+  const remoteGetterNodes = [];
 
   return {
-    changeNodeCoordinates: async (
-      uuid: string,
-      coordinates: { x: number; y: number }
-    ) => {
-      const node = nodes.get(uuid);
-
-      if (node) {
-        await config.onNodeMoved?.(node, {
-          x: coordinates.x,
-          y: coordinates.y,
-        });
-
-        nodes.set(uuid, {
-          ...node,
-          x: coordinates.x,
-          y: coordinates.y,
-        });
-      }
+    defineDataType(name, dataType) {
+      return this;
     },
-    createStaticGetterNode: <
-      const Type extends StaticGetterNodeDataTypes
-    >(staticGetterConfig: {
-      type: Type;
-      x?: number;
-      y?: number;
-    }): StaticGetterNode<Type, Config["dataTypes"]> => {
-      const node: StaticGetterNode<Type, Config["dataTypes"]> = {
-        uuid: uuid(),
-        nodeType: NodeableType.StaticGetter,
-        x: staticGetterConfig.x || 0,
-        y: staticGetterConfig.y || 0,
-
-        type: staticGetterConfig.type,
-        value: null,
-      };
-
-      nodes.set(node.uuid, node);
-
-      return node;
+    defineApiModule(name, apiModule) {
+      return this;
+    },
+    defineMacros(name, macrosConfiguration) {
+      return this;
+    },
+    defineRemoteGetterNode(name, remoteGetterNode) {
+      return this;
     },
   };
 }
 
-const commutator = createCommutator({
-  dataTypes: {
-    ...commonDataTypes,
-    Kek: {
-      name: "Kek",
-      type: CommonDataType.Number,
-    },
-  },
-});
+const commutator = createCommutator();
 
-const node = commutator.createStaticGetterNode({
-  type: "Kek",
-  x: 200,
-  y: 100,
-});
+commutator
+  .defineDataType("Test1", { type: CommonDataType.String, name: "Test1" })
+  .defineDataType("Test2", {
+    type: CommonDataType.Object,
+    name: "Test",
+    properties: { test: { type: "Test1", name: "Field" } },
+  })
+  .defineDataType("Test3", { type: CommonDataType.String, name: "Test3" })
+  .defineDataType("Test", { type: CommonDataType.String, name: "Test4" })
+  .defineApiModule("Schedule", {
+    async scheduleTrigger(uuid: string, timestamp: number) {
+      console.log("scheduled trigger");
+    },
+    cancelSchedule(uuid: string) {
+      console.log("canceled schedule");
+    },
+  })
+  .defineMacros("Test", {
+    hiddenStates: {
+      isCreated: { type: CommonDataType.Boolean, name: "Создан" },
+    },
+    sharedStates: {
+      user: { type: "Test2", name: "User" },
+    },
+    consumers: {
+      name: { type: CommonDataType.String, name: "Имя" },
+    },
+    isHandlerHidden: false,
+    handler: async ({ self, api }) => {
+      api.Schedule.scheduleTrigger(self.uuid, Date.now() + 1000);
+      self.sharedStates.user.test;
+    },
+  });
