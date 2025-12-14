@@ -58,3 +58,4 @@ const commutator = createCommutator()
 
 const macros = commutator.createMacros("Test");
 const staticGetterNode = commutator.createStaticGetterNode("Test");
+const remoteGetterNode = commutator.createRemoteGetterNode("Test");

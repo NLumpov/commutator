@@ -29,7 +29,7 @@ export type RemoteGetterNodeInstance<
   y: number;
   keys: FieldRecordValues<Keys, DataTypes>;
   value: FieldValue<Value, DataTypes> | null;
-  [CacheKey]: string;
+  [CacheKey]: string | null;
 };
 
 export type RemoteGetterNode<

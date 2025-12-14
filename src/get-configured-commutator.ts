@@ -1,12 +1,14 @@
 import { v7 as uuid } from "uuid";
-import type {
-  Field,
-  FieldRecordValues,
-  FieldValue,
-  Macros,
-  MacrosInstance,
-  RemoteGetterNode,
-  StaticGetterNodeInstance,
+import {
+  CacheKey,
+  type Field,
+  type FieldRecordValues,
+  type FieldValue,
+  type Macros,
+  type MacrosInstance,
+  type RemoteGetterNode,
+  type RemoteGetterNodeInstance,
+  type StaticGetterNodeInstance,
 } from "./data-types";
 import { NodeType } from "./data-types/node-type";
 import {
@@ -93,6 +95,34 @@ export function getConfiguredCommutator<
           DataTypes[Name],
           DataTypes
         >,
+      };
+    },
+    createRemoteGetterNode<const Name extends keyof RemoteGetterNodes>(
+      name: Name,
+      initialCoordinates: { x: number; y: number } = { x: 0, y: 0 }
+    ): RemoteGetterNodeInstance<
+      DataTypes,
+      Name extends string ? Name : never,
+      RemoteGetterNodes[Name]["keys"],
+      RemoteGetterNodes[Name]["value"]
+    > {
+      const config = state.remoteGetterNodes[name]!;
+
+      return {
+        uuid: uuid(),
+        x: initialCoordinates.x,
+        y: initialCoordinates.y,
+        type: NodeType.RemoteGetter,
+        name: name as Name extends string ? Name : never,
+        keys: buildDataFromDeclarations(
+          state.dataTypes,
+          config.keys
+        ) as FieldRecordValues<RemoteGetterNodes[Name]["keys"], DataTypes>,
+        value: buildDataFromDeclaration(
+          state.dataTypes,
+          config.value
+        ) as FieldValue<RemoteGetterNodes[Name]["value"], DataTypes>,
+        [CacheKey]: null,
       };
     },
   };
