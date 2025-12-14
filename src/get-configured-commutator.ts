@@ -1,6 +1,5 @@
 import { v7 as uuid } from "uuid";
 import {
-  CacheKey,
   type Field,
   type FieldRecordValues,
   type FieldValue,
@@ -122,7 +121,6 @@ export function getConfiguredCommutator<
           state.dataTypes,
           config.value
         ) as FieldValue<RemoteGetterNodes[Name]["value"], DataTypes>,
-        [CacheKey]: null,
       };
     },
   };

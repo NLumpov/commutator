@@ -1,8 +1,6 @@
 import type { Field, FieldRecordValues, FieldValue } from "./field";
 import type { NodeType } from "./node-type";
 
-export const CacheKey: unique symbol = Symbol("CacheKey");
-
 export type StaticGetterNodeInstance<
   DataTypes extends Record<string, Field<DataTypes>>,
   Name extends keyof DataTypes,
@@ -29,7 +27,6 @@ export type RemoteGetterNodeInstance<
   y: number;
   keys: FieldRecordValues<Keys, DataTypes>;
   value: FieldValue<Value, DataTypes> | null;
-  [CacheKey]: string | null;
 };
 
 export type RemoteGetterNode<

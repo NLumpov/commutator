@@ -1,9 +1,9 @@
 import { getConfiguredCommutator } from "./get-configured-commutator";
-import type {
-  CommonDataType,
-  Field,
-  Macros,
-  RemoteGetterNode,
+import {
+  type CommonDataType,
+  type Field,
+  type Macros,
+  type RemoteGetterNode,
 } from "./data-types";
 
 export function createCommutator<
@@ -140,7 +140,7 @@ export function createCommutator<
         ...currentState,
         remoteGetterNodes: {
           ...currentState.remoteGetterNodes,
-          [name]: remoteGetterNode,
+          [name]: { ...remoteGetterNode },
         },
       });
     },
