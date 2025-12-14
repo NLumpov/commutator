@@ -46,20 +46,20 @@ export type FieldValue<
       : never
     : TField extends { type: CommonDataType.StringEnum; values: infer Values }
     ? Values extends readonly string[]
-      ? Values[number]
+      ? Values[number] | null
       : never
     : TField extends { type: CommonDataType.NumberEnum; values: infer Values }
     ? Values extends readonly number[]
-      ? Values[number]
+      ? Values[number] | null
       : never
     : TField["type"] extends CommonDataType.String
-    ? string
+    ? string | null
     : TField["type"] extends CommonDataType.Number
-    ? number
+    ? number | null
     : TField["type"] extends CommonDataType.Boolean
-    ? boolean
+    ? boolean | null
     : TField["type"] extends CommonDataType.Date
-    ? number
+    ? number | null
     : never
   : TField["type"] extends keyof DataTypes
   ? FieldValue<DataTypes[TField["type"]], DataTypes>

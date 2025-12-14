@@ -1,114 +1,10 @@
-import { CommonDataType, type Field, type Macros } from "./data-types";
-import type { RemoteGetterNode } from "./data-types/remote-getter-node";
+export { createCommutator } from "./create-commutator";
 
-type Commutator<
-  DataTypes extends Record<string, Field<DataTypes>> = {},
-  MacrosConfigurations extends Record<string, any> = {},
-  Api extends Record<string, Record<string, any>> = {},
-  RemoteGetterNodes extends Record<
-    string,
-    RemoteGetterNode<Api, DataTypes, any, any>
-  > = {}
-> = {
-  defineDataType<
-    const Name extends string,
-    const DataType extends Field<DataTypes>
-  >(
-    name: Name extends keyof DataTypes | keyof typeof CommonDataType
-      ? never
-      : Name,
-    dataType: Name extends keyof DataTypes | keyof typeof CommonDataType
-      ? never
-      : DataType
-  ): Commutator<
-    DataTypes & { [K in Name]: DataType },
-    MacrosConfigurations,
-    Api
-  >;
+import { CommonDataType } from "./data-types";
+import { createCommutator } from "./create-commutator";
+import type { OnlyPrimitiveDataTypes } from "./data-types/only-primitive-data-types";
 
-  defineMacros<
-    const Name extends string,
-    const HiddenStates extends Record<string, Field<DataTypes>>,
-    const SharedStates extends Record<string, Field<DataTypes>>,
-    const Consumers extends Record<string, Field<DataTypes>>
-  >(
-    name: Name extends keyof MacrosConfigurations ? never : Name,
-    macrosConfiguration: Macros<
-      Api,
-      DataTypes,
-      HiddenStates,
-      SharedStates,
-      Consumers
-    >
-  ): Commutator<
-    DataTypes,
-    MacrosConfigurations & {
-      [K in Name]: Macros<
-        Api,
-        DataTypes,
-        HiddenStates,
-        SharedStates,
-        Consumers
-      >;
-    },
-    Api,
-    RemoteGetterNodes
-  >;
-
-  defineApiModule<
-    const Name extends string,
-    const ApiModule extends Record<string, any>
-  >(
-    name: Name extends keyof Api ? never : Name,
-    apiModule: ApiModule
-  ): Commutator<
-    DataTypes,
-    MacrosConfigurations,
-    Api & { [K in Name]: ApiModule },
-    RemoteGetterNodes
-  >;
-
-  defineRemoteGetterNode<
-    const Name extends string,
-    const Keys extends Record<string, Field<DataTypes>>,
-    const Value extends Field<DataTypes>
-  >(
-    name: Name extends keyof RemoteGetterNodes ? never : Name,
-    remoteGetterNode: RemoteGetterNode<Api, DataTypes, Keys, Value>
-  ): Commutator<
-    DataTypes,
-    MacrosConfigurations,
-    Api,
-    RemoteGetterNodes & {
-      [K in Name]: RemoteGetterNode<Api, DataTypes, Keys, Value>;
-    }
-  >;
-};
-
-export function createCommutator(): Commutator<{}, {}, {}, {}> {
-  const dataTypes: Record<string, Field<any>> = {};
-  const macros = [];
-  const remoteGetterNodes = [];
-
-  return {
-    defineDataType(name, dataType) {
-      return this;
-    },
-    defineApiModule(name, apiModule) {
-      return this;
-    },
-    defineMacros(name, macrosConfiguration) {
-      return this;
-    },
-    defineRemoteGetterNode(name, remoteGetterNode) {
-      return this;
-    },
-  };
-}
-
-const commutator = createCommutator();
-
-commutator
+const commutator = createCommutator()
   .defineDataType("Test1", { type: CommonDataType.String, name: "Test1" })
   .defineDataType("Test2", {
     type: CommonDataType.Object,
@@ -140,4 +36,25 @@ commutator
       api.Schedule.scheduleTrigger(self.uuid, Date.now() + 1000);
       self.sharedStates.user.test;
     },
-  });
+  })
+  .defineRemoteGetterNode("Test", {
+    keys: {
+      id: { type: CommonDataType.Number, name: "ID" },
+    },
+    value: { type: CommonDataType.Number, name: "ID" },
+    get: async ({ self, api }) => {
+      const user = await api.Schedule.scheduleTrigger(
+        self.uuid,
+        Date.now() + 1000
+      );
+
+      return 1;
+    },
+    set: async ({ self, api, value }) => {
+      self.keys = value;
+    },
+  })
+  .finalize();
+
+const macros = commutator.createMacros("Test");
+const staticGetterNode = commutator.createStaticGetterNode("Test");
