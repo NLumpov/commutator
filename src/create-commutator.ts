@@ -1,17 +1,21 @@
 import { getConfiguredCommutator } from "./get-configured-commutator";
 import {
-  type CommonDataType,
+  CommonDataType,
+  FieldType,
   type Field,
   type Macros,
+  type MacrosField,
   type RemoteGetterNode,
 } from "./data-types";
+import { v7 as uuid } from "uuid";
+import { NodeType } from "./data-types/node-type";
 
 export function createCommutator<
   const DataTypes extends Record<string, Field<DataTypes>> = {},
   const Api extends Record<string, Record<string, any>> = {},
   const MacrosConfigurations extends Record<
     string,
-    Macros<Api, DataTypes, any, any, any, any>
+    Macros<Api, DataTypes, any, any>
   > = {},
   const RemoteGetterNodes extends Record<
     string,
@@ -66,39 +70,60 @@ export function createCommutator<
 
     defineMacros<
       const Name extends string,
-      const HiddenStates extends Record<string, Field<DataTypes>>,
-      const SharedStates extends Record<string, Field<DataTypes>>,
-      const Consumers extends Record<string, Field<DataTypes>>
+      const Fields extends Record<string, MacrosField<DataTypes, Field<DataTypes>>>
     >(
       name: Name extends keyof MacrosConfigurations ? never : Name,
-      macrosConfiguration: Macros<
-        Api,
-        DataTypes,
-        Name,
-        HiddenStates,
-        SharedStates,
-        Consumers
-      >
+      macrosConfiguration: Omit<
+        Macros<Api, DataTypes, Name, Fields>,
+        "fields" | "uuid" | "type"
+      > & {
+        fieldsBuilder: (args: {
+          hiddenState: <const FieldData extends Field<DataTypes>>(
+            field: FieldData
+          ) => MacrosField<DataTypes, FieldData>;
+          sharedState: <const FieldData extends Field<DataTypes>>(
+            field: FieldData
+          ) => MacrosField<DataTypes, FieldData>;
+          consumer: <const FieldData extends Field<DataTypes>>(
+            field: FieldData
+          ) => MacrosField<DataTypes, FieldData>;
+        }) => Fields;
+      }
     ) {
+      const { fieldsBuilder, ...otherConfiguration } = macrosConfiguration;
       return createCommutator<
         DataTypes,
         Api,
         MacrosConfigurations & {
-          [K in Name]: Macros<
-            Api,
-            DataTypes,
-            Name,
-            HiddenStates,
-            SharedStates,
-            Consumers
-          >;
+          [K in Name]: Macros<Api, DataTypes, Name, Fields>;
         },
         RemoteGetterNodes
       >({
         ...currentState,
         macros: {
           ...currentState.macros,
-          [name]: macrosConfiguration,
+          [name]: {
+            ...otherConfiguration,
+            uuid: uuid(),
+            type: NodeType.Macros,
+            fields: fieldsBuilder({
+              hiddenState: (field) => ({
+                uuid: uuid(),
+                type: FieldType.HiddenState,
+                field,
+              }),
+              sharedState: (field) => ({
+                uuid: uuid(),
+                type: FieldType.SharedState,
+                field,
+              }),
+              consumer: (field) => ({
+                uuid: uuid(),
+                type: FieldType.Consumer,
+                field,
+              }),
+            }),
+          },
         },
       });
     },

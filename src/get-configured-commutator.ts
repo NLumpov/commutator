@@ -22,7 +22,7 @@ export function getConfiguredCommutator<
   const Api extends Record<string, Record<string, any>> = {},
   const MacrosConfigurations extends Record<
     string,
-    Macros<Api, DataTypes, any, any, any, any>
+    Macros<Api, DataTypes, any, any>
   > = {},
   const RemoteGetterNodes extends Record<
     string,

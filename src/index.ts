@@ -2,7 +2,6 @@ export { createCommutator } from "./create-commutator";
 
 import { CommonDataType } from "./data-types";
 import { createCommutator } from "./create-commutator";
-import type { OnlyPrimitiveDataTypes } from "./data-types/only-primitive-data-types";
 
 const commutator = createCommutator()
   .defineDataType("Test1", { type: CommonDataType.String, name: "Test1" })
@@ -22,19 +21,14 @@ const commutator = createCommutator()
     },
   })
   .defineMacros("Test", {
-    hiddenStates: {
-      isCreated: { type: CommonDataType.Boolean, name: "Создан" },
-    },
-    sharedStates: {
-      user: { type: "Test2", name: "User" },
-    },
-    consumers: {
-      name: { type: CommonDataType.String, name: "Имя" },
-    },
+    fieldsBuilder: ({ consumer, hiddenState, sharedState }) => ({
+      isCreated: hiddenState({ type: CommonDataType.Boolean, name: "Создан" }),
+      user: sharedState({ type: "Test2", name: "User" }),
+      name: consumer({ type: CommonDataType.String, name: "Имя" }),
+    }),
     isHandlerHidden: false,
     handler: async ({ self, api }) => {
       api.Schedule.scheduleTrigger(self.uuid, Date.now() + 1000);
-      self.sharedStates.user.test;
     },
   })
   .defineRemoteGetterNode("Test", {

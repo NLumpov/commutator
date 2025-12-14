@@ -36,8 +36,10 @@ export type RemoteGetterNode<
   Name extends string,
   Value extends Field<DataTypes>
 > = {
-  keys: Keys;
-  value: Value;
+  readonly uuid: string;
+  readonly keys: Keys;
+  readonly value: Value;
+  readonly type: NodeType.RemoteGetter;
 
   get: (args: {
     self: RemoteGetterNodeInstance<DataTypes, Name, Keys, Value>;
