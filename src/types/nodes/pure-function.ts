@@ -1,4 +1,4 @@
-import type { Field } from "@declarations/field";
+import type { Field, FieldValue } from "@declarations/field";
 import type { Pin, PinArrayValue } from "@declarations/pin";
 import type { ExecPin } from "@declarations/pin";
 import type { AbstractNode } from "@declarations/nodes";
@@ -6,13 +6,12 @@ import type { NodeType } from "@enums/node-type";
 
 export interface PureFunctionNode<
   DataTypes extends Record<string, Field<DataTypes>>,
-  Nodes extends Record<string, AbstractNode<DataTypes, Nodes, any>>,
+  Nodes extends Record<string, AbstractNode<DataTypes, Nodes, Meta, any>>,
+  Meta extends Field<DataTypes>,
   Name extends keyof Nodes,
   PinsIn extends Pin<DataTypes, PinsIn, any>[],
-  PinsOut extends Pin<DataTypes, PinsOut, any>[],
-  ExecPinsIn extends ExecPin<ExecPinsIn, any>[],
-  ExecPinsOut extends ExecPin<ExecPinsOut, any>[]
-> extends AbstractNode<DataTypes, Nodes, Name> {
+  PinsOut extends Pin<DataTypes, PinsOut, any>[]
+> extends AbstractNode<DataTypes, Nodes, Meta, Name> {
   readonly name: Name;
   readonly type: NodeType.PureFunction;
 
@@ -29,18 +28,13 @@ export interface PureFunctionNode<
   /** Можем ли динамически добавлять пины на выход */
   readonly canAddPinOut: boolean;
 
-  /** Exec в pure-функции вызывается когда срабатывает пулл-стратегия,
+  /**
+   * Exec в pure-функции вызывается когда срабатывает пулл-стратегия,
    * и требует добавить в стекфрейм результаты её выполнения
    */
-  readonly exec: ({
-    pinsIn,
-    pinsOut,
-    execPinsIn,
-    execPinsOut,
-  }: {
+  readonly exec: (args: {
     pinsIn: PinArrayValue<PinsIn, DataTypes>;
     pinsOut: PinArrayValue<PinsOut, DataTypes>;
-    execPinsIn: Record<string, ExecPin<any, any>>;
-    execPinsOut: Record<string, ExecPin<any, any>>;
+    meta: FieldValue<Meta, DataTypes>;
   }) => Promise<void>;
 }
