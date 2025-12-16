@@ -1,55 +1,39 @@
-export { createCommutator } from "./create-commutator";
+import { CommonDataType } from "./enums/common-data-type";
+import type { Field } from "./types/field";
 
-import { CommonDataType } from "./data-types";
-import { createCommutator } from "./create-commutator";
+export function createCommutator<
+  const DataTypes extends Record<string, Field<DataTypes>> = {}
+>(state?: { dataTypes: DataTypes }) {
+  return {
+    defineDataType<
+      const Name extends string,
+      const DataType extends Field<DataTypes>
+    >(
+      name: Name extends keyof DataTypes | keyof typeof CommonDataType
+        ? never
+        : Name,
+      dataType: Name extends keyof DataTypes | keyof typeof CommonDataType
+        ? never
+        : DataType
+    ) {
+      return createCommutator<DataTypes & { [K in Name]: DataType }>({
+        ...state,
+        dataTypes: {
+          ...state?.dataTypes,
+          [name]: dataType,
+        } as DataTypes & { [K in Name]: DataType },
+      });
+    },
+  };
+}
 
 const commutator = createCommutator()
-  .defineDataType("Test1", { type: CommonDataType.String, name: "Test1" })
+  .defineDataType("Test", {
+    type: CommonDataType.String,
+    name: "Test",
+  })
   .defineDataType("Test2", {
     type: CommonDataType.Object,
     name: "Test",
-    properties: { test: { type: "Test1", name: "Field" } },
+    properties: { test: { type: "Test", name: "Test" } },
   })
-  .defineDataType("Test3", { type: CommonDataType.String, name: "Test3" })
-  .defineDataType("Test", { type: CommonDataType.String, name: "Test4" })
-  .defineApiModule("Schedule", {
-    async scheduleTrigger(uuid: string, timestamp: number) {
-      console.log("scheduled trigger");
-    },
-    cancelSchedule(uuid: string) {
-      console.log("canceled schedule");
-    },
-  })
-  .defineMacros("Test", {
-    fieldsBuilder: ({ consumer, hiddenState, sharedState }) => ({
-      isCreated: hiddenState({ type: CommonDataType.Boolean, name: "Создан" }),
-      user: sharedState({ type: "Test2", name: "User" }),
-      name: consumer({ type: CommonDataType.String, name: "Имя" }),
-    }),
-    isHandlerHidden: false,
-    handler: async ({ self, api }) => {
-      api.Schedule.scheduleTrigger(self.uuid, Date.now() + 1000);
-    },
-  })
-  .defineRemoteGetterNode("Test", {
-    keys: {
-      id: { type: CommonDataType.Number, name: "ID" },
-    },
-    value: { type: CommonDataType.Number, name: "ID" },
-    get: async ({ self, api }) => {
-      const user = await api.Schedule.scheduleTrigger(
-        self.uuid,
-        Date.now() + 1000
-      );
-
-      return 1;
-    },
-    set: async ({ self, api, value }) => {
-      self.keys = value;
-    },
-  })
-  .finalize();
-
-const macros = commutator.createMacros("Test");
-const staticGetterNode = commutator.createStaticGetterNode("Test");
-const remoteGetterNode = commutator.createRemoteGetterNode("Test");
