@@ -51,7 +51,7 @@ export function createCommutator<
       type Extension = { [K in Name]: DataType };
       return createCommutator<
         DataTypes & Extension,
-        ExtendAbstractNodes<DataTypes, { [K in Name]: DataType }, Nodes>,
+        ExtendAbstractNodes<DataTypes, Extension, Nodes>,
         ExtendEvents<DataTypes, Extension, Nodes, Events>,
         ExtendRefNodes<DataTypes, Extension, Nodes, Refs>,
         ExtendPureFunctions<DataTypes, Extension, Nodes, PureFunctions>,
