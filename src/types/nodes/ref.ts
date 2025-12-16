@@ -16,9 +16,24 @@ export interface RefNode<
   /**
    * Метод для резолва рефа, вызывается в момент подгрузки сущности из пина.
    * Берёт из метаданных информацию о местонахождении сущности, подгружает сущность и возвращает её.
-  */
+   */
   readonly resolveRef: (args: {
     pinOut: PinOut;
     meta: FieldValue<Field<DataTypes>, DataTypes>;
   }) => Promise<PinValue<PinOut, DataTypes> | null>;
 }
+
+export type ExtendRefNodes<
+  DataTypes extends Record<string, Field<DataTypes>>,
+  Extension extends Record<string, Field<DataTypes>>,
+  Nodes extends Record<string, AbstractNode<DataTypes, Nodes, any, any>>,
+  Refs extends Record<string, RefNode<DataTypes, Nodes, any, any, any>>,
+> = Refs & {
+  [K in keyof Refs]: RefNode<
+    DataTypes & Extension,
+    Nodes,
+    any,
+    any,
+    any
+  >;
+};

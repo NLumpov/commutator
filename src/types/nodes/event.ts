@@ -15,3 +15,19 @@ export interface EventNode<
   readonly pinsIn: PinsIn;
   readonly execPinOut: ExecPinOut;
 }
+
+export type ExtendEvents<
+  DataTypes extends Record<string, Field<DataTypes>>,
+  Extension extends Record<string, Field<DataTypes>>,
+  Nodes extends Record<string, AbstractNode<DataTypes, Nodes, any, any>>,
+  Events extends Record<string, EventNode<DataTypes, Nodes, any, any, any, any>>,
+> = Events & {
+  [K in keyof Events]: EventNode<
+    DataTypes & Extension,
+    Nodes,
+    any,
+    any,
+    any,
+    any
+  >;
+};

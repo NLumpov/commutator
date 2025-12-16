@@ -15,3 +15,16 @@ export interface AbstractNode<
    */
   readonly meta: Meta;
 }
+
+export type ExtendAbstractNodes<
+  DataTypes extends Record<string, Field<DataTypes>>,
+  Extension extends Record<string, Field<DataTypes>>,
+  Nodes extends Record<string, AbstractNode<DataTypes, Nodes, any, any>>,
+> = Nodes & {
+  [K in keyof Nodes]: AbstractNode<
+    DataTypes & Extension,
+    Nodes,
+    any,
+    any
+  >;
+};

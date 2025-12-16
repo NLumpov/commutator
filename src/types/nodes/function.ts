@@ -58,3 +58,21 @@ export interface FunctionNode<
     meta: FieldValue<Meta, DataTypes>;
   }) => Promise<PinArrayValue<PinsOut, DataTypes>>;
 }
+
+export type ExtendFunctions<
+  DataTypes extends Record<string, Field<DataTypes>>,
+  Extension extends Record<string, Field<DataTypes>>,
+  Nodes extends Record<string, AbstractNode<DataTypes, Nodes, any, any>>,
+  Functions extends Record<string, FunctionNode<DataTypes, Nodes, any, any, any, any, any, any>>,
+> = Functions & {
+  [K in keyof Functions]: FunctionNode<
+    DataTypes & Extension,
+    Nodes,
+    any,
+    any,
+    any,
+    any,
+    any,
+    any
+  >;
+};

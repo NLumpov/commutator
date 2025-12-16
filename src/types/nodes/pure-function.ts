@@ -1,6 +1,5 @@
 import type { Field, FieldValue } from "@declarations/field";
 import type { Pin, PinArrayValue } from "@declarations/pin";
-import type { ExecPin } from "@declarations/pin";
 import type { AbstractNode } from "@declarations/nodes";
 import type { NodeType } from "@enums/node-type";
 
@@ -38,3 +37,19 @@ export interface PureFunctionNode<
     meta: FieldValue<Meta, DataTypes>;
   }) => Promise<void>;
 }
+
+export type ExtendPureFunctions<
+  DataTypes extends Record<string, Field<DataTypes>>,
+  Extension extends Record<string, Field<DataTypes>>,
+  Nodes extends Record<string, AbstractNode<DataTypes, Nodes, any, any>>,
+  PureFunctions extends Record<string, PureFunctionNode<DataTypes, Nodes, any, any, any, any>>,
+> = PureFunctions & {
+  [K in keyof PureFunctions]: PureFunctionNode<
+    DataTypes & Extension,
+    Nodes,
+    any,
+    any,
+    any,
+    any
+  >;
+};
