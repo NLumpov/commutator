@@ -8,6 +8,7 @@ import type {
 import { CommonDataType } from "@enums/common-data-type";
 import type { Field } from "@declarations/field";
 import type { ExecPin, Pin } from "@declarations/pin";
+import type { CommutatorConfigState } from "@declarations/commutator-config-state";
 
 export function createCommutator<
   const DataTypes extends Record<string, Field<DataTypes>> = {},
@@ -33,14 +34,15 @@ export function createCommutator<
   > = {},
   const Apis extends Record<string, any> = {}
 >(
-  state: {
-    dataTypes: DataTypes;
-    events: Events;
-    refs: Refs;
-    pureFunctions: PureFunctions;
-    functions: Functions;
-    apis: Apis;
-  } = {
+  state: CommutatorConfigState<
+    DataTypes,
+    Nodes,
+    Events,
+    Refs,
+    PureFunctions,
+    Functions,
+    Apis
+  > = {
     dataTypes: {} as DataTypes,
     events: {} as Events,
     refs: {} as Refs,
@@ -420,40 +422,89 @@ export function createCommutator<
         },
       });
     },
+    inject<
+      const LocalDataTypes extends Record<string, Field<LocalDataTypes>> = {},
+      const LocalNodes extends Record<
+        string,
+        AbstractNode<LocalDataTypes, LocalNodes, any, any, any, any, any, any>
+      > = {},
+      const LocalEvents extends Record<
+        string,
+        EventNode<LocalDataTypes, LocalNodes, any, any, any, any, any, any>
+      > = {},
+      const LocalRefs extends Record<
+        string,
+        RefNode<
+          LocalDataTypes,
+          LocalNodes,
+          LocalApis,
+          any,
+          any,
+          any,
+          any,
+          any,
+          any
+        >
+      > = {},
+      const LocalPureFunctions extends Record<
+        string,
+        PureFunctionNode<
+          LocalDataTypes,
+          LocalNodes,
+          any,
+          any,
+          any,
+          any,
+          any,
+          any
+        >
+      > = {},
+      const LocalFunctions extends Record<
+        string,
+        FunctionNode<LocalDataTypes, LocalNodes, any, any, any, any, any, any>
+      > = {},
+      const LocalApis extends Record<string, any> = {}
+    >(
+      injection: CommutatorConfigState<
+        LocalDataTypes,
+        LocalNodes,
+        LocalEvents,
+        LocalRefs,
+        LocalPureFunctions,
+        LocalFunctions,
+        LocalApis
+      >
+    ) {
+      return createCommutator<
+        DataTypes & LocalDataTypes,
+        Nodes & LocalNodes,
+        Events & LocalEvents,
+        Refs & LocalRefs,
+        PureFunctions & LocalPureFunctions,
+        Functions & LocalFunctions,
+        Apis & LocalApis
+      >({
+        dataTypes: { ...state?.dataTypes, ...injection?.dataTypes },
+        events: { ...state?.events, ...injection?.events },
+        refs: { ...state?.refs, ...injection?.refs },
+        pureFunctions: { ...state?.pureFunctions, ...injection?.pureFunctions },
+        functions: { ...state?.functions, ...injection?.functions },
+        apis: { ...state?.apis, ...injection?.apis },
+      });
+    },
+    extract() {
+      return {
+        dataTypes: state?.dataTypes,
+        events: state?.events,
+        refs: state?.refs,
+        pureFunctions: state?.pureFunctions,
+        functions: state?.functions,
+        apis: state?.apis,
+      };
+    },
   };
 }
 
-const commutator = createCommutator()
-  .defineDataType("Test", {
-    type: CommonDataType.String,
-    name: "Test",
-  })
-  .defineDataType("Test2", {
-    type: CommonDataType.Object,
-    name: "Test",
-    properties: { test: { type: "Test", name: "Test" } },
-  })
-  .defineApi('Variable', {
-    getVariable: async (key: string) => {
-      return { value: "" };
-    },
-  })
-  .defineEvent("TestEvent", {
-    execPinsOut: {
-      key: "Test",
-    },
-    meta: {
-      type: "Test",
-      name: "Test",
-    },
-  })
-  .defineRef("Variable", {
-    pinsOut: {
-      value: { type: "Test" },
-    },
-    meta: { type: CommonDataType.String },
-    resolveRef: async ({ meta, pinsOut, api }) => {
-      api.Variable.getVariable('');
-      return { value: "" };
-    },
-  })
+// Re-export types and enums for convenience
+export * from "./types";
+export * from "./enums";

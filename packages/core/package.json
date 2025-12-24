@@ -1,0 +1,24 @@
+{
+  "name": "@commutator/core",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./index.ts",
+  "module": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./types": "./types/index.ts",
+    "./enums": "./enums/index.ts"
+  },
+  "dependencies": {
+    "uuid": "^13.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/uuid": "^11.0.0"
+  }
+}
+
