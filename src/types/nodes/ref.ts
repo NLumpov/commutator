@@ -9,6 +9,7 @@ export interface RefNode<
     string,
     AbstractNode<DataTypes, Nodes, Meta, any, any, any, any, any>
   >,
+  Apis extends Record<string, any>,
   Meta extends Field<DataTypes>,
   Name extends keyof Nodes,
   PinsIn extends Record<string, Pin<DataTypes>>,
@@ -32,6 +33,7 @@ export interface RefNode<
    */
   readonly resolveRef: (args: {
     pinsOut: PinsOut;
-    meta: FieldValue<Field<DataTypes>, DataTypes>;
+    meta: FieldValue<Meta, DataTypes>;
+    api: Apis;
   }) => Promise<PinRecordValue<PinsOut, DataTypes> | null>;
 }

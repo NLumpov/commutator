@@ -21,7 +21,7 @@ export function createCommutator<
   > = {},
   const Refs extends Record<
     string,
-    RefNode<DataTypes, Nodes, any, any, any, any, any, any>
+    RefNode<DataTypes, Nodes, Apis, any, any, any, any, any, any>
   > = {},
   const PureFunctions extends Record<
     string,
@@ -30,7 +30,8 @@ export function createCommutator<
   const Functions extends Record<
     string,
     FunctionNode<DataTypes, Nodes, any, any, any, any, any, any>
-  > = {}
+  > = {},
+  const Apis extends Record<string, any> = {}
 >(
   state: {
     dataTypes: DataTypes;
@@ -38,12 +39,14 @@ export function createCommutator<
     refs: Refs;
     pureFunctions: PureFunctions;
     functions: Functions;
+    apis: Apis;
   } = {
     dataTypes: {} as DataTypes,
     events: {} as Events,
     refs: {} as Refs,
     pureFunctions: {} as PureFunctions,
     functions: {} as Functions,
+    apis: {} as Apis,
   }
 ) {
   return {
@@ -85,6 +88,7 @@ export function createCommutator<
         [K in Name]: RefNode<
           DataTypes & Extension,
           Nodes,
+          Apis,
           any,
           any,
           any,
@@ -123,7 +127,8 @@ export function createCommutator<
         ExtendedEvents,
         ExtendedRefs,
         ExtendedPureFunctions,
-        ExtendedFunctions
+        ExtendedFunctions,
+        Apis
       >({
         ...state,
         events: state?.events ?? ({} as ExtendedEvents),
@@ -188,7 +193,8 @@ export function createCommutator<
         ExtendedEvents,
         Refs,
         PureFunctions,
-        Functions
+        Functions,
+        Apis
       >({
         ...state,
         events: {
@@ -210,6 +216,7 @@ export function createCommutator<
         RefNode<
           DataTypes,
           Nodes,
+          Apis,
           Meta,
           Name,
           PinsIn,
@@ -217,13 +224,14 @@ export function createCommutator<
           ExecPinsIn,
           ExecPinsOut
         >,
-        "pinsOut" | "meta"
+        "pinsOut" | "meta" | "resolveRef"
       >
     ) {
       type ExtendedRefs = Refs & {
         [K in Name]: RefNode<
           DataTypes,
           Nodes,
+          Apis,
           Meta,
           Name,
           PinsIn,
@@ -249,7 +257,8 @@ export function createCommutator<
         Events,
         ExtendedRefs,
         PureFunctions,
-        Functions
+        Functions,
+        Apis
       >({
         ...state,
         refs: {
@@ -310,7 +319,8 @@ export function createCommutator<
         Events,
         Refs,
         ExtendedPureFunctions,
-        Functions
+        Functions,
+        Apis
       >({
         ...state,
         pureFunctions: {
@@ -380,12 +390,33 @@ export function createCommutator<
         Events,
         Refs,
         PureFunctions,
-        ExtendedFunctions
+        ExtendedFunctions,
+        Apis
       >({
         ...state,
         functions: {
           ...state?.functions,
           [name]: functionNode,
+        },
+      });
+    },
+    defineApi<const Name extends string, const Api extends Record<string, any>>(
+      name: Name extends keyof Apis ? never : Name,
+      api: Api
+    ) {
+      return createCommutator<
+        DataTypes,
+        Nodes,
+        Events,
+        Refs,
+        PureFunctions,
+        Functions,
+        Apis & { [K in Name]: Api }
+      >({
+        ...state,
+        apis: {
+          ...state?.apis,
+          [name]: api,
         },
       });
     },
@@ -402,6 +433,11 @@ const commutator = createCommutator()
     name: "Test",
     properties: { test: { type: "Test", name: "Test" } },
   })
+  .defineApi('Variable', {
+    getVariable: async (key: string) => {
+      return { value: "" };
+    },
+  })
   .defineEvent("TestEvent", {
     execPinsOut: {
       key: "Test",
@@ -410,4 +446,14 @@ const commutator = createCommutator()
       type: "Test",
       name: "Test",
     },
-  });
+  })
+  .defineRef("Variable", {
+    pinsOut: {
+      value: { type: "Test" },
+    },
+    meta: { type: CommonDataType.String },
+    resolveRef: async ({ meta, pinsOut, api }) => {
+      api.Variable.getVariable('');
+      return { value: "" };
+    },
+  })
