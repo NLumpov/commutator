@@ -1,38 +1,31 @@
 import type { Field, FieldValue } from "@declarations/field";
+import type { CommonDataType } from "@enums/common-data-type";
 
-export type Pin<
-  DataTypes extends Record<string, Field<DataTypes>>,
-  Pins extends Pin<DataTypes, any, any>[],
-  PinKey extends Pins[number]["key"]
-> = {
-  uuid: string;
-  // Ключ пина, уникальный на все Pin'ы в рамках одной функции/ивента/рефа
-  key: PinKey;
+export type Pin<DataTypes extends Record<string, Field<DataTypes>>> = {
   // тип данных которые отдёт/забирает пин
-  type: Field<DataTypes>;
+  type:
+    | keyof DataTypes
+    | Exclude<
+        CommonDataType,
+        | CommonDataType.Object
+        | CommonDataType.Array
+        | CommonDataType.StringEnum
+        | CommonDataType.NumberEnum
+      >;
   // Значение если к пину ничего не приконнекчено
   default?: FieldValue<Field<DataTypes>, DataTypes>;
 };
 
-export type ExecPin<
-  ExecPins extends ExecPin<any, any>[],
-  PinKey extends keyof ExecPins
-> = {
-  uuid: string;
-  // Ключ пина, уникальный на все ExecPin'ы в рамках одной функции/ивента/рефа
-  key: PinKey;
-};
+export type ExecPin = {}
 
 export type PinValue<
-  TPin extends Pin<DataTypes, any, any>,
+  TPin extends Pin<DataTypes>,
   DataTypes extends Record<string, Field<DataTypes>>
-> = FieldValue<TPin["type"], DataTypes>;
+> = FieldValue<TPin, DataTypes>;
 
-export type PinArrayValue<
-  Pins extends Pin<DataTypes, any, any>[],
+export type PinRecordValue<
+  Pins extends Record<string, Pin<DataTypes>>,
   DataTypes extends Record<string, Field<DataTypes>>
 > = {
-  [Key in keyof Pins]: Pin<DataTypes, Pins, Pins[Key]["key"]> & {
-    value: PinValue<Pins[Key], DataTypes>;
-  };
+  [Key in keyof Pins]: PinValue<Pins[Key], DataTypes>;
 };

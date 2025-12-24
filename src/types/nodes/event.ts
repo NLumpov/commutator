@@ -5,29 +5,34 @@ import type { AbstractNode } from "@declarations/nodes";
 
 export interface EventNode<
   DataTypes extends Record<string, Field<DataTypes>>,
-  Nodes extends Record<string, AbstractNode<DataTypes, Nodes, Meta, any>>,
+  Nodes extends Record<
+    string,
+    AbstractNode<
+      DataTypes,
+      Nodes,
+      Meta,
+      Name,
+      PinsIn,
+      PinsOut,
+      ExecPinsIn,
+      ExecPinsOut
+    >
+  >,
   Meta extends Field<DataTypes>,
   Name extends keyof Nodes,
-  PinsIn extends Pin<DataTypes, PinsIn, any>[],
-  ExecPinOut extends ExecPin<[ExecPinOut], any>
-> extends AbstractNode<DataTypes, Nodes, Meta, Name> {
-  readonly type: NodeType.Event;
-  readonly pinsIn: PinsIn;
-  readonly execPinOut: ExecPinOut;
-}
-
-export type ExtendEvents<
-  DataTypes extends Record<string, Field<DataTypes>>,
-  Extension extends Record<string, Field<DataTypes>>,
-  Nodes extends Record<string, AbstractNode<DataTypes, Nodes, any, any>>,
-  Events extends Record<string, EventNode<DataTypes, Nodes, any, any, any, any>>,
-> = Events & {
-  [K in keyof Events]: EventNode<
-    DataTypes & Extension,
+  PinsIn extends Record<string, Pin<DataTypes>>,
+  PinsOut extends Record<string, Pin<DataTypes>>,
+  ExecPinsIn extends Record<string, ExecPin>,
+  ExecPinsOut extends Record<string, ExecPin>
+> extends AbstractNode<
+    DataTypes,
     Nodes,
-    any,
-    any,
-    any,
-    any
-  >;
-};
+    Meta,
+    Name,
+    PinsIn,
+    PinsOut,
+    ExecPinsIn,
+    ExecPinsOut
+  > {
+  readonly type: NodeType.Event;
+}
