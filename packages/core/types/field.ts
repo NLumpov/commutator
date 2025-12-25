@@ -1,4 +1,4 @@
-import type { CommonDataType } from "@enums/common-data-type";
+import { CommonDataType } from "../enums";
 
 export type Field<DataTypes extends Record<string, Field<DataTypes>>> = {
   name?: string;

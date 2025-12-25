@@ -1,3 +1,9 @@
-import { createCommutator, type CommutatorConfigState } from "@commutator/core";
+import { CommonDataType, Commutator } from "@commutator/core";
 
-export const logicalExtension = createCommutator()
+export const logicalExtension = Commutator.initialize().defineDataType(
+  "goolean",
+  {
+    type: CommonDataType.Object,
+    properties: {},
+  }
+);

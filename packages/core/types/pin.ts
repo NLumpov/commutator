@@ -1,5 +1,5 @@
-import type { Field, FieldValue } from "@declarations/field";
-import type { CommonDataType } from "@enums/common-data-type";
+import type { Field, FieldValue } from "./field";
+import { CommonDataType } from "../enums";
 
 export type Pin<DataTypes extends Record<string, Field<DataTypes>>> = {
   // тип данных которые отдёт/забирает пин

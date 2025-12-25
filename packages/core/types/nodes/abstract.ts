@@ -1,30 +1,15 @@
-import type { NodeType } from "@enums/node-type";
-import type { Field } from "@declarations/field";
-import type { ExecPin, Pin } from "@declarations/pin";
+import type { NodeType } from "../../enums";
+import type { Field } from "../field";
+import type { ExecPin, Pin } from "../pin";
 
 export interface AbstractNode<
   DataTypes extends Record<string, Field<DataTypes>>,
-  Nodes extends Record<
-    string,
-    AbstractNode<
-      DataTypes,
-      Nodes,
-      Meta,
-      Name,
-      PinsIn,
-      PinsOut,
-      ExecPinsIn,
-      ExecPinsOut
-    >
-  >,
   Meta extends Field<DataTypes> | undefined,
-  Name extends keyof Nodes,
   PinsIn extends Record<string, Pin<DataTypes>>,
   PinsOut extends Record<string, Pin<DataTypes>>,
   ExecPinsIn extends Record<string, ExecPin>,
   ExecPinsOut extends Record<string, ExecPin>
 > {
-  readonly name: Name;
   readonly type: NodeType;
 
   readonly pinsIn: PinsIn;
