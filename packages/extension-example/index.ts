@@ -1,9 +1,8 @@
 import { CommonDataType, Commutator } from "@commutator/core";
 
-export const logicalExtension = Commutator.initialize().defineDataType(
-  "goolean",
-  {
-    type: CommonDataType.Object,
-    properties: {},
-  }
-);
+export const exampleExtension = Commutator.initialize().defineDataType("User", {
+  type: CommonDataType.Object,
+  properties: {
+    name: { type: CommonDataType.String },
+  },
+});
