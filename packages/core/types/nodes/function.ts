@@ -5,7 +5,7 @@ import type { NodeType } from "../../enums";
 
 export interface FunctionNode<
   DataTypes extends Record<string, Field<DataTypes>>,
-  Meta extends Field<DataTypes>,
+  Meta extends Field<DataTypes> | undefined,
   PinsIn extends Record<string, Pin<DataTypes>>,
   PinsOut extends Record<string, Pin<DataTypes>>,
   ExecPinsIn extends Record<string, ExecPin>,
@@ -28,10 +28,15 @@ export interface FunctionNode<
    */
   readonly exec: (args: {
     pinsIn: PinRecordValue<PinsIn, DataTypes>;
-    pinsOut: PinRecordValue<PinsOut, DataTypes>;
     execPinsIn: ExecPinsIn;
     execPinsOut: ExecPinsOut;
+    meta: Meta extends Field<DataTypes> ? FieldValue<Meta, DataTypes> : never;
     triggeredExecPinKey: keyof ExecPinsIn;
-    meta: FieldValue<Meta, DataTypes>;
-  }) => Promise<PinRecordValue<PinsOut, DataTypes>>;
+    exec: (args: {
+      meta: Meta extends Field<DataTypes> ? FieldValue<Meta, DataTypes> : never;
+      pinsOut: PinRecordValue<PinsOut, DataTypes>;
+      execPinOut: string | null;
+    }) => Promise<void>;
+    // Переделать апи, надо чтобы была возможность экзекать по очереди 10 раз и тд
+  }) => Promise<void>;
 }

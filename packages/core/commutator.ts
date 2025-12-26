@@ -131,7 +131,7 @@ export class Commutator<
 
   defineEvent<
     const Name extends string,
-    const Meta extends Field<DataTypes>,
+    const Meta extends Field<DataTypes> | undefined,
     const PinsIn extends Record<string, Pin<DataTypes>>,
     const PinsOut extends Record<string, Pin<DataTypes>>,
     const ExecPinsIn extends Record<string, ExecPin>,
@@ -207,7 +207,7 @@ export class Commutator<
 
   defineRef<
     const Name extends string,
-    const Meta extends Field<DataTypes>,
+    const Meta extends Field<DataTypes> | undefined,
     const PinsIn extends Record<string, Pin<DataTypes>>,
     const PinsOut extends Record<string, Pin<DataTypes>>,
     const ExecPinsIn extends Record<string, ExecPin>,
@@ -221,8 +221,8 @@ export class Commutator<
       ? never
       : Name,
     refNode: Pick<
-      RefNode<DataTypes, Apis, Meta, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>,
-      "pinsOut" | "meta" | "resolveRef"
+      RefNode<DataTypes, Meta, Apis, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>,
+      "pinsOut" | "resolveRef" | "meta"
     >
   ): Commutator<
     DataTypes,
@@ -230,8 +230,8 @@ export class Commutator<
     Refs & {
       [K in Name]: RefNode<
         DataTypes,
-        Apis,
         Meta,
+        Apis,
         PinsIn,
         PinsOut,
         ExecPinsIn,
@@ -248,8 +248,8 @@ export class Commutator<
     } as Refs & {
       [K in Name]: RefNode<
         DataTypes,
-        Apis,
         Meta,
+        Apis,
         PinsIn,
         PinsOut,
         ExecPinsIn,
@@ -263,8 +263,8 @@ export class Commutator<
       Refs & {
         [K in Name]: RefNode<
           DataTypes,
-          Apis,
           Meta,
+          Apis,
           PinsIn,
           PinsOut,
           ExecPinsIn,
@@ -369,7 +369,7 @@ export class Commutator<
 
   defineFunction<
     const Name extends string,
-    const Meta extends Field<DataTypes>,
+    const Meta extends Field<DataTypes> | undefined,
     const PinsIn extends Record<string, Pin<DataTypes>>,
     const PinsOut extends Record<string, Pin<DataTypes>>,
     const ExecPinsIn extends Record<string, ExecPin>,
@@ -392,6 +392,7 @@ export class Commutator<
       | "execPinsOut"
       | "canAddExecPinIn"
       | "canAddExecPinOut"
+      | "exec"
       | "meta"
     >
   ): Commutator<
@@ -527,8 +528,3 @@ export class Commutator<
     );
   }
 }
-
-export const logicalExtension = Commutator.initialize().defineDataType(
-  "TestData",
-  { type: CommonDataType.Object, properties: {} }
-);

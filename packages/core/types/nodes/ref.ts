@@ -5,8 +5,8 @@ import type { AbstractNode } from "./abstract";
 
 export interface RefNode<
   DataTypes extends Record<string, Field<DataTypes>>,
+  Meta extends Field<DataTypes> | undefined,
   Apis extends Record<string, any>,
-  Meta extends Field<DataTypes>,
   PinsIn extends Record<string, Pin<DataTypes>>,
   PinsOut extends Record<string, Pin<DataTypes>>,
   ExecPinsIn extends Record<string, ExecPin>,
@@ -26,7 +26,6 @@ export interface RefNode<
    */
   readonly resolveRef: (args: {
     pinsOut: PinsOut;
-    meta: FieldValue<Meta, DataTypes>;
     api: Apis;
   }) => Promise<PinRecordValue<PinsOut, DataTypes> | null>;
 }

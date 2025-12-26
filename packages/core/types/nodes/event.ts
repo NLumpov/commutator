@@ -5,7 +5,7 @@ import type { AbstractNode } from "./abstract";
 
 export interface EventNode<
   DataTypes extends Record<string, Field<DataTypes>>,
-  Meta extends Field<DataTypes>,
+  Meta extends Field<DataTypes> | undefined,
   PinsIn extends Record<string, Pin<DataTypes>>,
   PinsOut extends Record<string, Pin<DataTypes>>,
   ExecPinsIn extends Record<string, ExecPin>,

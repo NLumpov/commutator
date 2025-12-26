@@ -19,11 +19,6 @@ export interface PureFunctionNode<
     ExecPinsOut
   > {
   readonly type: NodeType.PureFunction;
-  /**
-   * Чистые функции не имеют метаданных т.к. они
-   * они не могут сохранять промежуточные значения
-   */
-  readonly meta: undefined;
 
   /**
    * Exec в pure-функции вызывается когда срабатывает пулл-стратегия,
