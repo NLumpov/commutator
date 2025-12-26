@@ -26,6 +26,6 @@ export interface PureFunctionNode<
    */
   readonly exec: (args: {
     pinsIn: PinRecordValue<PinsIn, DataTypes>;
-    pinsOut: PinRecordValue<PinsOut, DataTypes>;
-  }) => Promise<void>;
+    pinsOut: PinsOut;
+  }) => Promise<PinRecordValue<PinsOut, DataTypes>>;
 }

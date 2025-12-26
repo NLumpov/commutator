@@ -308,7 +308,7 @@ export class Commutator<
         ExecPinsIn,
         ExecPinsOut
       >,
-      "pinsIn" | "pinsOut" | "canAddPinIn" | "canAddPinOut"
+      "pinsIn" | "pinsOut" | "canAddPinIn" | "canAddPinOut" | "exec"
     >
   ): Commutator<
     DataTypes,
