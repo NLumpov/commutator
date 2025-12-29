@@ -12,8 +12,7 @@
     "lint": "bun run --filter='./packages/*' lint"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "@types/uuid": "^11.0.0"
+    "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
