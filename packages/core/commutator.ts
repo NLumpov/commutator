@@ -1,3 +1,4 @@
+import { CommutatorInstance } from "./commutator-instance";
 import { CommonDataType } from "./enums";
 import type {
   EventNode,
@@ -31,28 +32,14 @@ export class Commutator<
   > = {},
   const Apis extends Record<string, any> = {}
 > {
-  private dataTypes: DataTypes;
-  private events: Events;
-  private refs: Refs;
-  private pureFunctions: PureFunctions;
-  private functions: Functions;
-  private apis: Apis;
-
   private constructor(
-    dataTypes: DataTypes,
-    events: Events,
-    refs: Refs,
-    pureFunctions: PureFunctions,
-    functions: Functions,
-    apis: Apis
-  ) {
-    this.dataTypes = dataTypes;
-    this.events = events;
-    this.refs = refs;
-    this.pureFunctions = pureFunctions;
-    this.functions = functions;
-    this.apis = apis;
-  }
+    private dataTypes: DataTypes,
+    private events: Events,
+    private refs: Refs,
+    private pureFunctions: PureFunctions,
+    private functions: Functions,
+    private apis: Apis
+  ) {}
 
   static initialize<
     const DataTypes extends Record<string, Field<DataTypes>> = {},
@@ -527,4 +514,34 @@ export class Commutator<
       { ...this.apis, ...otherConfig.apis }
     );
   }
+
+  createInstance() {
+    return CommutatorInstance.initialize(
+      this.dataTypes,
+      this.events,
+      this.refs,
+      this.pureFunctions,
+      this.functions,
+      this.apis
+    );
+  }
 }
+
+// TODO инстансы нод
+// TODO связи
+
+const commutator = Commutator.initialize()
+  .defineDataType("User", {
+    type: CommonDataType.Object,
+    properties: {
+      name: { type: CommonDataType.String },
+    },
+  })
+  .defineEvent("UserCreated", {
+    execPinsOut: { "": {} },
+    pinsOut: { Key: { type: CommonDataType.String } },
+  })
+  .createInstance()
+
+const evt = commutator.createEvent("UserCreated");
+

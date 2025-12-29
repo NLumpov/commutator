@@ -1,5 +1,5 @@
 import type { NodeType } from "../../enums";
-import type { Field, FieldValue } from "../field";
+import type { Field } from "../field";
 import type { ExecPin, Pin, PinRecordValue } from "../pin";
 import type { AbstractNode } from "./abstract";
 
