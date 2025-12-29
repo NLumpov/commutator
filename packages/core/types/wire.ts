@@ -1,4 +1,4 @@
 export interface Wire {
-  from: string;
-  to: string;
+    readonly from: string;
+    readonly to: string;
 }
