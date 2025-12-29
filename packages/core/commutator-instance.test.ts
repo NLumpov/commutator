@@ -1095,7 +1095,7 @@ describe("CommutatorInstance", () => {
           // Создаем второе соединение (func2 -> func1), это должно создать цикл
           expect(() => {
             instance.wire(func2ExecOut!, func1ExecIn!);
-          }).toThrow("Cyclic connection detected in exec pins");
+          }).toThrow("Cyclic connection detected in pins");
         });
 
         test("should detect indirect exec cycle (A -> B -> C -> A)", () => {
@@ -1191,7 +1191,7 @@ describe("CommutatorInstance", () => {
           // Попытка создать соединение func3 -> func1 должна создать цикл
           expect(() => {
             instance.wire(func3ExecOut!, func1ExecIn!);
-          }).toThrow("Cyclic connection detected in exec pins");
+          }).toThrow("Cyclic connection detected in pins");
         });
 
         test("should allow non-cyclic exec connections", () => {
@@ -1324,7 +1324,7 @@ describe("CommutatorInstance", () => {
           // Создаем второе соединение (func2 -> func1), это должно создать цикл
           expect(() => {
             instance.wire(func2Out!, func1In!);
-          }).toThrow("Cyclic connection detected in data pins");
+          }).toThrow("Cyclic connection detected in pins");
         });
 
         test("should detect indirect data cycle (A -> B -> C -> A)", () => {
@@ -1408,7 +1408,7 @@ describe("CommutatorInstance", () => {
           // Попытка создать соединение func3 -> func1 должна создать цикл
           expect(() => {
             instance.wire(func3Out!, func1In!);
-          }).toThrow("Cyclic connection detected in data pins");
+          }).toThrow("Cyclic connection detected in pins");
         });
 
         test("should allow non-cyclic data connections", () => {
