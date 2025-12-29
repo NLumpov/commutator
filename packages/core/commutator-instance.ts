@@ -325,7 +325,9 @@ export class CommutatorInstance<
     // Для exec pins разрешаем множественные входы, не проверяем существование провода
 
     // Проверяем циклические связи
-    this.checkCyclicConnection(outputPin, inputPin);
+    if (this.checkCyclicConnection(outputPin, inputPin)) {
+      throw new Error("Cyclic connection detected in pins");
+    }
 
     // Создаем провод и добавляем его в массив
     const wire: Wire = {
@@ -336,19 +338,19 @@ export class CommutatorInstance<
   }
 
   /**
-   * Проверяет, не создаст ли соединение циклическую связь в графе
+   * Проверяет, создаст ли соединение циклическую связь в графе
+   * @returns true если соединение создаст цикл, false если нет
    */
-  private checkCyclicConnection(
+  checkCyclicConnection(
     outputPin: PinInstance,
     inputPin: PinInstance
-  ): void {
+  ): boolean {
     const outputNodeUuid = outputPin.nodeUuid;
     const inputNodeUuid = inputPin.nodeUuid;
 
     // Определяем типы пинов для проверки
     let outputPinType: PinInstanceType;
     let inputPinType: PinInstanceType;
-    let errorMessage: string;
 
     if (
       outputPin.type === PinInstanceType.OutputExec &&
@@ -356,22 +358,23 @@ export class CommutatorInstance<
     ) {
       outputPinType = PinInstanceType.OutputExec;
       inputPinType = PinInstanceType.InputExec;
-      errorMessage = "Cyclic connection detected in exec pins";
     } else if (
       outputPin.type === PinInstanceType.Output &&
       inputPin.type === PinInstanceType.Input
     ) {
       outputPinType = PinInstanceType.Output;
       inputPinType = PinInstanceType.Input;
-      errorMessage = "Cyclic connection detected in data pins";
     } else {
       // Не проверяем циклы для других комбинаций типов
-      return;
+      return false;
     }
 
-    if (this.wouldCreateCycle(inputNodeUuid, outputNodeUuid, outputPinType, inputPinType)) {
-      throw new Error(errorMessage);
-    }
+    return this.wouldCreateCycle(
+      inputNodeUuid,
+      outputNodeUuid,
+      outputPinType,
+      inputPinType
+    );
   }
 
   /**
@@ -463,4 +466,3 @@ export class CommutatorInstance<
 
 // TODO функция выгрузки текущего инстанса
 // TODO функция создания инстанса из выгрузки
-// TODO доделать проверку циклических связей в графах
