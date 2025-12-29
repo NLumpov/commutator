@@ -526,22 +526,3 @@ export class Commutator<
     );
   }
 }
-
-// TODO инстансы нод
-// TODO связи
-
-const commutator = Commutator.initialize()
-  .defineDataType("User", {
-    type: CommonDataType.Object,
-    properties: {
-      name: { type: CommonDataType.String },
-    },
-  })
-  .defineEvent("UserCreated", {
-    execPinsOut: { "": {} },
-    pinsOut: { Key: { type: CommonDataType.String } },
-  })
-  .createInstance()
-
-const evt = commutator.createEvent("UserCreated");
-

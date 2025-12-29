@@ -1,8 +1,6 @@
 import { ulid } from "./util/ulid";
 import { NodeType, PinInstanceType } from "./enums";
 import type {
-  AbstractNode,
-  AbstractNodeInstance,
   EventNode,
   EventNodeInstance,
   ExecPin,
@@ -181,7 +179,8 @@ export class CommutatorInstance<
       y: 0,
     };
 
-    this.pureFunctionInstances[pureFunctionInstance.uuid] = pureFunctionInstance;
+    this.pureFunctionInstances[pureFunctionInstance.uuid] =
+      pureFunctionInstance;
     this.createPinInstances(
       pureFunctionInstance.uuid,
       pureFunctionConfig.pinsIn,
@@ -217,25 +216,40 @@ export class CommutatorInstance<
     return functionInstance;
   }
 
-  connect(from: string, to: string): void {
-    const fromInstance =
-      this.eventInstances[from] ||
-      this.refInstances[from] ||
-      this.pureFunctionInstances[from] ||
-      this.functionInstances[from];
-    const toInstance =
-      this.eventInstances[to] ||
-      this.refInstances[to] ||
-      this.pureFunctionInstances[to] ||
-      this.functionInstances[to];
+  wire(from: string, to: string): void {
+    const fromPin = this.pinInstances[from];
+    const toPin = this.pinInstances[to];
 
-    if (!fromInstance || !toInstance) {
-      throw new Error("Invalid connection");
+    if (!fromPin || !toPin) {
+      throw new Error("Pin not found");
     }
 
-    this.wires.push({
-      from,
-      to,
-    });
+    if (
+      (fromPin.type === PinInstanceType.Output &&
+        toPin.type === PinInstanceType.Input) ||
+      (fromPin.type === PinInstanceType.Input &&
+        toPin.type === PinInstanceType.Output)
+    ) {
+      this.wires.push({
+        from,
+        to,
+      });
+    }
+
+    if (
+      (fromPin.type === PinInstanceType.OutputExec &&
+        toPin.type === PinInstanceType.InputExec) ||
+      (fromPin.type === PinInstanceType.InputExec &&
+        toPin.type === PinInstanceType.OutputExec)
+    ) {
+      this.wires.push({
+        from,
+        to,
+      });
+    }
   }
 }
+
+// TODO функция выгрузки текущего инстанса
+// TODO функция создания инстанса из выгрузки
+// TODO доделать проверку циклических связей в графах
