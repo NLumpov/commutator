@@ -462,7 +462,27 @@ export class CommutatorInstance<
     }
     return undefined;
   }
+
+  extract() {
+    return {
+      events: this.eventInstances,
+      refs: this.refInstances,
+      pureFunctions: this.pureFunctionInstances,
+      functions: this.functionInstances,
+      pinInstances: this.pinInstances,
+      wires: this.wires,
+    }
+  }
 }
 
 // TODO функция выгрузки текущего инстанса
 // TODO функция создания инстанса из выгрузки
+// Сначала сделать выгрузку и загрузку инстанса
+// Потом уже заниматься отработкой инстансов т.к. хз как она должна работать
+// В идеале в бд должен лежать просто кеш привязанный к запуску
+
+// Сделать три слоя
+// Коммутатор, schema и instance
+// коммутатор - конфигурация типов и нод, уже готова
+// schema - граф сделанный на онове типов и нод, уже готов
+// instance - запуск, не готов
