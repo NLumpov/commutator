@@ -1,9 +1,8 @@
 import { describe, test, expect } from "bun:test";
 import { Commutator } from "./commutator";
-import { CommutatorInstance } from "./commutator-instance";
 import { CommonDataType, NodeType, PinInstanceType } from "./enums";
 
-describe("CommutatorInstance", () => {
+describe("CommutatorSchema", () => {
   describe("createEvent", () => {
     test("should create event instance", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
@@ -16,7 +15,7 @@ describe("CommutatorInstance", () => {
         },
       });
 
-      const instance = commutator.createInstance();
+      const instance = commutator.createSchema();
       const eventInstance = instance.createEvent("onClick");
 
       expect(eventInstance).toBeDefined();
@@ -42,7 +41,7 @@ describe("CommutatorInstance", () => {
           execPinsOut: {},
         });
 
-      const instance = commutator.createInstance();
+      const instance = commutator.createSchema();
       const event1 = instance.createEvent("onClick");
       const event2 = instance.createEvent("onHover");
       const event3 = instance.createEvent("onClick");
@@ -65,7 +64,7 @@ describe("CommutatorInstance", () => {
         resolveRef: async () => ({ user: "test" }),
       });
 
-      const instance = commutator.createInstance();
+      const instance = commutator.createSchema();
       const refInstance = instance.createRef("userRef");
 
       expect(refInstance).toBeDefined();
@@ -92,7 +91,7 @@ describe("CommutatorInstance", () => {
         }),
       });
 
-      const instance = commutator.createInstance();
+      const instance = commutator.createSchema();
       const pureFunctionInstance = instance.createPureFunction("add");
 
       expect(pureFunctionInstance).toBeDefined();
@@ -122,7 +121,7 @@ describe("CommutatorInstance", () => {
         exec: async () => {},
       });
 
-      const instance = commutator.createInstance();
+      const instance = commutator.createSchema();
       const functionInstance = instance.createFunction("log");
 
       expect(functionInstance).toBeDefined();
@@ -152,7 +151,7 @@ describe("CommutatorInstance", () => {
             exec: async () => ({}),
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createPureFunction("target");
 
@@ -193,7 +192,7 @@ describe("CommutatorInstance", () => {
             exec: async () => ({}),
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createPureFunction("target");
 
@@ -231,7 +230,7 @@ describe("CommutatorInstance", () => {
             exec: async () => ({}),
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createPureFunction("target");
 
@@ -269,7 +268,7 @@ describe("CommutatorInstance", () => {
             exec: async () => ({}),
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createPureFunction("target");
 
@@ -313,7 +312,7 @@ describe("CommutatorInstance", () => {
             exec: async () => ({}),
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source1 = instance.createEvent("source1");
         const source2 = instance.createEvent("source2");
         const target = instance.createPureFunction("target");
@@ -372,7 +371,7 @@ describe("CommutatorInstance", () => {
             exec: async () => ({}),
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target1 = instance.createPureFunction("target1");
         const target2 = instance.createPureFunction("target2");
@@ -427,7 +426,7 @@ describe("CommutatorInstance", () => {
             exec: async () => {},
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createFunction("target");
 
@@ -475,7 +474,7 @@ describe("CommutatorInstance", () => {
             exec: async () => {},
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source1 = instance.createEvent("source1");
         const source2 = instance.createEvent("source2");
         const target = instance.createFunction("target");
@@ -542,7 +541,7 @@ describe("CommutatorInstance", () => {
             exec: async () => {},
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target1 = instance.createFunction("target1");
         const target2 = instance.createFunction("target2");
@@ -577,7 +576,7 @@ describe("CommutatorInstance", () => {
     describe("error cases", () => {
       test("should throw error when pin not found", () => {
         const commutator = Commutator.initialize();
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
 
         expect(() => {
           instance.wire("non-existent-pin-1", "non-existent-pin-2");
@@ -592,7 +591,7 @@ describe("CommutatorInstance", () => {
           execPinsOut: {},
         });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
 
         const outputPinUuid = instance.getPinUuid(
@@ -627,7 +626,7 @@ describe("CommutatorInstance", () => {
             exec: async () => ({}),
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const func1 = instance.createPureFunction("func1");
         const func2 = instance.createPureFunction("func2");
 
@@ -662,7 +661,7 @@ describe("CommutatorInstance", () => {
             execPinsOut: {},
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const event1 = instance.createEvent("event1");
         const event2 = instance.createEvent("event2");
 
@@ -704,7 +703,7 @@ describe("CommutatorInstance", () => {
             exec: async () => {},
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createFunction("target");
 
@@ -742,7 +741,7 @@ describe("CommutatorInstance", () => {
             exec: async () => ({}),
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createPureFunction("target");
 
@@ -780,7 +779,7 @@ describe("CommutatorInstance", () => {
             exec: async () => ({}),
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createPureFunction("target");
 
@@ -821,7 +820,7 @@ describe("CommutatorInstance", () => {
             exec: async () => ({}),
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createPureFunction("target");
 
@@ -882,7 +881,7 @@ describe("CommutatorInstance", () => {
             exec: async () => {},
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createFunction("target");
 
@@ -927,7 +926,7 @@ describe("CommutatorInstance", () => {
             exec: async () => ({}),
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createPureFunction("target");
 
@@ -995,7 +994,7 @@ describe("CommutatorInstance", () => {
             exec: async () => {},
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const source = instance.createEvent("source");
         const target = instance.createFunction("target");
 
@@ -1062,7 +1061,7 @@ describe("CommutatorInstance", () => {
               exec: async () => {},
             });
 
-          const instance = commutator.createInstance();
+          const instance = commutator.createSchema();
           const func1 = instance.createFunction("func1");
           const func2 = instance.createFunction("func2");
 
@@ -1146,7 +1145,7 @@ describe("CommutatorInstance", () => {
               exec: async () => {},
             });
 
-          const instance = commutator.createInstance();
+          const instance = commutator.createSchema();
           const func1 = instance.createFunction("func1");
           const func2 = instance.createFunction("func2");
           const func3 = instance.createFunction("func3");
@@ -1231,7 +1230,7 @@ describe("CommutatorInstance", () => {
               exec: async () => {},
             });
 
-          const instance = commutator.createInstance();
+          const instance = commutator.createSchema();
           const event = instance.createEvent("event");
           const func1 = instance.createFunction("func1");
           const func2 = instance.createFunction("func2");
@@ -1291,7 +1290,7 @@ describe("CommutatorInstance", () => {
               exec: async () => ({ output: "" }),
             });
 
-          const instance = commutator.createInstance();
+          const instance = commutator.createSchema();
           const func1 = instance.createPureFunction("func1");
           const func2 = instance.createPureFunction("func2");
 
@@ -1363,7 +1362,7 @@ describe("CommutatorInstance", () => {
               exec: async () => ({ output: 0 }),
             });
 
-          const instance = commutator.createInstance();
+          const instance = commutator.createSchema();
           const func1 = instance.createPureFunction("func1");
           const func2 = instance.createPureFunction("func2");
           const func3 = instance.createPureFunction("func3");
@@ -1440,7 +1439,7 @@ describe("CommutatorInstance", () => {
               exec: async () => ({}),
             });
 
-          const instance = commutator.createInstance();
+          const instance = commutator.createSchema();
           const event = instance.createEvent("event");
           const func1 = instance.createPureFunction("func1");
           const func2 = instance.createPureFunction("func2");
@@ -1515,7 +1514,7 @@ describe("CommutatorInstance", () => {
             exec: async () => {},
           });
 
-        const instance = commutator.createInstance();
+        const instance = commutator.createSchema();
         const func1 = instance.createFunction("func1");
         const func2 = instance.createFunction("func2");
 

@@ -7,7 +7,7 @@ describe("Commutator", () => {
     test("should create empty commutator", () => {
       const commutator = Commutator.initialize();
       expect(commutator).toBeDefined();
-      expect(commutator.createInstance()).toBeDefined();
+      expect(commutator.createSchema()).toBeDefined();
     });
 
     test("should create commutator with data types", () => {
@@ -20,7 +20,7 @@ describe("Commutator", () => {
       });
 
       expect(commutator).toBeDefined();
-      const instance = commutator.createInstance();
+      const instance = commutator.createSchema();
       expect(instance).toBeDefined();
     });
 
@@ -36,7 +36,7 @@ describe("Commutator", () => {
       });
 
       expect(commutator).toBeDefined();
-      const instance = commutator.createInstance();
+      const instance = commutator.createSchema();
       expect(instance).toBeDefined();
     });
 
@@ -57,7 +57,7 @@ describe("Commutator", () => {
       });
 
       expect(commutator).toBeDefined();
-      const instance = commutator.createInstance();
+      const instance = commutator.createSchema();
       expect(instance).toBeDefined();
     });
   });
@@ -95,7 +95,7 @@ describe("Commutator", () => {
       const merged = commutator1.inject(commutator2);
 
       expect(merged).toBeDefined();
-      const instance = merged.createInstance();
+      const instance = merged.createSchema();
       expect(instance).toBeDefined();
 
       // Проверяем, что оба типа данных доступны
@@ -116,7 +116,7 @@ describe("Commutator", () => {
       });
 
       const merged = commutator1.inject(commutator2);
-      const instance = merged.createInstance();
+      const instance = merged.createSchema();
 
       expect(instance).toBeDefined();
     });
@@ -137,7 +137,7 @@ describe("Commutator", () => {
       });
 
       const merged = commutator1.inject(commutator2);
-      const instance = merged.createInstance();
+      const instance = merged.createSchema();
 
       const event1 = instance.createEvent("event1");
       const event2 = instance.createEvent("event2");
@@ -162,7 +162,7 @@ describe("Commutator", () => {
       });
 
       const merged = commutator1.inject(commutator2);
-      const instance = merged.createInstance();
+      const instance = merged.createSchema();
 
       const ref1 = instance.createRef("ref1");
       const ref2 = instance.createRef("ref2");
@@ -197,7 +197,7 @@ describe("Commutator", () => {
       });
 
       const merged = commutator1.inject(commutator2);
-      const instance = merged.createInstance();
+      const instance = merged.createSchema();
 
       const func1 = instance.createPureFunction("func1");
       const func2 = instance.createPureFunction("func2");
@@ -240,7 +240,7 @@ describe("Commutator", () => {
       });
 
       const merged = commutator1.inject(commutator2);
-      const instance = merged.createInstance();
+      const instance = merged.createSchema();
 
       const func1 = instance.createFunction("func1");
       const func2 = instance.createFunction("func2");
@@ -287,7 +287,7 @@ describe("Commutator", () => {
         });
 
       const merged = commutator1.inject(commutator2);
-      const instance = merged.createInstance();
+      const instance = merged.createSchema();
 
       // Проверяем, что все типы доступны
       const onClick = instance.createEvent("onClick");

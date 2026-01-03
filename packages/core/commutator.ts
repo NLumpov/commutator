@@ -1,4 +1,4 @@
-import { CommutatorInstance } from "./commutator-instance";
+import { CommutatorSchema } from "./commutator-schema";
 import { CommonDataType } from "./enums";
 import type {
   EventNode,
@@ -515,8 +515,8 @@ export class Commutator<
     );
   }
 
-  createInstance() {
-    return CommutatorInstance.initialize(
+  createSchema() {
+    return CommutatorSchema.initialize(
       this.dataTypes,
       this.events,
       this.refs,

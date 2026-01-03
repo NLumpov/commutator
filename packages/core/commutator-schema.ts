@@ -16,7 +16,7 @@ import type {
   PinInstance,
 } from "./types";
 
-export class CommutatorInstance<
+export class CommutatorSchema<
   const DataTypes extends Record<string, Field<DataTypes>> = {},
   const Events extends Record<
     string,
@@ -80,7 +80,7 @@ export class CommutatorInstance<
     pureFunctions: PureFunctions = {} as PureFunctions,
     functions: Functions = {} as Functions,
     apis: Apis = {} as Apis
-  ): CommutatorInstance<
+  ): CommutatorSchema<
     DataTypes,
     Events,
     Refs,
@@ -88,7 +88,7 @@ export class CommutatorInstance<
     Functions,
     Apis
   > {
-    return new CommutatorInstance(
+    return new CommutatorSchema(
       dataTypes,
       events,
       refs,
