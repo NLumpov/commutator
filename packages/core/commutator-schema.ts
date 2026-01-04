@@ -432,7 +432,7 @@ export class CommutatorSchema<
       throw new CommutatorError("Cannot remove pin from node");
     }
 
-    const nodePins = Object.values(this.pinInstances).filter(
+    const nodePins = [...this.pinInstances.values()].filter(
       (pin) =>
         pin.nodeUuid === currentPin.nodeUuid && pin.type === currentPin.type
     );
@@ -510,7 +510,7 @@ export class CommutatorSchema<
     visited.add(startNodeUuid);
 
     // Находим все выходные пины стартовой ноды указанного типа
-    const startNodeOutputPins = Object.values(this.pinInstances).filter(
+    const startNodeOutputPins = [...this.pinInstances.values()].filter(
       (pin) => pin.nodeUuid === startNodeUuid && pin.type === outputPinType
     );
 
@@ -554,21 +554,10 @@ export class CommutatorSchema<
     return false;
   }
 
-  getPinUuid(
-    nodeInstance: { uuid: string },
-    pinName: string,
-    pinType: PinInstanceType
-  ): string | undefined {
-    for (const pinInstance of Object.values(this.pinInstances)) {
-      if (
-        pinInstance.nodeUuid === nodeInstance.uuid &&
-        pinInstance.name === pinName &&
-        pinInstance.type === pinType
-      ) {
-        return pinInstance.uuid;
-      }
-    }
-    return undefined;
+  getNodePins(nodeUuid: string): PinInstance[] {
+    return Array.from(this.pinInstances.values()).filter(
+      (pinInstance) => pinInstance.nodeUuid === nodeUuid
+    );
   }
 
   extract() {
