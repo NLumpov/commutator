@@ -15,6 +15,7 @@ import type {
   Wire,
   PinInstance,
 } from "./types";
+import { CommutatorError } from "./commutator-error";
 
 export class CommutatorSchema<
   const DataTypes extends Record<string, Field<DataTypes>> = {},
@@ -43,14 +44,17 @@ export class CommutatorSchema<
     private pureFunctions: PureFunctions,
     private functions: Functions,
     private apis: Apis,
-    private eventInstances: Record<string, EventNodeInstance<any>> = {},
-    private refInstances: Record<string, RefNodeInstance<any>> = {},
-    private pureFunctionInstances: Record<
+    private eventInstances: Map<string, EventNodeInstance<any>> = new Map(),
+    private refInstances: Map<string, RefNodeInstance<any>> = new Map(),
+    private pureFunctionInstances: Map<
       string,
       PureFunctionNodeInstance<any>
-    > = {},
-    private functionInstances: Record<string, FunctionNodeInstance<any>> = {},
-    private pinInstances: Record<string, PinInstance> = {},
+    > = new Map(),
+    private functionInstances: Map<
+      string,
+      FunctionNodeInstance<any>
+    > = new Map(),
+    private pinInstances: Map<string, PinInstance> = new Map(),
     private wires: Wire[] = []
   ) {}
 
@@ -80,14 +84,7 @@ export class CommutatorSchema<
     pureFunctions: PureFunctions = {} as PureFunctions,
     functions: Functions = {} as Functions,
     apis: Apis = {} as Apis
-  ): CommutatorSchema<
-    DataTypes,
-    Events,
-    Refs,
-    PureFunctions,
-    Functions,
-    Apis
-  > {
+  ): CommutatorSchema<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
     return new CommutatorSchema(
       dataTypes,
       events,
@@ -118,7 +115,7 @@ export class CommutatorSchema<
           type,
           name: pinName,
         };
-        this.pinInstances[pinInstance.uuid] = pinInstance;
+        this.pinInstances.set(pinInstance.uuid, pinInstance);
       }
     }
   }
@@ -133,7 +130,7 @@ export class CommutatorSchema<
       y: 0,
     };
 
-    this.eventInstances[eventInstance.uuid] = eventInstance;
+    this.eventInstances.set(eventInstance.uuid, eventInstance);
     this.createPinInstances(
       eventInstance.uuid,
       eventConfig.pinsIn || {},
@@ -155,7 +152,7 @@ export class CommutatorSchema<
       y: 0,
     };
 
-    this.refInstances[refInstance.uuid] = refInstance;
+    this.refInstances.set(refInstance.uuid, refInstance);
     this.createPinInstances(
       refInstance.uuid,
       refConfig.pinsIn || {},
@@ -179,8 +176,10 @@ export class CommutatorSchema<
       y: 0,
     };
 
-    this.pureFunctionInstances[pureFunctionInstance.uuid] =
-      pureFunctionInstance;
+    this.pureFunctionInstances.set(
+      pureFunctionInstance.uuid,
+      pureFunctionInstance
+    );
     this.createPinInstances(
       pureFunctionInstance.uuid,
       pureFunctionConfig.pinsIn || {},
@@ -204,7 +203,7 @@ export class CommutatorSchema<
       y: 0,
     };
 
-    this.functionInstances[functionInstance.uuid] = functionInstance;
+    this.functionInstances.set(functionInstance.uuid, functionInstance);
     this.createPinInstances(
       functionInstance.uuid,
       functionConfig.pinsIn || {},
@@ -217,15 +216,15 @@ export class CommutatorSchema<
   }
 
   wire(from: string, to: string): void {
-    const fromPin = this.pinInstances[from];
-    const toPin = this.pinInstances[to];
+    const fromPin = this.pinInstances.get(from);
+    const toPin = this.pinInstances.get(to);
 
     if (!fromPin || !toPin) {
-      throw new Error("Pin not found");
+      throw new CommutatorError("Pin not found");
     }
 
     if (from === to) {
-      throw new Error("Self-loop");
+      throw new CommutatorError("Self-loop");
     }
 
     // Определяем выходной и входной пины
@@ -255,24 +254,24 @@ export class CommutatorSchema<
       outputPinUuid = to;
       inputPinUuid = from;
     } else {
-      throw new Error("Invalid connection");
+      throw new CommutatorError("Invalid connection");
     }
 
     // Находим ноды по uuid
     const outputNodeInstance =
-      this.eventInstances[outputPin.nodeUuid] ||
-      this.refInstances[outputPin.nodeUuid] ||
-      this.pureFunctionInstances[outputPin.nodeUuid] ||
-      this.functionInstances[outputPin.nodeUuid];
+      this.eventInstances.get(outputPin.nodeUuid) ||
+      this.refInstances.get(outputPin.nodeUuid) ||
+      this.pureFunctionInstances.get(outputPin.nodeUuid) ||
+      this.functionInstances.get(outputPin.nodeUuid);
 
     const inputNodeInstance =
-      this.eventInstances[inputPin.nodeUuid] ||
-      this.refInstances[inputPin.nodeUuid] ||
-      this.pureFunctionInstances[inputPin.nodeUuid] ||
-      this.functionInstances[inputPin.nodeUuid];
+      this.eventInstances.get(inputPin.nodeUuid) ||
+      this.refInstances.get(inputPin.nodeUuid) ||
+      this.pureFunctionInstances.get(inputPin.nodeUuid) ||
+      this.functionInstances.get(inputPin.nodeUuid);
 
     if (!outputNodeInstance || !inputNodeInstance) {
-      throw new Error("Node instance not found");
+      throw new CommutatorError("Node instance not found");
     }
 
     // Получаем конфигурацию нод
@@ -289,7 +288,7 @@ export class CommutatorSchema<
       this.functions[inputNodeInstance.name as keyof Functions];
 
     if (!outputNodeConfig || !inputNodeConfig) {
-      throw new Error("Node config not found");
+      throw new CommutatorError("Node config not found");
     }
 
     // Проверяем типы для data pins
@@ -302,14 +301,14 @@ export class CommutatorSchema<
       const inputPinConfig = inputNodeConfig.pinsIn[inputPin.name];
 
       if (!outputPinConfig || !inputPinConfig) {
-        throw new Error("Pin config not found");
+        throw new CommutatorError("Pin config not found");
       }
 
       // Проверяем совместимость типов
       // Если inputPin имеет тип Any, то принимает любой тип
       if (inputPinConfig.type !== CommonDataType.Any) {
         if (outputPinConfig.type !== inputPinConfig.type) {
-          throw new Error("Type mismatch");
+          throw new CommutatorError("Type mismatch");
         }
       }
 
@@ -318,7 +317,7 @@ export class CommutatorSchema<
         (wire) => wire.to === inputPinUuid
       );
       if (isInputWireExists) {
-        throw new Error("To wire already exists");
+        throw new CommutatorError("To wire already exists");
       }
     }
 
@@ -326,7 +325,7 @@ export class CommutatorSchema<
 
     // Проверяем циклические связи
     if (this.checkCyclicConnection(outputPin, inputPin)) {
-      throw new Error("Cyclic connection detected in pins");
+      throw new CommutatorError("Cyclic connection detected in pins");
     }
 
     // Создаем провод и добавляем его в массив
@@ -335,6 +334,115 @@ export class CommutatorSchema<
       to: inputPinUuid,
     };
     this.wires.push(wire);
+  }
+
+  /**
+   * Отвязка пинов друг от друга. Работает идемпотентно,
+   * поэтому можно вызывать даже если не уверен что провод существует
+   */
+  unwire(from: string, to: string): void {
+    this.wires = this.wires.filter(
+      (wire) =>
+        (wire.from !== from && wire.to !== to) ||
+        (wire.from !== to && wire.to !== from)
+    );
+  }
+
+  /**
+   * Добавление пина в ноду. Выдаст ошибку, если в настройках ноды запрещено добавлять пины данного типа
+   */
+  addPin(nodeUuid: string, name: string, type: PinInstanceType): void {
+    const nodeInstance =
+      this.eventInstances.get(nodeUuid) ||
+      this.refInstances.get(nodeUuid) ||
+      this.pureFunctionInstances.get(nodeUuid) ||
+      this.functionInstances.get(nodeUuid);
+
+    if (!nodeInstance) {
+      throw new CommutatorError("Node instance not found");
+    }
+
+    const nodeConfig =
+      this.events[nodeInstance.name] ||
+      this.refs[nodeInstance.name] ||
+      this.pureFunctions[nodeInstance.name] ||
+      this.functions[nodeInstance.name];
+
+    if (!nodeConfig) {
+      throw new CommutatorError("Node config not found");
+    }
+
+    if (
+      (type === PinInstanceType.Input && !nodeConfig.canAddPinIn) ||
+      (type === PinInstanceType.Output && !nodeConfig.canAddPinOut) ||
+      (type === PinInstanceType.InputExec && !nodeConfig.canAddExecPinIn) ||
+      (type === PinInstanceType.OutputExec && !nodeConfig.canAddExecPinOut)
+    ) {
+      throw new CommutatorError("Cannot add pin to node");
+    }
+
+    const pinInstance: PinInstance = {
+      nodeUuid,
+      uuid: ulid(),
+      type,
+      name,
+    };
+
+    this.pinInstances.set(pinInstance.uuid, pinInstance);
+  }
+
+  removePin(uuid: string): void {
+    const currentPin = this.pinInstances.get(uuid);
+
+    if (!currentPin) {
+      throw new CommutatorError("Pin instance not found");
+    }
+
+    const pinNodeInstance =
+      this.eventInstances.get(currentPin.nodeUuid) ||
+      this.refInstances.get(currentPin.nodeUuid) ||
+      this.pureFunctionInstances.get(currentPin.nodeUuid) ||
+      this.functionInstances.get(currentPin.nodeUuid);
+
+    if (!pinNodeInstance) {
+      throw new CommutatorError("Node instance not found");
+    }
+
+    const pinNodeConfig =
+      this.events[pinNodeInstance.name] ||
+      this.refs[pinNodeInstance.name] ||
+      this.pureFunctions[pinNodeInstance.name] ||
+      this.functions[pinNodeInstance.name];
+
+    if (!pinNodeConfig) {
+      throw new CommutatorError("Node config not found");
+    }
+
+    // Если нельзя менять пины то выдаём ошибку
+    if (
+      (currentPin.type === PinInstanceType.Input &&
+        !pinNodeConfig.canAddPinIn) ||
+      (currentPin.type === PinInstanceType.Output &&
+        !pinNodeConfig.canAddPinOut) ||
+      (currentPin.type === PinInstanceType.InputExec &&
+        !pinNodeConfig.canAddExecPinIn) ||
+      (currentPin.type === PinInstanceType.OutputExec &&
+        !pinNodeConfig.canAddExecPinOut)
+    ) {
+      throw new CommutatorError("Cannot remove pin from node");
+    }
+
+    const nodePins = Object.values(this.pinInstances).filter(
+      (pin) =>
+        pin.nodeUuid === currentPin.nodeUuid && pin.type === currentPin.type
+    );
+
+    // Если остался 1 пин то выдаём ошибку потому что последний пин удалять нельзя
+    if (nodePins.length <= 1) {
+      throw new CommutatorError("Cannot remove last pin from node");
+    }
+
+    this.pinInstances.delete(uuid);
   }
 
   /**
@@ -415,7 +523,7 @@ export class CommutatorSchema<
 
       for (const wire of outgoingWires) {
         // Находим входной пин, к которому ведет провод
-        const inputPin = this.pinInstances[wire.to];
+        const inputPin = this.pinInstances.get(wire.to);
         if (!inputPin || inputPin.type !== inputPinType) {
           continue;
         }
@@ -465,13 +573,13 @@ export class CommutatorSchema<
 
   extract() {
     return {
-      events: this.eventInstances,
-      refs: this.refInstances,
-      pureFunctions: this.pureFunctionInstances,
-      functions: this.functionInstances,
-      pinInstances: this.pinInstances,
+      events: Object.fromEntries(this.eventInstances),
+      refs: Object.fromEntries(this.refInstances),
+      pureFunctions: Object.fromEntries(this.pureFunctionInstances),
+      functions: Object.fromEntries(this.functionInstances),
+      pinInstances: Object.fromEntries(this.pinInstances),
       wires: this.wires,
-    }
+    };
   }
 }
 
