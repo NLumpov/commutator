@@ -14,6 +14,7 @@ import type {
   RefNodeInstance,
   Wire,
   PinInstance,
+  CommutatorInstanceSnapshot,
 } from "./types";
 import { CommutatorError } from "./commutator-error";
 
@@ -37,6 +38,14 @@ export class CommutatorSchema<
   > = {},
   const Apis extends Record<string, any> = {}
 > {
+  private eventInstances: Map<string, EventNodeInstance<any>> = new Map();
+  private refInstances: Map<string, RefNodeInstance<any>> = new Map();
+  private pureFunctionInstances: Map<string, PureFunctionNodeInstance<any>> =
+    new Map();
+  private functionInstances: Map<string, FunctionNodeInstance<any>> = new Map();
+  private pinInstances: Map<string, PinInstance> = new Map();
+  private wires: Wire[] = [];
+
   private constructor(
     private dataTypes: DataTypes,
     private events: Events,
@@ -44,19 +53,39 @@ export class CommutatorSchema<
     private pureFunctions: PureFunctions,
     private functions: Functions,
     private apis: Apis,
-    private eventInstances: Map<string, EventNodeInstance<any>> = new Map(),
-    private refInstances: Map<string, RefNodeInstance<any>> = new Map(),
-    private pureFunctionInstances: Map<
-      string,
-      PureFunctionNodeInstance<any>
-    > = new Map(),
-    private functionInstances: Map<
-      string,
-      FunctionNodeInstance<any>
-    > = new Map(),
-    private pinInstances: Map<string, PinInstance> = new Map(),
-    private wires: Wire[] = []
-  ) {}
+    snapshot?: CommutatorInstanceSnapshot
+  ) {
+    if (snapshot) {
+      this.eventInstances = new Map(
+        snapshot.events.map((eventInstance) => [
+          eventInstance.uuid,
+          eventInstance,
+        ])
+      );
+      this.refInstances = new Map(
+        snapshot.refs.map((refInstance) => [refInstance.uuid, refInstance])
+      );
+      this.pureFunctionInstances = new Map(
+        snapshot.pureFunctions.map((pureFunctionInstance) => [
+          pureFunctionInstance.uuid,
+          pureFunctionInstance,
+        ])
+      );
+      this.functionInstances = new Map(
+        snapshot.functions.map((functionInstance) => [
+          functionInstance.uuid,
+          functionInstance,
+        ])
+      );
+      this.pinInstances = new Map(
+        snapshot.pinInstances.map((pinInstance) => [
+          pinInstance.uuid,
+          pinInstance,
+        ])
+      );
+      this.wires = [...snapshot.wires];
+    }
+  }
 
   static initialize<
     const DataTypes extends Record<string, Field<DataTypes>> = {},
@@ -83,15 +112,52 @@ export class CommutatorSchema<
     refs: Refs = {} as Refs,
     pureFunctions: PureFunctions = {} as PureFunctions,
     functions: Functions = {} as Functions,
-    apis: Apis = {} as Apis
+    apis: Apis = {} as Apis,
+    snapshot?: CommutatorInstanceSnapshot
   ): CommutatorSchema<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
+    // Если есть снапшот проверяем совместимость с конфигурацией комммутатора, проверяем что все типы нод из снапшота совпадают с конфигом
+    if (snapshot) {
+      for (const eventInstance of snapshot.events) {
+        if (!(eventInstance.name in events)) {
+          throw new CommutatorError(
+            `Event instance "${eventInstance.name}" not found in events configuration`
+          );
+        }
+      }
+
+      for (const refInstance of snapshot.refs) {
+        if (!(refInstance.name in refs)) {
+          throw new CommutatorError(
+            `Ref instance "${refInstance.name}" not found in refs configuration`
+          );
+        }
+      }
+
+      for (const pureFunctionInstance of snapshot.pureFunctions) {
+        if (!(pureFunctionInstance.name in pureFunctions)) {
+          throw new CommutatorError(
+            `PureFunction instance "${pureFunctionInstance.name}" not found in pureFunctions configuration`
+          );
+        }
+      }
+
+      for (const functionInstance of snapshot.functions) {
+        if (!(functionInstance.name in functions)) {
+          throw new CommutatorError(
+            `Function instance "${functionInstance.name}" not found in functions configuration`
+          );
+        }
+      }
+    }
+
     return new CommutatorSchema(
       dataTypes,
       events,
       refs,
       pureFunctions,
       functions,
-      apis
+      apis,
+      snapshot
     );
   }
 
@@ -566,14 +632,14 @@ export class CommutatorSchema<
     );
   }
 
-  extract() {
+  extract(): CommutatorInstanceSnapshot {
     return {
-      events: Object.fromEntries(this.eventInstances),
-      refs: Object.fromEntries(this.refInstances),
-      pureFunctions: Object.fromEntries(this.pureFunctionInstances),
-      functions: Object.fromEntries(this.functionInstances),
-      pinInstances: Object.fromEntries(this.pinInstances),
-      wires: this.wires,
+      events: [...this.eventInstances.values()],
+      refs: [...this.refInstances.values()],
+      pureFunctions: [...this.pureFunctionInstances.values()],
+      functions: [...this.functionInstances.values()],
+      pinInstances: [...this.pinInstances.values()],
+      wires: [...this.wires],
     };
   }
 }

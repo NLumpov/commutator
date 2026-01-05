@@ -1,6 +1,7 @@
 import { CommutatorSchema } from "./commutator-schema";
 import { CommonDataType } from "./enums";
 import type {
+  CommutatorInstanceSnapshot,
   EventNode,
   ExecPin,
   Field,
@@ -515,14 +516,15 @@ export class Commutator<
     );
   }
 
-  createSchema() {
+  createSchema(snapshot?: CommutatorInstanceSnapshot) {
     return CommutatorSchema.initialize(
       this.dataTypes,
       this.events,
       this.refs,
       this.pureFunctions,
       this.functions,
-      this.apis
+      this.apis,
+      snapshot,
     );
   }
 }

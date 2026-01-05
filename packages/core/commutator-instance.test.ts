@@ -1608,4 +1608,347 @@ describe("CommutatorSchema", () => {
       });
     });
   });
+
+  describe("snapshot", () => {
+    describe("extract and restore", () => {
+      test("should extract and restore schema with events", () => {
+        const commutator = Commutator.initialize().defineEvent("onClick", {
+          pinsOut: {
+            x: { type: CommonDataType.Number },
+            y: { type: CommonDataType.Number },
+          },
+          execPinsOut: {
+            next: {},
+          },
+        });
+
+        const schema1 = commutator.createSchema();
+        const event1 = schema1.createEvent("onClick");
+        event1.x = 10;
+        event1.y = 20;
+
+        const snapshot = schema1.extract();
+        const schema2 = commutator.createSchema(snapshot);
+        const restoredSnapshot = schema2.extract();
+
+        expect(restoredSnapshot.events).toHaveLength(1);
+        expect(restoredSnapshot.events[0]?.name).toBe("onClick");
+        expect(restoredSnapshot.events[0]?.uuid).toBe(event1.uuid);
+        expect(restoredSnapshot.events[0]?.x).toBe(10);
+        expect(restoredSnapshot.events[0]?.y).toBe(20);
+      });
+
+      test("should extract and restore schema with multiple node types", () => {
+        const commutator = Commutator.initialize()
+          .defineEvent("onClick", {
+            pinsOut: {
+              x: { type: CommonDataType.Number },
+            },
+            execPinsOut: {},
+          })
+          .defineRef("userRef", {
+            pinsOut: {
+              user: { type: CommonDataType.String },
+            },
+            resolveRef: async () => ({ user: "test" }),
+          })
+          .definePureFunction("add", {
+            pinsIn: {
+              a: { type: CommonDataType.Number },
+              b: { type: CommonDataType.Number },
+            },
+            pinsOut: {
+              result: { type: CommonDataType.Number },
+            },
+            canAddPinIn: false,
+            canAddPinOut: false,
+            exec: async ({ pinsIn }) => ({
+              result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
+            }),
+          })
+          .defineFunction("log", {
+            pinsIn: {
+              message: { type: CommonDataType.String },
+            },
+            pinsOut: {},
+            execPinsIn: {
+              start: {},
+            },
+            execPinsOut: {
+              next: {},
+            },
+            canAddPinIn: false,
+            canAddPinOut: false,
+            canAddExecPinIn: false,
+            canAddExecPinOut: false,
+            exec: async () => {},
+          });
+
+        const schema1 = commutator.createSchema();
+        const event1 = schema1.createEvent("onClick");
+        const ref1 = schema1.createRef("userRef");
+        const pureFunc1 = schema1.createPureFunction("add");
+        const func1 = schema1.createFunction("log");
+
+        const snapshot = schema1.extract();
+        const schema2 = commutator.createSchema(snapshot);
+        const restoredSnapshot = schema2.extract();
+
+        expect(restoredSnapshot.events).toHaveLength(1);
+        expect(restoredSnapshot.refs).toHaveLength(1);
+        expect(restoredSnapshot.pureFunctions).toHaveLength(1);
+        expect(restoredSnapshot.functions).toHaveLength(1);
+
+        expect(restoredSnapshot.events[0]?.uuid).toBe(event1.uuid);
+        expect(restoredSnapshot.refs[0]?.uuid).toBe(ref1.uuid);
+        expect(restoredSnapshot.pureFunctions[0]?.uuid).toBe(pureFunc1.uuid);
+        expect(restoredSnapshot.functions[0]?.uuid).toBe(func1.uuid);
+      });
+
+      test("should extract and restore schema with pins and wires", () => {
+        const commutator = Commutator.initialize()
+          .defineEvent("source", {
+            pinsOut: {
+              value: { type: CommonDataType.String },
+            },
+            execPinsOut: {
+              next: {},
+            },
+          })
+          .definePureFunction("target", {
+            pinsIn: {
+              value: { type: CommonDataType.String },
+            },
+            pinsOut: {},
+            canAddPinIn: false,
+            canAddPinOut: false,
+            exec: async () => ({}),
+          });
+
+        const schema1 = commutator.createSchema();
+        const source = schema1.createEvent("source");
+        const target = schema1.createPureFunction("target");
+
+        const outputPinUuid = schema1
+          .getNodePins(source.uuid)
+          .find(
+            (pin) =>
+              pin.name === "value" && pin.type === PinInstanceType.Output
+          )?.uuid;
+        const inputPinUuid = schema1
+          .getNodePins(target.uuid)
+          .find(
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
+          )?.uuid;
+
+        schema1.wire(outputPinUuid!, inputPinUuid!);
+
+        const snapshot = schema1.extract();
+        const schema2 = commutator.createSchema(snapshot);
+        const restoredSnapshot = schema2.extract();
+
+        expect(restoredSnapshot.pinInstances).toHaveLength(
+          snapshot.pinInstances.length
+        );
+        expect(restoredSnapshot.wires).toHaveLength(1);
+        expect(restoredSnapshot.wires[0]?.from).toBe(outputPinUuid);
+        expect(restoredSnapshot.wires[0]?.to).toBe(inputPinUuid);
+      });
+    });
+
+    describe("validation", () => {
+      test("should throw error when event type not found in configuration", () => {
+        const commutator1 = Commutator.initialize().defineEvent("onClick", {
+          pinsOut: {
+            x: { type: CommonDataType.Number },
+          },
+          execPinsOut: {},
+        });
+
+        const schema1 = commutator1.createSchema();
+        schema1.createEvent("onClick");
+        const snapshot = schema1.extract();
+
+        const commutator2 = Commutator.initialize().defineEvent("onHover", {
+          pinsOut: {
+            y: { type: CommonDataType.Number },
+          },
+          execPinsOut: {},
+        });
+
+        expect(() => {
+          commutator2.createSchema(snapshot);
+        }).toThrow(CommutatorError);
+      });
+
+      test("should throw error when ref type not found in configuration", () => {
+        const commutator1 = Commutator.initialize().defineRef("userRef", {
+          pinsOut: {
+            user: { type: CommonDataType.String },
+          },
+          resolveRef: async () => ({ user: "test" }),
+        });
+
+        const schema1 = commutator1.createSchema();
+        schema1.createRef("userRef");
+        const snapshot = schema1.extract();
+
+        const commutator2 = Commutator.initialize().defineRef("postRef", {
+          pinsOut: {
+            post: { type: CommonDataType.String },
+          },
+          resolveRef: async () => ({ post: "test" }),
+        });
+
+        expect(() => {
+          commutator2.createSchema(snapshot);
+        }).toThrow(CommutatorError);
+      });
+
+      test("should throw error when pureFunction type not found in configuration", () => {
+        const commutator1 = Commutator.initialize().definePureFunction("add", {
+          pinsIn: {
+            a: { type: CommonDataType.Number },
+            b: { type: CommonDataType.Number },
+          },
+          pinsOut: {
+            result: { type: CommonDataType.Number },
+          },
+          canAddPinIn: false,
+          canAddPinOut: false,
+          exec: async ({ pinsIn }) => ({
+            result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
+          }),
+        });
+
+        const schema1 = commutator1.createSchema();
+        schema1.createPureFunction("add");
+        const snapshot = schema1.extract();
+
+        const commutator2 = Commutator.initialize().definePureFunction("multiply", {
+          pinsIn: {
+            a: { type: CommonDataType.Number },
+            b: { type: CommonDataType.Number },
+          },
+          pinsOut: {
+            result: { type: CommonDataType.Number },
+          },
+          canAddPinIn: false,
+          canAddPinOut: false,
+          exec: async ({ pinsIn }) => ({
+            result: (pinsIn.a ?? 0) * (pinsIn.b ?? 0),
+          }),
+        });
+
+        expect(() => {
+          commutator2.createSchema(snapshot);
+        }).toThrow(CommutatorError);
+      });
+
+      test("should throw error when function type not found in configuration", () => {
+        const commutator1 = Commutator.initialize().defineFunction("log", {
+          pinsIn: {
+            message: { type: CommonDataType.String },
+          },
+          pinsOut: {},
+          execPinsIn: {
+            start: {},
+          },
+          execPinsOut: {
+            next: {},
+          },
+          canAddPinIn: false,
+          canAddPinOut: false,
+          canAddExecPinIn: false,
+          canAddExecPinOut: false,
+          exec: async () => {},
+        });
+
+        const schema1 = commutator1.createSchema();
+        schema1.createFunction("log");
+        const snapshot = schema1.extract();
+
+        const commutator2 = Commutator.initialize().defineFunction("print", {
+          pinsIn: {
+            message: { type: CommonDataType.String },
+          },
+          pinsOut: {},
+          execPinsIn: {
+            start: {},
+          },
+          execPinsOut: {
+            next: {},
+          },
+          canAddPinIn: false,
+          canAddPinOut: false,
+          canAddExecPinIn: false,
+          canAddExecPinOut: false,
+          exec: async () => {},
+        });
+
+        expect(() => {
+          commutator2.createSchema(snapshot);
+        }).toThrow(CommutatorError);
+      });
+
+      test("should successfully restore when all node types match", () => {
+        const commutator = Commutator.initialize()
+          .defineEvent("onClick", {
+            pinsOut: {
+              x: { type: CommonDataType.Number },
+            },
+            execPinsOut: {},
+          })
+          .defineRef("userRef", {
+            pinsOut: {
+              user: { type: CommonDataType.String },
+            },
+            resolveRef: async () => ({ user: "test" }),
+          })
+          .definePureFunction("add", {
+            pinsIn: {
+              a: { type: CommonDataType.Number },
+            },
+            pinsOut: {
+              result: { type: CommonDataType.Number },
+            },
+            canAddPinIn: false,
+            canAddPinOut: false,
+            exec: async () => ({ result: 0 }),
+          })
+          .defineFunction("log", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: {
+              start: {},
+            },
+            execPinsOut: {
+              next: {},
+            },
+            canAddPinIn: false,
+            canAddPinOut: false,
+            canAddExecPinIn: false,
+            canAddExecPinOut: false,
+            exec: async () => {},
+          });
+
+        const schema1 = commutator.createSchema();
+        schema1.createEvent("onClick");
+        schema1.createRef("userRef");
+        schema1.createPureFunction("add");
+        schema1.createFunction("log");
+
+        const snapshot = schema1.extract();
+
+        expect(() => {
+          const schema2 = commutator.createSchema(snapshot);
+          const restoredSnapshot = schema2.extract();
+          expect(restoredSnapshot.events).toHaveLength(1);
+          expect(restoredSnapshot.refs).toHaveLength(1);
+          expect(restoredSnapshot.pureFunctions).toHaveLength(1);
+          expect(restoredSnapshot.functions).toHaveLength(1);
+        }).not.toThrow();
+      });
+    });
+  });
 });
