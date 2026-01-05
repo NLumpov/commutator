@@ -1940,6 +1940,8 @@ describe("CommutatorSchema", () => {
 
         const snapshot = schema1.extract();
 
+        console.log(snapshot);
+
         expect(() => {
           const schema2 = commutator.createSchema(snapshot);
           const restoredSnapshot = schema2.extract();

@@ -511,6 +511,34 @@ export class CommutatorSchema<
     this.pinInstances.delete(uuid);
   }
 
+  moveNode(uuid: string, x: number, y: number): void {
+    const nodeInstance =
+      this.eventInstances.get(uuid) ||
+      this.refInstances.get(uuid) ||
+      this.pureFunctionInstances.get(uuid) ||
+      this.functionInstances.get(uuid);
+    if (!nodeInstance) {
+      throw new CommutatorError("Node instance not found");
+    }
+
+    switch (nodeInstance.type) {
+      case NodeType.Event:
+        this.eventInstances.set(uuid, { ...nodeInstance, x, y });
+        break;
+      case NodeType.Ref:
+        this.refInstances.set(uuid, { ...nodeInstance, x, y });
+        break;
+      case NodeType.PureFunction:
+        this.pureFunctionInstances.set(uuid, { ...nodeInstance, x, y });
+        break;
+      case NodeType.Function:
+        this.functionInstances.set(uuid, { ...nodeInstance, x, y });
+        break;
+      default:
+        throw new CommutatorError("Unknown node type");
+    }
+  }
+
   /**
    * Проверяет, создаст ли соединение циклическую связь в графе
    * @returns true если соединение создаст цикл, false если нет
