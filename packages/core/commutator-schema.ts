@@ -493,60 +493,66 @@ export class CommutatorSchema<
     startNodeUuid: string,
     targetNodeUuid: string,
     outputPinType: PinInstanceType,
-    inputPinType: PinInstanceType,
-    visited: Set<string> = new Set()
+    inputPinType: PinInstanceType
   ): boolean {
     // Если стартовая нода совпадает с целевой, это цикл
     if (startNodeUuid === targetNodeUuid) {
       return true;
     }
 
-    // Если мы уже посещали эту ноду, пропускаем (избегаем бесконечной рекурсии)
-    if (visited.has(startNodeUuid)) {
-      return false;
-    }
+    // Стек для хранения нод, которые нужно проверить
+    const stack: string[] = [startNodeUuid];
+    // Множество посещенных нод для избежания бесконечных циклов
+    const visited = new Set<string>();
 
-    // Добавляем текущую ноду в посещенные
-    visited.add(startNodeUuid);
+    // Пока есть ноды для проверки
+    while (stack.length > 0) {
+      const currentNodeUuid = stack.pop()!;
 
-    // Находим все выходные пины стартовой ноды указанного типа
-    const startNodeOutputPins = [...this.pinInstances.values()].filter(
-      (pin) => pin.nodeUuid === startNodeUuid && pin.type === outputPinType
-    );
+      // Если это целевая нода, цикл найден
+      if (currentNodeUuid === targetNodeUuid) {
+        return true;
+      }
 
-    // Для каждого выходного пина проверяем, куда он ведет
-    for (const outputPin of startNodeOutputPins) {
-      // Находим все провода, идущие от этого пина
-      const outgoingWires = this.wires.filter(
-        (wire) => wire.from === outputPin.uuid
+      // Если уже посещали эту ноду, пропускаем
+      if (visited.has(currentNodeUuid)) {
+        continue;
+      }
+
+      // Добавляем текущую ноду в посещенные
+      visited.add(currentNodeUuid);
+
+      // Находим все выходные пины текущей ноды указанного типа
+      const currentNodeOutputPins = [...this.pinInstances.values()].filter(
+        (pin) => pin.nodeUuid === currentNodeUuid && pin.type === outputPinType
       );
 
-      for (const wire of outgoingWires) {
-        // Находим входной пин, к которому ведет провод
-        const inputPin = this.pinInstances.get(wire.to);
-        if (!inputPin || inputPin.type !== inputPinType) {
-          continue;
-        }
+      // Для каждого выходного пина проверяем, куда он ведет
+      for (const outputPin of currentNodeOutputPins) {
+        // Находим все провода, идущие от этого пина
+        const outgoingWires = this.wires.filter(
+          (wire) => wire.from === outputPin.uuid
+        );
 
-        // Находим ноду, содержащую этот входной пин
-        const nextNodeUuid = inputPin.nodeUuid;
+        for (const wire of outgoingWires) {
+          // Находим входной пин, к которому ведет провод
+          const inputPin = this.pinInstances.get(wire.to);
+          if (!inputPin || inputPin.type !== inputPinType) {
+            continue;
+          }
 
-        // Если мы достигли целевой ноды, это цикл
-        if (nextNodeUuid === targetNodeUuid) {
-          return true;
-        }
+          // Находим ноду, содержащую этот входной пин
+          const nextNodeUuid = inputPin.nodeUuid;
 
-        // Рекурсивно проверяем дальше
-        if (
-          this.wouldCreateCycle(
-            nextNodeUuid,
-            targetNodeUuid,
-            outputPinType,
-            inputPinType,
-            visited
-          )
-        ) {
-          return true;
+          // Если мы достигли целевой ноды, это цикл
+          if (nextNodeUuid === targetNodeUuid) {
+            return true;
+          }
+
+          // Добавляем следующую ноду в стек для проверки
+          if (!visited.has(nextNodeUuid)) {
+            stack.push(nextNodeUuid);
+          }
         }
       }
     }
@@ -555,7 +561,7 @@ export class CommutatorSchema<
   }
 
   getNodePins(nodeUuid: string): PinInstance[] {
-    return Array.from(this.pinInstances.values()).filter(
+    return [...this.pinInstances.values()].filter(
       (pinInstance) => pinInstance.nodeUuid === nodeUuid
     );
   }
