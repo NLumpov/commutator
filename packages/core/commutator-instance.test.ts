@@ -1624,8 +1624,7 @@ describe("CommutatorSchema", () => {
 
         const schema1 = commutator.createSchema();
         const event1 = schema1.createEvent("onClick");
-        event1.x = 10;
-        event1.y = 20;
+        schema1.moveNode(event1.uuid, 10, 20);
 
         const snapshot = schema1.extract();
         const schema2 = commutator.createSchema(snapshot);
@@ -1939,8 +1938,6 @@ describe("CommutatorSchema", () => {
         schema1.createFunction("log");
 
         const snapshot = schema1.extract();
-
-        console.log(snapshot);
 
         expect(() => {
           const schema2 = commutator.createSchema(snapshot);

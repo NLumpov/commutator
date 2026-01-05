@@ -59,31 +59,31 @@ export class CommutatorSchema<
       this.eventInstances = new Map(
         snapshot.events.map((eventInstance) => [
           eventInstance.uuid,
-          eventInstance,
+          { ...eventInstance },
         ])
       );
       this.refInstances = new Map(
-        snapshot.refs.map((refInstance) => [refInstance.uuid, refInstance])
+        snapshot.refs.map((refInstance) => [refInstance.uuid, { ...refInstance }])
       );
       this.pureFunctionInstances = new Map(
         snapshot.pureFunctions.map((pureFunctionInstance) => [
           pureFunctionInstance.uuid,
-          pureFunctionInstance,
+          { ...pureFunctionInstance },
         ])
       );
       this.functionInstances = new Map(
         snapshot.functions.map((functionInstance) => [
           functionInstance.uuid,
-          functionInstance,
+          { ...functionInstance },
         ])
       );
       this.pinInstances = new Map(
         snapshot.pinInstances.map((pinInstance) => [
           pinInstance.uuid,
-          pinInstance,
+          { ...pinInstance },
         ])
       );
-      this.wires = [...snapshot.wires];
+      this.wires = snapshot.wires.map((wire) => ({ ...wire }));
     }
   }
 
@@ -205,7 +205,7 @@ export class CommutatorSchema<
       eventConfig.execPinsOut || {}
     );
 
-    return eventInstance;
+    return { ...eventInstance };
   }
 
   createRef<Name extends keyof Refs>(name: Name): RefNodeInstance<Name> {
@@ -227,7 +227,7 @@ export class CommutatorSchema<
       refConfig.execPinsOut || {}
     );
 
-    return refInstance;
+    return { ...refInstance };
   }
 
   createPureFunction<Name extends keyof PureFunctions>(
@@ -254,7 +254,7 @@ export class CommutatorSchema<
       pureFunctionConfig.execPinsOut || {}
     );
 
-    return pureFunctionInstance;
+    return { ...pureFunctionInstance };
   }
 
   createFunction<Name extends keyof Functions>(
@@ -278,7 +278,7 @@ export class CommutatorSchema<
       functionConfig.execPinsOut || {}
     );
 
-    return functionInstance;
+    return { ...functionInstance };
   }
 
   wire(from: string, to: string): void {
@@ -399,7 +399,7 @@ export class CommutatorSchema<
       from: outputPinUuid,
       to: inputPinUuid,
     };
-    this.wires.push(wire);
+    this.wires = [...this.wires, wire];
   }
 
   /**
@@ -655,19 +655,53 @@ export class CommutatorSchema<
   }
 
   getNodePins(nodeUuid: string): PinInstance[] {
-    return [...this.pinInstances.values()].filter(
-      (pinInstance) => pinInstance.nodeUuid === nodeUuid
-    );
+    const result: PinInstance[] = [];
+    for (const pinInstance of this.pinInstances.values()) {
+      if (pinInstance.nodeUuid === nodeUuid) {
+        result.push({ ...pinInstance });
+      }
+    }
+    return result;
   }
 
   extract(): CommutatorInstanceSnapshot {
+    const events: EventNodeInstance<any>[] = [];
+    for (const event of this.eventInstances.values()) {
+      events.push({ ...event });
+    }
+
+    const refs: RefNodeInstance<any>[] = [];
+    for (const ref of this.refInstances.values()) {
+      refs.push({ ...ref });
+    }
+
+    const pureFunctions: PureFunctionNodeInstance<any>[] = [];
+    for (const pureFunc of this.pureFunctionInstances.values()) {
+      pureFunctions.push({ ...pureFunc });
+    }
+
+    const functions: FunctionNodeInstance<any>[] = [];
+    for (const func of this.functionInstances.values()) {
+      functions.push({ ...func });
+    }
+
+    const pinInstances: PinInstance[] = [];
+    for (const pin of this.pinInstances.values()) {
+      pinInstances.push({ ...pin });
+    }
+
+    const wires: Wire[] = [];
+    for (const wire of this.wires) {
+      wires.push({ ...wire });
+    }
+
     return {
-      events: [...this.eventInstances.values()],
-      refs: [...this.refInstances.values()],
-      pureFunctions: [...this.pureFunctionInstances.values()],
-      functions: [...this.functionInstances.values()],
-      pinInstances: [...this.pinInstances.values()],
-      wires: [...this.wires],
+      events,
+      refs,
+      pureFunctions,
+      functions,
+      pinInstances,
+      wires,
     };
   }
 }
