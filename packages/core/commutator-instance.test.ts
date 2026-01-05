@@ -159,8 +159,7 @@ describe("CommutatorSchema", () => {
         const outputPinUuid = instance
           .getNodePins(source.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
@@ -201,8 +200,7 @@ describe("CommutatorSchema", () => {
         const outputPinUuid = instance
           .getNodePins(source.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
@@ -240,8 +238,7 @@ describe("CommutatorSchema", () => {
         const outputPinUuid = instance
           .getNodePins(source.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
@@ -279,8 +276,7 @@ describe("CommutatorSchema", () => {
         const outputPinUuid = instance
           .getNodePins(source.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
@@ -325,14 +321,12 @@ describe("CommutatorSchema", () => {
         const outputPin1Uuid = instance
           .getNodePins(source1.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const outputPin2Uuid = instance
           .getNodePins(source2.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
@@ -386,8 +380,7 @@ describe("CommutatorSchema", () => {
         const outputPinUuid = instance
           .getNodePins(source.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const inputPin1Uuid = instance
           .getNodePins(target1.uuid)
@@ -613,8 +606,7 @@ describe("CommutatorSchema", () => {
         const outputPinUuid = instance
           .getNodePins(source.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
 
         expect(() => {
@@ -727,8 +719,7 @@ describe("CommutatorSchema", () => {
         const dataOutputPinUuid = instance
           .getNodePins(source.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const execInputPinUuid = instance
           .getNodePins(target.uuid)
@@ -848,8 +839,7 @@ describe("CommutatorSchema", () => {
         const outputPinUuid = instance
           .getNodePins(source.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
@@ -868,8 +858,7 @@ describe("CommutatorSchema", () => {
         const outputPin2Uuid = instance
           .getNodePins(source2.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const inputPin2Uuid = instance
           .getNodePins(target2.uuid)
@@ -1032,8 +1021,7 @@ describe("CommutatorSchema", () => {
         const dataOutput = instance
           .getNodePins(source.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const dataInput = instance
           .getNodePins(target.uuid)
@@ -1351,7 +1339,8 @@ describe("CommutatorSchema", () => {
           const func2In = instance
             .getNodePins(func2.uuid)
             .find(
-              (pin) => pin.name === "input" && pin.type === PinInstanceType.Input
+              (pin) =>
+                pin.name === "input" && pin.type === PinInstanceType.Input
             )?.uuid;
           const func2Out = instance
             .getNodePins(func2.uuid)
@@ -1362,7 +1351,8 @@ describe("CommutatorSchema", () => {
           const func1In = instance
             .getNodePins(func1.uuid)
             .find(
-              (pin) => pin.name === "input" && pin.type === PinInstanceType.Input
+              (pin) =>
+                pin.name === "input" && pin.type === PinInstanceType.Input
             )?.uuid;
 
           // Создаем первое соединение (func1 -> func2)
@@ -1426,7 +1416,8 @@ describe("CommutatorSchema", () => {
           const func2In = instance
             .getNodePins(func2.uuid)
             .find(
-              (pin) => pin.name === "input" && pin.type === PinInstanceType.Input
+              (pin) =>
+                pin.name === "input" && pin.type === PinInstanceType.Input
             )?.uuid;
           const func2Out = instance
             .getNodePins(func2.uuid)
@@ -1437,7 +1428,8 @@ describe("CommutatorSchema", () => {
           const func3In = instance
             .getNodePins(func3.uuid)
             .find(
-              (pin) => pin.name === "input" && pin.type === PinInstanceType.Input
+              (pin) =>
+                pin.name === "input" && pin.type === PinInstanceType.Input
             )?.uuid;
           const func3Out = instance
             .getNodePins(func3.uuid)
@@ -1448,7 +1440,8 @@ describe("CommutatorSchema", () => {
           const func1In = instance
             .getNodePins(func1.uuid)
             .find(
-              (pin) => pin.name === "input" && pin.type === PinInstanceType.Input
+              (pin) =>
+                pin.name === "input" && pin.type === PinInstanceType.Input
             )?.uuid;
 
           // Создаем цепочку: func1 -> func2 -> func3
@@ -1506,7 +1499,8 @@ describe("CommutatorSchema", () => {
           const func1In = instance
             .getNodePins(func1.uuid)
             .find(
-              (pin) => pin.name === "input" && pin.type === PinInstanceType.Input
+              (pin) =>
+                pin.name === "input" && pin.type === PinInstanceType.Input
             )?.uuid;
           const func1Out = instance
             .getNodePins(func1.uuid)
@@ -1517,7 +1511,8 @@ describe("CommutatorSchema", () => {
           const func2In = instance
             .getNodePins(func2.uuid)
             .find(
-              (pin) => pin.name === "input" && pin.type === PinInstanceType.Input
+              (pin) =>
+                pin.name === "input" && pin.type === PinInstanceType.Input
             )?.uuid;
 
           // Создаем линейную цепочку: event -> func1 -> func2 (без циклов)
@@ -1731,8 +1726,7 @@ describe("CommutatorSchema", () => {
         const outputPinUuid = schema1
           .getNodePins(source.uuid)
           .find(
-            (pin) =>
-              pin.name === "value" && pin.type === PinInstanceType.Output
+            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
           )?.uuid;
         const inputPinUuid = schema1
           .getNodePins(target.uuid)
@@ -1824,20 +1818,23 @@ describe("CommutatorSchema", () => {
         schema1.createPureFunction("add");
         const snapshot = schema1.extract();
 
-        const commutator2 = Commutator.initialize().definePureFunction("multiply", {
-          pinsIn: {
-            a: { type: CommonDataType.Number },
-            b: { type: CommonDataType.Number },
-          },
-          pinsOut: {
-            result: { type: CommonDataType.Number },
-          },
-          canAddPinIn: false,
-          canAddPinOut: false,
-          exec: async ({ pinsIn }) => ({
-            result: (pinsIn.a ?? 0) * (pinsIn.b ?? 0),
-          }),
-        });
+        const commutator2 = Commutator.initialize().definePureFunction(
+          "multiply",
+          {
+            pinsIn: {
+              a: { type: CommonDataType.Number },
+              b: { type: CommonDataType.Number },
+            },
+            pinsOut: {
+              result: { type: CommonDataType.Number },
+            },
+            canAddPinIn: false,
+            canAddPinOut: false,
+            exec: async ({ pinsIn }) => ({
+              result: (pinsIn.a ?? 0) * (pinsIn.b ?? 0),
+            }),
+          }
+        );
 
         expect(() => {
           commutator2.createSchema(snapshot);
@@ -1946,6 +1943,76 @@ describe("CommutatorSchema", () => {
           expect(restoredSnapshot.refs).toHaveLength(1);
           expect(restoredSnapshot.pureFunctions).toHaveLength(1);
           expect(restoredSnapshot.functions).toHaveLength(1);
+        }).not.toThrow();
+      });
+
+      test("should throw error when pin references non-existent dataType", () => {
+        const commutator1 = Commutator.initialize()
+          .defineDataType("User", {
+            type: CommonDataType.Object,
+            properties: {},
+          })
+          .defineEvent("onClick", {
+            pinsOut: {
+              user: { type: "User" },
+            },
+            execPinsOut: {},
+          });
+
+        const schema1 = commutator1.createSchema();
+        schema1.createEvent("onClick");
+        const snapshot = schema1.extract();
+
+        // Создаем коммутатор без dataType "User"
+        const commutator2 = Commutator.initialize().defineEvent("onClick", {
+          pinsOut: {
+            // @ts-expect-error тут специально выключаем типы, так как намеренно делаем ошибку в коде
+            user: { type: "User" },
+          },
+          execPinsOut: {},
+        });
+
+        expect(() => {
+          commutator2.createSchema(snapshot);
+        }).toThrow(CommutatorError);
+      });
+
+      test("should successfully restore when all dataTypes match", () => {
+        const commutator = Commutator.initialize()
+          .defineDataType("User", {
+            type: CommonDataType.Object,
+            properties: {
+              name: { type: CommonDataType.String },
+            },
+          })
+          .defineEvent("onClick", {
+            pinsOut: {
+              user: { type: "User" },
+            },
+            execPinsOut: {},
+          })
+          .definePureFunction("process", {
+            pinsIn: {
+              user: { type: "User" },
+            },
+            pinsOut: {
+              result: { type: CommonDataType.String },
+            },
+            canAddPinIn: false,
+            canAddPinOut: false,
+            exec: async () => ({ result: "" }),
+          });
+
+        const schema1 = commutator.createSchema();
+        schema1.createEvent("onClick");
+        schema1.createPureFunction("process");
+        const snapshot = schema1.extract();
+
+        expect(() => {
+          const schema2 = commutator.createSchema(snapshot);
+          const restoredSnapshot = schema2.extract();
+          expect(restoredSnapshot.events).toHaveLength(1);
+          expect(restoredSnapshot.pureFunctions).toHaveLength(1);
         }).not.toThrow();
       });
     });

@@ -15,6 +15,8 @@ import type {
   Wire,
   PinInstance,
   CommutatorInstanceSnapshot,
+  AbstractNode,
+  AbstractNodeInstance,
 } from "./types";
 import { CommutatorError } from "./commutator-error";
 
@@ -63,7 +65,10 @@ export class CommutatorSchema<
         ])
       );
       this.refInstances = new Map(
-        snapshot.refs.map((refInstance) => [refInstance.uuid, { ...refInstance }])
+        snapshot.refs.map((refInstance) => [
+          refInstance.uuid,
+          { ...refInstance },
+        ])
       );
       this.pureFunctionInstances = new Map(
         snapshot.pureFunctions.map((pureFunctionInstance) => [
@@ -117,35 +122,55 @@ export class CommutatorSchema<
   ): CommutatorSchema<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
     // Если есть снапшот проверяем совместимость с конфигурацией комммутатора, проверяем что все типы нод из снапшота совпадают с конфигом
     if (snapshot) {
-      for (const eventInstance of snapshot.events) {
-        if (!(eventInstance.name in events)) {
+      // Проверяем существование конфигураций нод и корректность dataTypes во всех пинах
+      const commonDataTypeValues = new Set<string>([
+        CommonDataType.Any,
+        CommonDataType.String,
+        CommonDataType.Number,
+        CommonDataType.Date,
+        CommonDataType.Boolean,
+        CommonDataType.Object,
+        CommonDataType.Array,
+        CommonDataType.StringEnum,
+        CommonDataType.NumberEnum,
+      ]);
+
+      // Собираем все instance'ы в единый массив
+      const allInstances: AbstractNodeInstance<string>[] = [
+        ...snapshot.events,
+        ...snapshot.refs,
+        ...snapshot.pureFunctions,
+        ...snapshot.functions,
+      ];
+
+      for (const instance of allInstances) {
+        const nodeConfig =
+          events[instance.name] ||
+          refs[instance.name] ||
+          pureFunctions[instance.name] ||
+          functions[instance.name];
+
+        if (!nodeConfig) {
           throw new CommutatorError(
-            `Event instance "${eventInstance.name}" not found in events configuration`
+            `Node config for "${instance.name}" of type "${instance.type}" not found`
           );
         }
-      }
 
-      for (const refInstance of snapshot.refs) {
-        if (!(refInstance.name in refs)) {
-          throw new CommutatorError(
-            `Ref instance "${refInstance.name}" not found in refs configuration`
-          );
-        }
-      }
-
-      for (const pureFunctionInstance of snapshot.pureFunctions) {
-        if (!(pureFunctionInstance.name in pureFunctions)) {
-          throw new CommutatorError(
-            `PureFunction instance "${pureFunctionInstance.name}" not found in pureFunctions configuration`
-          );
-        }
-      }
-
-      for (const functionInstance of snapshot.functions) {
-        if (!(functionInstance.name in functions)) {
-          throw new CommutatorError(
-            `Function instance "${functionInstance.name}" not found in functions configuration`
-          );
+        for (const pins of [nodeConfig.pinsIn, nodeConfig.pinsOut]) {
+          if (!pins) continue;
+          for (const [pinName, pin] of Object.entries(
+            pins
+          ) as [string, Pin<DataTypes>][]) {
+            if (
+              typeof pin.type === "string" &&
+              !commonDataTypeValues.has(pin.type) &&
+              !(pin.type in dataTypes)
+            ) {
+              throw new CommutatorError(
+                `Pin "${pinName}" in ${instance.type} "${instance.name}" references non-existent dataType "${pin.type}"`
+              );
+            }
+          }
         }
       }
     }
