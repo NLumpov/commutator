@@ -27,8 +27,7 @@
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json}": [
-      "biome format --write",
-      "biome check --diagnostic-level=error"
+      "biome check --write --diagnostic-level=error"
     ]
   }
 }
