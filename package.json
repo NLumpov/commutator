@@ -10,7 +10,7 @@
     "build": "bun run --filter='./packages/*' build",
     "test": "bun run --filter='./packages/*' test",
     "lint": "bun run --filter='./packages/*' lint",
-    "biome:check": "biome check --diagnostic-level=error .",
+    "biome:check": "biome check .",
     "biome:fix": "biome check --write .",
     "biome:format": "biome format --write .",
     "typecheck": "bunx tsc --noEmit",
