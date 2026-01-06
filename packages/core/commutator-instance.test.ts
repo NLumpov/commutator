@@ -1,7 +1,7 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
+import { CommutatorError } from "commutator-error";
 import { Commutator } from "./commutator";
 import { CommonDataType, NodeType, PinInstanceType } from "./enums";
-import { CommutatorError } from "commutator-error";
 
 describe("CommutatorSchema", () => {
   describe("createEvent", () => {
@@ -158,14 +158,10 @@ describe("CommutatorSchema", () => {
 
         const outputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(outputPinUuid).toBeDefined();
         expect(inputPinUuid).toBeDefined();
@@ -199,14 +195,10 @@ describe("CommutatorSchema", () => {
 
         const outputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
           instance.wire(outputPinUuid!, inputPinUuid!);
@@ -237,14 +229,10 @@ describe("CommutatorSchema", () => {
 
         const outputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
           instance.wire(outputPinUuid!, inputPinUuid!);
@@ -275,14 +263,10 @@ describe("CommutatorSchema", () => {
 
         const outputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
           instance.wire(outputPinUuid!, inputPinUuid!);
@@ -320,19 +304,13 @@ describe("CommutatorSchema", () => {
 
         const outputPin1Uuid = instance
           .getNodePins(source1.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const outputPin2Uuid = instance
           .getNodePins(source2.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         // First wire should succeed
         expect(() => {
@@ -379,19 +357,13 @@ describe("CommutatorSchema", () => {
 
         const outputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const inputPin1Uuid = instance
           .getNodePins(target1.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
         const inputPin2Uuid = instance
           .getNodePins(target2.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         // Both wires should succeed
         expect(() => {
@@ -433,16 +405,10 @@ describe("CommutatorSchema", () => {
 
         const execOutputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) =>
-              pin.name === "next" && pin.type === PinInstanceType.OutputExec
-          )?.uuid;
+          .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
         const execInputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) =>
-              pin.name === "start" && pin.type === PinInstanceType.InputExec
-          )?.uuid;
+          .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
         expect(() => {
           instance.wire(execOutputPinUuid!, execInputPinUuid!);
@@ -484,22 +450,13 @@ describe("CommutatorSchema", () => {
 
         const execOutputPin1Uuid = instance
           .getNodePins(source1.uuid)
-          .find(
-            (pin) =>
-              pin.name === "next" && pin.type === PinInstanceType.OutputExec
-          )?.uuid;
+          .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
         const execOutputPin2Uuid = instance
           .getNodePins(source2.uuid)
-          .find(
-            (pin) =>
-              pin.name === "next" && pin.type === PinInstanceType.OutputExec
-          )?.uuid;
+          .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
         const execInputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) =>
-              pin.name === "start" && pin.type === PinInstanceType.InputExec
-          )?.uuid;
+          .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
         // First wire should succeed
         expect(() => {
@@ -554,22 +511,13 @@ describe("CommutatorSchema", () => {
 
         const execOutputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) =>
-              pin.name === "next" && pin.type === PinInstanceType.OutputExec
-          )?.uuid;
+          .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
         const execInputPin1Uuid = instance
           .getNodePins(target1.uuid)
-          .find(
-            (pin) =>
-              pin.name === "start" && pin.type === PinInstanceType.InputExec
-          )?.uuid;
+          .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
         const execInputPin2Uuid = instance
           .getNodePins(target2.uuid)
-          .find(
-            (pin) =>
-              pin.name === "start" && pin.type === PinInstanceType.InputExec
-          )?.uuid;
+          .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
         // Both wires should succeed
         expect(() => {
@@ -605,9 +553,7 @@ describe("CommutatorSchema", () => {
 
         const outputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
 
         expect(() => {
           instance.wire(outputPinUuid!, outputPinUuid!);
@@ -641,14 +587,10 @@ describe("CommutatorSchema", () => {
 
         const inputPin1Uuid = instance
           .getNodePins(func1.uuid)
-          .find(
-            (pin) => pin.name === "a" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input)?.uuid;
         const inputPin2Uuid = instance
           .getNodePins(func2.uuid)
-          .find(
-            (pin) => pin.name === "b" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "b" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
           instance.wire(inputPin1Uuid!, inputPin2Uuid!);
@@ -676,14 +618,10 @@ describe("CommutatorSchema", () => {
 
         const outputPin1Uuid = instance
           .getNodePins(event1.uuid)
-          .find(
-            (pin) => pin.name === "a" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Output)?.uuid;
         const outputPin2Uuid = instance
           .getNodePins(event2.uuid)
-          .find(
-            (pin) => pin.name === "b" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "b" && pin.type === PinInstanceType.Output)?.uuid;
 
         expect(() => {
           instance.wire(outputPin1Uuid!, outputPin2Uuid!);
@@ -718,15 +656,10 @@ describe("CommutatorSchema", () => {
 
         const dataOutputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const execInputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) =>
-              pin.name === "start" && pin.type === PinInstanceType.InputExec
-          )?.uuid;
+          .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
         expect(() => {
           instance.wire(dataOutputPinUuid!, execInputPinUuid!);
@@ -757,15 +690,10 @@ describe("CommutatorSchema", () => {
 
         const execOutputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) =>
-              pin.name === "next" && pin.type === PinInstanceType.OutputExec
-          )?.uuid;
+          .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
         const dataInputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
           instance.wire(execOutputPinUuid!, dataInputPinUuid!);
@@ -796,15 +724,10 @@ describe("CommutatorSchema", () => {
 
         const execOutputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) =>
-              pin.name === "next" && pin.type === PinInstanceType.OutputExec
-          )?.uuid;
+          .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
         const dataInputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         // Try reversed order
         expect(() => {
@@ -838,14 +761,10 @@ describe("CommutatorSchema", () => {
 
         const outputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const inputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         // Wire in correct order
         expect(() => {
@@ -857,14 +776,10 @@ describe("CommutatorSchema", () => {
         const target2 = instance.createPureFunction("target");
         const outputPin2Uuid = instance
           .getNodePins(source2.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const inputPin2Uuid = instance
           .getNodePins(target2.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
           instance.wire(inputPin2Uuid!, outputPin2Uuid!);
@@ -899,16 +814,10 @@ describe("CommutatorSchema", () => {
 
         const execOutputPinUuid = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) =>
-              pin.name === "next" && pin.type === PinInstanceType.OutputExec
-          )?.uuid;
+          .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
         const execInputPinUuid = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) =>
-              pin.name === "start" && pin.type === PinInstanceType.InputExec
-          )?.uuid;
+          .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
         // Wire in reverse order should work
         expect(() => {
@@ -946,40 +855,22 @@ describe("CommutatorSchema", () => {
 
         const stringOutput = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) =>
-              pin.name === "stringValue" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "stringValue" && pin.type === PinInstanceType.Output)?.uuid;
         const stringInput = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) =>
-              pin.name === "stringValue" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "stringValue" && pin.type === PinInstanceType.Input)?.uuid;
         const numberOutput = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) =>
-              pin.name === "numberValue" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "numberValue" && pin.type === PinInstanceType.Output)?.uuid;
         const numberInput = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) =>
-              pin.name === "numberValue" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "numberValue" && pin.type === PinInstanceType.Input)?.uuid;
         const booleanOutput = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) =>
-              pin.name === "booleanValue" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "booleanValue" && pin.type === PinInstanceType.Output)?.uuid;
         const booleanInput = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) =>
-              pin.name === "booleanValue" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "booleanValue" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
           instance.wire(stringOutput!, stringInput!);
@@ -1020,26 +911,16 @@ describe("CommutatorSchema", () => {
 
         const dataOutput = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const dataInput = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
         const execOutput = instance
           .getNodePins(source.uuid)
-          .find(
-            (pin) =>
-              pin.name === "next" && pin.type === PinInstanceType.OutputExec
-          )?.uuid;
+          .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
         const execInput = instance
           .getNodePins(target.uuid)
-          .find(
-            (pin) =>
-              pin.name === "start" && pin.type === PinInstanceType.InputExec
-          )?.uuid;
+          .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
         expect(() => {
           instance.wire(dataOutput!, dataInput!);
@@ -1089,28 +970,16 @@ describe("CommutatorSchema", () => {
 
           const func1ExecOut = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "next" && pin.type === PinInstanceType.OutputExec
-            )?.uuid;
+            .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
           const func2ExecIn = instance
             .getNodePins(func2.uuid)
-            .find(
-              (pin) =>
-                pin.name === "start" && pin.type === PinInstanceType.InputExec
-            )?.uuid;
+            .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
           const func2ExecOut = instance
             .getNodePins(func2.uuid)
-            .find(
-              (pin) =>
-                pin.name === "next" && pin.type === PinInstanceType.OutputExec
-            )?.uuid;
+            .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
           const func1ExecIn = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "start" && pin.type === PinInstanceType.InputExec
-            )?.uuid;
+            .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
           // Создаем первое соединение (func1 -> func2)
           expect(() => {
@@ -1178,40 +1047,22 @@ describe("CommutatorSchema", () => {
 
           const func1ExecOut = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "next" && pin.type === PinInstanceType.OutputExec
-            )?.uuid;
+            .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
           const func2ExecIn = instance
             .getNodePins(func2.uuid)
-            .find(
-              (pin) =>
-                pin.name === "start" && pin.type === PinInstanceType.InputExec
-            )?.uuid;
+            .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
           const func2ExecOut = instance
             .getNodePins(func2.uuid)
-            .find(
-              (pin) =>
-                pin.name === "next" && pin.type === PinInstanceType.OutputExec
-            )?.uuid;
+            .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
           const func3ExecIn = instance
             .getNodePins(func3.uuid)
-            .find(
-              (pin) =>
-                pin.name === "start" && pin.type === PinInstanceType.InputExec
-            )?.uuid;
+            .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
           const func3ExecOut = instance
             .getNodePins(func3.uuid)
-            .find(
-              (pin) =>
-                pin.name === "next" && pin.type === PinInstanceType.OutputExec
-            )?.uuid;
+            .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
           const func1ExecIn = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "start" && pin.type === PinInstanceType.InputExec
-            )?.uuid;
+            .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
           // Создаем цепочку: func1 -> func2 -> func3
           expect(() => {
@@ -1269,28 +1120,16 @@ describe("CommutatorSchema", () => {
 
           const eventExecOut = instance
             .getNodePins(event.uuid)
-            .find(
-              (pin) =>
-                pin.name === "next" && pin.type === PinInstanceType.OutputExec
-            )?.uuid;
+            .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
           const func1ExecIn = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "start" && pin.type === PinInstanceType.InputExec
-            )?.uuid;
+            .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
           const func1ExecOut = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "next" && pin.type === PinInstanceType.OutputExec
-            )?.uuid;
+            .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
           const func2ExecIn = instance
             .getNodePins(func2.uuid)
-            .find(
-              (pin) =>
-                pin.name === "start" && pin.type === PinInstanceType.InputExec
-            )?.uuid;
+            .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
           // Создаем линейную цепочку: event -> func1 -> func2 (без циклов)
           expect(() => {
@@ -1332,28 +1171,16 @@ describe("CommutatorSchema", () => {
 
           const func1Out = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "output" && pin.type === PinInstanceType.Output
-            )?.uuid;
+            .find((pin) => pin.name === "output" && pin.type === PinInstanceType.Output)?.uuid;
           const func2In = instance
             .getNodePins(func2.uuid)
-            .find(
-              (pin) =>
-                pin.name === "input" && pin.type === PinInstanceType.Input
-            )?.uuid;
+            .find((pin) => pin.name === "input" && pin.type === PinInstanceType.Input)?.uuid;
           const func2Out = instance
             .getNodePins(func2.uuid)
-            .find(
-              (pin) =>
-                pin.name === "output" && pin.type === PinInstanceType.Output
-            )?.uuid;
+            .find((pin) => pin.name === "output" && pin.type === PinInstanceType.Output)?.uuid;
           const func1In = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "input" && pin.type === PinInstanceType.Input
-            )?.uuid;
+            .find((pin) => pin.name === "input" && pin.type === PinInstanceType.Input)?.uuid;
 
           // Создаем первое соединение (func1 -> func2)
           expect(() => {
@@ -1409,40 +1236,22 @@ describe("CommutatorSchema", () => {
 
           const func1Out = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "output" && pin.type === PinInstanceType.Output
-            )?.uuid;
+            .find((pin) => pin.name === "output" && pin.type === PinInstanceType.Output)?.uuid;
           const func2In = instance
             .getNodePins(func2.uuid)
-            .find(
-              (pin) =>
-                pin.name === "input" && pin.type === PinInstanceType.Input
-            )?.uuid;
+            .find((pin) => pin.name === "input" && pin.type === PinInstanceType.Input)?.uuid;
           const func2Out = instance
             .getNodePins(func2.uuid)
-            .find(
-              (pin) =>
-                pin.name === "output" && pin.type === PinInstanceType.Output
-            )?.uuid;
+            .find((pin) => pin.name === "output" && pin.type === PinInstanceType.Output)?.uuid;
           const func3In = instance
             .getNodePins(func3.uuid)
-            .find(
-              (pin) =>
-                pin.name === "input" && pin.type === PinInstanceType.Input
-            )?.uuid;
+            .find((pin) => pin.name === "input" && pin.type === PinInstanceType.Input)?.uuid;
           const func3Out = instance
             .getNodePins(func3.uuid)
-            .find(
-              (pin) =>
-                pin.name === "output" && pin.type === PinInstanceType.Output
-            )?.uuid;
+            .find((pin) => pin.name === "output" && pin.type === PinInstanceType.Output)?.uuid;
           const func1In = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "input" && pin.type === PinInstanceType.Input
-            )?.uuid;
+            .find((pin) => pin.name === "input" && pin.type === PinInstanceType.Input)?.uuid;
 
           // Создаем цепочку: func1 -> func2 -> func3
           expect(() => {
@@ -1492,28 +1301,16 @@ describe("CommutatorSchema", () => {
 
           const eventOut = instance
             .getNodePins(event.uuid)
-            .find(
-              (pin) =>
-                pin.name === "value" && pin.type === PinInstanceType.Output
-            )?.uuid;
+            .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
           const func1In = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "input" && pin.type === PinInstanceType.Input
-            )?.uuid;
+            .find((pin) => pin.name === "input" && pin.type === PinInstanceType.Input)?.uuid;
           const func1Out = instance
             .getNodePins(func1.uuid)
-            .find(
-              (pin) =>
-                pin.name === "output" && pin.type === PinInstanceType.Output
-            )?.uuid;
+            .find((pin) => pin.name === "output" && pin.type === PinInstanceType.Output)?.uuid;
           const func2In = instance
             .getNodePins(func2.uuid)
-            .find(
-              (pin) =>
-                pin.name === "input" && pin.type === PinInstanceType.Input
-            )?.uuid;
+            .find((pin) => pin.name === "input" && pin.type === PinInstanceType.Input)?.uuid;
 
           // Создаем линейную цепочку: event -> func1 -> func2 (без циклов)
           expect(() => {
@@ -1570,26 +1367,16 @@ describe("CommutatorSchema", () => {
 
         const func1DataOut = instance
           .getNodePins(func1.uuid)
-          .find(
-            (pin) => pin.name === "data" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "data" && pin.type === PinInstanceType.Output)?.uuid;
         const func2DataIn = instance
           .getNodePins(func2.uuid)
-          .find(
-            (pin) => pin.name === "data" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "data" && pin.type === PinInstanceType.Input)?.uuid;
         const func2ExecOut = instance
           .getNodePins(func2.uuid)
-          .find(
-            (pin) =>
-              pin.name === "next" && pin.type === PinInstanceType.OutputExec
-          )?.uuid;
+          .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
         const func1ExecIn = instance
           .getNodePins(func1.uuid)
-          .find(
-            (pin) =>
-              pin.name === "start" && pin.type === PinInstanceType.InputExec
-          )?.uuid;
+          .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
         // Создаем соединение data: func1 -> func2
         expect(() => {
@@ -1725,14 +1512,10 @@ describe("CommutatorSchema", () => {
 
         const outputPinUuid = schema1
           .getNodePins(source.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
         const inputPinUuid = schema1
           .getNodePins(target.uuid)
-          .find(
-            (pin) => pin.name === "value" && pin.type === PinInstanceType.Input
-          )?.uuid;
+          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         schema1.wire(outputPinUuid!, inputPinUuid!);
 
@@ -1740,9 +1523,7 @@ describe("CommutatorSchema", () => {
         const schema2 = commutator.createSchema(snapshot);
         const restoredSnapshot = schema2.extract();
 
-        expect(restoredSnapshot.pinInstances).toHaveLength(
-          snapshot.pinInstances.length
-        );
+        expect(restoredSnapshot.pinInstances).toHaveLength(snapshot.pinInstances.length);
         expect(restoredSnapshot.wires).toHaveLength(1);
         expect(restoredSnapshot.wires[0]?.from).toBe(outputPinUuid);
         expect(restoredSnapshot.wires[0]?.to).toBe(inputPinUuid);
@@ -1818,23 +1599,20 @@ describe("CommutatorSchema", () => {
         schema1.createPureFunction("add");
         const snapshot = schema1.extract();
 
-        const commutator2 = Commutator.initialize().definePureFunction(
-          "multiply",
-          {
-            pinsIn: {
-              a: { type: CommonDataType.Number },
-              b: { type: CommonDataType.Number },
-            },
-            pinsOut: {
-              result: { type: CommonDataType.Number },
-            },
-            canAddPinIn: false,
-            canAddPinOut: false,
-            exec: async ({ pinsIn }) => ({
-              result: (pinsIn.a ?? 0) * (pinsIn.b ?? 0),
-            }),
-          }
-        );
+        const commutator2 = Commutator.initialize().definePureFunction("multiply", {
+          pinsIn: {
+            a: { type: CommonDataType.Number },
+            b: { type: CommonDataType.Number },
+          },
+          pinsOut: {
+            result: { type: CommonDataType.Number },
+          },
+          canAddPinIn: false,
+          canAddPinOut: false,
+          exec: async ({ pinsIn }) => ({
+            result: (pinsIn.a ?? 0) * (pinsIn.b ?? 0),
+          }),
+        });
 
         expect(() => {
           commutator2.createSchema(snapshot);

@@ -1,23 +1,17 @@
+import type { NodeType } from "../../enums";
 import type { Field, FieldValue } from "../field";
 import type { ExecPin, Pin, PinRecordValue } from "../pin";
 import type { AbstractNode } from "./abstract";
-import type { NodeType } from "../../enums";
 
 export interface FunctionNode<
   DataTypes extends Record<string, Field<DataTypes>>,
   Meta extends Field<DataTypes> | undefined,
+  Config extends Field<DataTypes> | undefined,
   PinsIn extends Record<string, Pin<DataTypes>>,
   PinsOut extends Record<string, Pin<DataTypes>>,
   ExecPinsIn extends Record<string, ExecPin>,
-  ExecPinsOut extends Record<string, ExecPin>
-> extends AbstractNode<
-    DataTypes,
-    Meta,
-    PinsIn,
-    PinsOut,
-    ExecPinsIn,
-    ExecPinsOut
-  > {
+  ExecPinsOut extends Record<string, ExecPin>,
+> extends AbstractNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut> {
   readonly type: NodeType.Function;
 
   /**
@@ -31,6 +25,7 @@ export interface FunctionNode<
     execPinsIn: ExecPinsIn;
     execPinsOut: ExecPinsOut;
     meta: Meta extends Field<DataTypes> ? FieldValue<Meta, DataTypes> : never;
+    config: Config extends Field<DataTypes> ? FieldValue<Config, DataTypes> : never;
     triggeredExecPinKey: keyof ExecPinsIn;
     exec: (args: {
       meta: Meta extends Field<DataTypes> ? FieldValue<Meta, DataTypes> : never;

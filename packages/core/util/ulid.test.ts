@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { ulid } from "./ulid";
 
 describe("ulid", () => {
@@ -83,4 +83,3 @@ describe("ulid", () => {
     expect(ids.size).toBe(count);
   });
 });
-

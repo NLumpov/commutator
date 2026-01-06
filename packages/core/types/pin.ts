@@ -1,5 +1,5 @@
+import type { CommonDataType } from "../enums";
 import type { Field, FieldValue } from "./field";
-import { CommonDataType } from "../enums";
 
 export type Pin<DataTypes extends Record<string, Field<DataTypes>>> = {
   // тип данных которые отдёт/забирает пин
@@ -16,16 +16,16 @@ export type Pin<DataTypes extends Record<string, Field<DataTypes>>> = {
   default?: FieldValue<Field<DataTypes>, DataTypes>;
 };
 
-export type ExecPin = {}
+export type ExecPin = {};
 
 export type PinValue<
   TPin extends Pin<DataTypes>,
-  DataTypes extends Record<string, Field<DataTypes>>
+  DataTypes extends Record<string, Field<DataTypes>>,
 > = FieldValue<TPin, DataTypes>;
 
 export type PinRecordValue<
   Pins extends Record<string, Pin<DataTypes>>,
-  DataTypes extends Record<string, Field<DataTypes>>
+  DataTypes extends Record<string, Field<DataTypes>>,
 > = {
   [Key in keyof Pins]: PinValue<Pins[Key], DataTypes>;
 };

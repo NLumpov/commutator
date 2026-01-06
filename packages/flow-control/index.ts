@@ -29,8 +29,7 @@ export const flowControlExtension = Commutator.initialize()
     exec: ({ pinsIn, execPinsOut, exec }) => {
       const availablePinsOutKeys = Object.keys(execPinsOut);
 
-      const pinToTrigger =
-        availablePinsOutKeys.find((key) => key === pinsIn.value) || "Default";
+      const pinToTrigger = availablePinsOutKeys.find((key) => key === pinsIn.value) || "Default";
 
       return exec({
         execPinOut: pinToTrigger,
@@ -52,8 +51,7 @@ export const flowControlExtension = Commutator.initialize()
       const availablePinsOutKeys = Object.keys(execPinsOut);
 
       const pinToTrigger =
-        availablePinsOutKeys.find((key) => Number(key) === pinsIn.value) ||
-        "Default";
+        availablePinsOutKeys.find((key) => Number(key) === pinsIn.value) || "Default";
 
       return exec({
         execPinOut: pinToTrigger,

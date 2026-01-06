@@ -1,4 +1,4 @@
-export const enum CommonDataType {
+export enum CommonDataType {
   Any = "Any",
   String = "String",
   Number = "Number",

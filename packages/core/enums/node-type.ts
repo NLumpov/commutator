@@ -1,4 +1,4 @@
-export const enum NodeType {
+export enum NodeType {
   PureFunction = "PureFunction",
   Function = "Function",
   Event = "Event",

@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { Commutator } from "./commutator";
 import { CommonDataType } from "./enums";
 
@@ -304,4 +304,3 @@ describe("Commutator", () => {
     });
   });
 });
-

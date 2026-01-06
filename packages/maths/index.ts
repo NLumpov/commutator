@@ -101,11 +101,11 @@ export const mathsExtension = Commutator.initialize()
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const tanValue = Math.tan(a);
-      
+
       if (tanValue === 0) {
         return { Result: 0 };
       }
-      
+
       return { Result: 1 / tanValue };
     },
   })
@@ -151,11 +151,11 @@ export const mathsExtension = Commutator.initialize()
     canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
-      
+
       if (a === 0) {
         return { Result: Math.PI / 2 };
       }
-      
+
       return { Result: Math.atan(1 / a) };
     },
   })
@@ -169,11 +169,11 @@ export const mathsExtension = Commutator.initialize()
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const result = Math.sinh(a);
-      
+
       if (Number.isNaN(result) || result === Infinity || result === -Infinity) {
         return { Result: 0 };
       }
-      
+
       return { Result: result };
     },
   })
@@ -187,11 +187,11 @@ export const mathsExtension = Commutator.initialize()
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const result = Math.cosh(a);
-      
+
       if (Number.isNaN(result) || result === Infinity || result === -Infinity) {
         return { Result: 0 };
       }
-      
+
       return { Result: result };
     },
   })
@@ -216,11 +216,11 @@ export const mathsExtension = Commutator.initialize()
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const result = Math.asinh(a);
-      
+
       if (Number.isNaN(result)) {
         return { Result: 0 };
       }
-      
+
       return { Result: result };
     },
   })
@@ -233,17 +233,17 @@ export const mathsExtension = Commutator.initialize()
     canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
-      
+
       if (a < 1) {
         return { Result: 0 };
       }
-      
+
       const result = Math.acosh(a);
-      
+
       if (Number.isNaN(result)) {
         return { Result: 0 };
       }
-      
+
       return { Result: result };
     },
   })
@@ -256,17 +256,17 @@ export const mathsExtension = Commutator.initialize()
     canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
-      
+
       if (a <= -1 || a >= 1) {
         return { Result: 0 };
       }
-      
+
       const result = Math.atanh(a);
-      
+
       if (Number.isNaN(result)) {
         return { Result: 0 };
       }
-      
+
       return { Result: result };
     },
   })
@@ -281,12 +281,12 @@ export const mathsExtension = Commutator.initialize()
     exec: async ({ pinsIn }) => {
       const base = pinsIn.Base || 0;
       const exponent = pinsIn.Exponent || 0;
-      const result = Math.pow(base, exponent);
-      
+      const result = base ** exponent;
+
       if (Number.isNaN(result) || result === Infinity || result === -Infinity) {
         return { Result: 0 };
       }
-      
+
       return { Result: result };
     },
   })
@@ -299,11 +299,11 @@ export const mathsExtension = Commutator.initialize()
     canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
-      
+
       if (a < 0) {
         return { Result: 0 };
       }
-      
+
       return { Result: Math.sqrt(a) };
     },
   })
@@ -334,11 +334,11 @@ export const mathsExtension = Commutator.initialize()
     canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
-      
+
       if (a <= 0) {
         return { Result: 0 };
       }
-      
+
       return { Result: Math.log(a) };
     },
   })
@@ -355,20 +355,20 @@ export const mathsExtension = Commutator.initialize()
       const start = pinsIn.Start ?? 0;
       const end = pinsIn.End ?? 1;
       const steps = Math.max(1, Math.floor(pinsIn.Steps ?? 100));
-      
+
       if (start === end) {
         return { Result: 0 };
       }
-      
+
       const stepSize = (end - start) / steps;
       let sum = 0;
-      
+
       for (let i = 0; i < steps; i++) {
         const x = start + i * stepSize;
         const y = x * x;
         sum += y * stepSize;
       }
-      
+
       return { Result: sum };
     },
   })
@@ -393,8 +393,7 @@ export const mathsExtension = Commutator.initialize()
         const result = Math.random() * (actualMax - actualMin) + actualMin;
         return { Result: result };
       } else {
-        const result =
-          Math.floor(Math.random() * (actualMax - actualMin + 1)) + actualMin;
+        const result = Math.floor(Math.random() * (actualMax - actualMin + 1)) + actualMin;
         return { Result: result };
       }
     },
@@ -463,7 +462,7 @@ export const mathsExtension = Commutator.initialize()
       const value = pinsIn.Value || 0;
       const decimals = Math.max(0, Math.floor(pinsIn.Decimals ?? 0));
 
-      const multiplier = Math.pow(10, decimals);
+      const multiplier = 10 ** decimals;
 
       return { Result: Math.trunc(value * multiplier) / multiplier };
     },
@@ -523,11 +522,11 @@ export const mathsExtension = Commutator.initialize()
     canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
-      
+
       if (a <= 0) {
         return { Result: 0 };
       }
-      
+
       return { Result: Math.log10(a) };
     },
   })
@@ -540,11 +539,11 @@ export const mathsExtension = Commutator.initialize()
     canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
-      
+
       if (a <= 0) {
         return { Result: 0 };
       }
-      
+
       return { Result: Math.log2(a) };
     },
   })
@@ -558,11 +557,11 @@ export const mathsExtension = Commutator.initialize()
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const result = Math.exp(a);
-      
+
       if (Number.isNaN(result) || result === Infinity || result === -Infinity) {
         return { Result: 0 };
       }
-      
+
       return { Result: result };
     },
   })
@@ -623,11 +622,11 @@ export const mathsExtension = Commutator.initialize()
       const a = pinsIn.A || 0;
       const b = pinsIn.B || 0;
       const result = Math.hypot(a, b);
-      
+
       if (Number.isNaN(result) || result === Infinity || result === -Infinity) {
         return { Result: 0 };
       }
-      
+
       return { Result: result };
     },
   })
@@ -644,10 +643,10 @@ export const mathsExtension = Commutator.initialize()
       const value = pinsIn.Value || 0;
       const min = pinsIn.Min ?? -Infinity;
       const max = pinsIn.Max ?? Infinity;
-      
+
       const actualMin = Math.min(min, max);
       const actualMax = Math.max(min, max);
-      
+
       return { Result: Math.max(actualMin, Math.min(actualMax, value)) };
     },
   })
@@ -664,7 +663,7 @@ export const mathsExtension = Commutator.initialize()
       const a = pinsIn.A || 0;
       const b = pinsIn.B || 0;
       const t = Math.max(0, Math.min(1, pinsIn.T ?? 0));
-      
+
       return { Result: a + (b - a) * t };
     },
   });
