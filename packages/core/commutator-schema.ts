@@ -631,7 +631,11 @@ export class CommutatorSchema<
 
     // Пока есть ноды для проверки
     while (stack.length > 0) {
-      const currentNodeUuid = stack.pop()!;
+      const currentNodeUuid = stack.pop();
+
+      if (!currentNodeUuid) {
+        break;
+      }
 
       // Если это целевая нода, цикл найден
       if (currentNodeUuid === targetNodeUuid) {

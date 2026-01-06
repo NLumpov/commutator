@@ -10,8 +10,9 @@ export function ulid(): string {
   if (now === lastTime && lastRandom) {
     random = Uint8Array.from(lastRandom);
     for (let i = random.length - 1; i >= 0; i--) {
-      if (random[i]! < 0xff) {
-        random[i]!++;
+      const value = random[i];
+      if (value !== undefined && value < 0xff) {
+        random[i] = value + 1;
         break;
       }
       random[i] = 0;

@@ -7,7 +7,21 @@
   },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/node_modules", "!**/dist", "!**/build", "!**/.bun"]
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/.bun",
+      "!**/*.test.ts",
+      "!**/*.test.js",
+      "!**/*.test.tsx",
+      "!**/*.test.jsx",
+      "!**/*.spec.ts",
+      "!**/*.spec.js",
+      "!**/*.spec.tsx",
+      "!**/*.spec.jsx"
+    ]
   },
   "formatter": {
     "enabled": true,
