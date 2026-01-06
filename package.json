@@ -10,15 +10,25 @@
     "build": "bun run --filter='./packages/*' build",
     "test": "bun run --filter='./packages/*' test",
     "lint": "bun run --filter='./packages/*' lint",
-    "biome:check": "biome check .",
+    "biome:check": "biome check --diagnostic-level=error .",
     "biome:fix": "biome check --write .",
-    "biome:format": "biome format --write ."
+    "biome:format": "biome format --write .",
+    "typecheck": "bunx tsc --noEmit",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.11",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json}": [
+      "biome format --write",
+      "biome check --diagnostic-level=error"
+    ]
   }
 }

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { CommutatorError } from "commutator-error";
 import { Commutator } from "./commutator";
+import { CommutatorError } from "./commutator-error";
 import { CommonDataType, NodeType, PinInstanceType } from "./enums";
 
 describe("CommutatorSchema", () => {

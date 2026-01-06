@@ -21,7 +21,10 @@ export class Commutator<
     string,
     PureFunctionNode<DataTypes, any, any, any, any, any, any>
   > = {},
-  const Functions extends Record<string, FunctionNode<DataTypes, any, any, any, any, any, any>> = {},
+  const Functions extends Record<
+    string,
+    FunctionNode<DataTypes, any, any, any, any, any, any>
+  > = {},
   const Apis extends Record<string, any> = {},
 > {
   private constructor(
@@ -41,7 +44,10 @@ export class Commutator<
       string,
       PureFunctionNode<DataTypes, any, any, any, any, any, any>
     > = {},
-    const Functions extends Record<string, FunctionNode<DataTypes, any, any, any, any, any, any>> = {},
+    const Functions extends Record<
+      string,
+      FunctionNode<DataTypes, any, any, any, any, any, any>
+    > = {},
     const Apis extends Record<string, any> = {},
   >(
     dataTypes: DataTypes = {} as DataTypes,
