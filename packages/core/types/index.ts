@@ -1,5 +1,6 @@
 export * from "./commutator-instance-snapshot";
 export * from "./field";
+export * from "./node-callback-context";
 export * from "./node-instances";
 export * from "./nodes";
 export * from "./pin";

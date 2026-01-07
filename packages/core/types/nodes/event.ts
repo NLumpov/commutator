@@ -7,10 +7,11 @@ export interface EventNode<
   DataTypes extends Record<string, Field<DataTypes>>,
   Meta extends Field<DataTypes> | undefined,
   Config extends Field<DataTypes> | undefined,
+  Apis extends Record<string, any>,
   PinsIn extends Record<string, Pin<DataTypes>>,
   PinsOut extends Record<string, Pin<DataTypes>>,
   ExecPinsIn extends Record<string, ExecPin>,
   ExecPinsOut extends Record<string, ExecPin>,
-> extends AbstractNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut> {
+> extends AbstractNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut, Apis> {
   readonly type: NodeType.Event;
 }

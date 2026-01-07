@@ -1,0 +1,137 @@
+---
+description: Avoid nested if statements - use early returns or inverted conditions instead.
+globs: "*.ts, *.tsx, *.js, *.jsx"
+alwaysApply: true
+---
+
+# Avoid Nested If Statements
+
+**MANDATORY RULE**: Minimize nested if statements. If it's possible to use early returns or inverted conditions to eliminate nesting, you MUST do it.
+
+## Principles
+
+1. **Early Returns**: Use early returns to handle error cases or invalid conditions first, reducing nesting levels.
+2. **Inverted Conditions**: Flip conditions when it makes the code flatter and more readable.
+3. **Guard Clauses**: Use guard clauses at the beginning of functions to handle edge cases.
+
+## Examples
+
+### ❌ Bad: Nested if statements
+
+```typescript
+function processData(data: Data | null) {
+  if (data !== null) {
+    if (data.isValid) {
+      if (data.value > 0) {
+        return data.value * 2;
+      } else {
+        return 0;
+      }
+    } else {
+      throw new Error("Invalid data");
+    }
+  } else {
+    return null;
+  }
+}
+```
+
+### ✅ Good: Early returns
+
+```typescript
+function processData(data: Data | null) {
+  if (data === null) {
+    return null;
+  }
+  
+  if (!data.isValid) {
+    throw new Error("Invalid data");
+  }
+  
+  if (data.value <= 0) {
+    return 0;
+  }
+  
+  return data.value * 2;
+}
+```
+
+### ❌ Bad: Nested if with complex logic
+
+```typescript
+function handleRequest(req: Request) {
+  if (req.isAuthenticated) {
+    if (req.hasPermission) {
+      if (req.data) {
+        processData(req.data);
+      } else {
+        return { error: "No data" };
+      }
+    } else {
+      return { error: "No permission" };
+    }
+  } else {
+    return { error: "Not authenticated" };
+  }
+}
+```
+
+### ✅ Good: Early returns with guard clauses
+
+```typescript
+function handleRequest(req: Request) {
+  if (!req.isAuthenticated) {
+    return { error: "Not authenticated" };
+  }
+  
+  if (!req.hasPermission) {
+    return { error: "No permission" };
+  }
+  
+  if (!req.data) {
+    return { error: "No data" };
+  }
+  
+  processData(req.data);
+}
+```
+
+### ❌ Bad: Nested if in loops
+
+```typescript
+for (const item of items) {
+  if (item !== null) {
+    if (item.isActive) {
+      if (item.value > threshold) {
+        processItem(item);
+      }
+    }
+  }
+}
+```
+
+### ✅ Good: Combined conditions or early continue
+
+```typescript
+for (const item of items) {
+  if (item === null || !item.isActive || item.value <= threshold) {
+    continue;
+  }
+  
+  processItem(item);
+}
+```
+
+## When to Apply
+
+- **Always** prefer early returns over nested if-else
+- **Always** use guard clauses for validation
+- **Always** invert conditions if it reduces nesting
+- **Always** use `continue` in loops instead of nested ifs when possible
+
+## Exceptions
+
+Only use nested ifs when:
+- The logic genuinely requires multiple levels of conditionality that cannot be flattened
+- Early returns would make the code less readable (rare cases)
+- The nesting is minimal (2 levels max) and significantly improves readability

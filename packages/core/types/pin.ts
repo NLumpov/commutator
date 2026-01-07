@@ -12,8 +12,6 @@ export type Pin<DataTypes extends Record<string, Field<DataTypes>>> = {
         | CommonDataType.StringEnum
         | CommonDataType.NumberEnum
       >;
-  // Значение если к пину ничего не приконнекчено
-  default?: FieldValue<Field<DataTypes>, DataTypes>;
 };
 
 export type ExecPin = {};

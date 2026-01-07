@@ -15,16 +15,13 @@ const extractKey = Symbol("extract");
 
 export class Commutator<
   const DataTypes extends Record<string, Field<DataTypes>> = {},
-  const Events extends Record<string, EventNode<DataTypes, any, any, any, any, any, any>> = {},
-  const Refs extends Record<string, RefNode<DataTypes, any, any, any, any, any, any, any>> = {},
+  const Events extends Record<string, EventNode<any, any, any, any, any, any, any, any>> = {},
+  const Refs extends Record<string, RefNode<any, any, any, any, any, any, any, any>> = {},
   const PureFunctions extends Record<
     string,
-    PureFunctionNode<DataTypes, any, any, any, any, any, any>
+    PureFunctionNode<any, any, any, any, any, any, any, any>
   > = {},
-  const Functions extends Record<
-    string,
-    FunctionNode<DataTypes, any, any, any, any, any, any>
-  > = {},
+  const Functions extends Record<string, FunctionNode<any, any, any, any, any, any, any, any>> = {},
   const Apis extends Record<string, any> = {},
 > {
   private constructor(
@@ -38,15 +35,15 @@ export class Commutator<
 
   static initialize<
     const DataTypes extends Record<string, Field<DataTypes>> = {},
-    const Events extends Record<string, EventNode<DataTypes, any, any, any, any, any, any>> = {},
-    const Refs extends Record<string, RefNode<DataTypes, any, any, any, any, any, any, any>> = {},
+    const Events extends Record<string, EventNode<any, any, any, any, any, any, any, any>> = {},
+    const Refs extends Record<string, RefNode<any, any, any, any, any, any, any, any>> = {},
     const PureFunctions extends Record<
       string,
-      PureFunctionNode<DataTypes, any, any, any, any, any, any>
+      PureFunctionNode<any, any, any, any, any, any, any, any>
     > = {},
     const Functions extends Record<
       string,
-      FunctionNode<DataTypes, any, any, any, any, any, any>
+      FunctionNode<any, any, any, any, any, any, any, any>
     > = {},
     const Apis extends Record<string, any> = {},
   >(
@@ -99,13 +96,22 @@ export class Commutator<
       ? never
       : Name,
     eventNode: Pick<
-      EventNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>,
-      "execPinsOut" | "pinsOut" | "meta" | "config"
+      EventNode<DataTypes, Meta, Config, Apis, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>,
+      "execPinsOut" | "pinsOut" | "meta" | "config" | "onConfigChange"
     >,
   ): Commutator<
     DataTypes,
     Events & {
-      [K in Name]: EventNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>;
+      [K in Name]: EventNode<
+        DataTypes,
+        Meta,
+        Config,
+        Apis,
+        PinsIn,
+        PinsOut,
+        ExecPinsIn,
+        ExecPinsOut
+      >;
     },
     Refs,
     PureFunctions,
@@ -120,7 +126,16 @@ export class Commutator<
     return new Commutator<
       DataTypes,
       Events & {
-        [K in Name]: EventNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>;
+        [K in Name]: EventNode<
+          DataTypes,
+          Meta,
+          Config,
+          Apis,
+          PinsIn,
+          PinsOut,
+          ExecPinsIn,
+          ExecPinsOut
+        >;
       },
       Refs,
       PureFunctions,
@@ -143,7 +158,7 @@ export class Commutator<
       : Name,
     refNode: Pick<
       RefNode<DataTypes, Meta, Config, Apis, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>,
-      "pinsOut" | "resolveRef" | "meta" | "config"
+      "pinsOut" | "resolveRef" | "meta" | "config" | "onConfigChange"
     >,
   ): Commutator<
     DataTypes,
@@ -155,11 +170,6 @@ export class Commutator<
     Functions,
     Apis
   > {
-    const extendedRefs = {
-      ...this.refs,
-      [name]: refNode,
-    };
-
     return new Commutator<
       DataTypes,
       Events,
@@ -178,7 +188,17 @@ export class Commutator<
       PureFunctions,
       Functions,
       Apis
-    >(this.dataTypes, this.events, extendedRefs, this.pureFunctions, this.functions, this.apis);
+    >(
+      this.dataTypes,
+      this.events,
+      {
+        ...this.refs,
+        [name]: refNode,
+      },
+      this.pureFunctions,
+      this.functions,
+      this.apis,
+    );
   }
 
   definePureFunction<
@@ -194,8 +214,8 @@ export class Commutator<
       ? never
       : Name,
     pureFunctionNode: Pick<
-      PureFunctionNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>,
-      "pinsIn" | "pinsOut" | "canAddPinIn" | "canAddPinOut" | "exec" | "config"
+      PureFunctionNode<DataTypes, Meta, Config, Apis, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>,
+      "pinsIn" | "pinsOut" | "canAddPinIn" | "canAddPinOut" | "exec" | "config" | "onConfigChange"
     >,
   ): Commutator<
     DataTypes,
@@ -206,6 +226,7 @@ export class Commutator<
         DataTypes,
         Meta,
         Config,
+        Apis,
         PinsIn,
         PinsOut,
         ExecPinsIn,
@@ -215,11 +236,6 @@ export class Commutator<
     Functions,
     Apis
   > {
-    const extendedPureFunctions = {
-      ...this.pureFunctions,
-      [name]: pureFunctionNode,
-    };
-
     return new Commutator<
       DataTypes,
       Events,
@@ -229,6 +245,7 @@ export class Commutator<
           DataTypes,
           Meta,
           Config,
+          Apis,
           PinsIn,
           PinsOut,
           ExecPinsIn,
@@ -237,7 +254,17 @@ export class Commutator<
       },
       Functions,
       Apis
-    >(this.dataTypes, this.events, this.refs, extendedPureFunctions, this.functions, this.apis);
+    >(
+      this.dataTypes,
+      this.events,
+      this.refs,
+      {
+        ...this.pureFunctions,
+        [name]: pureFunctionNode,
+      },
+      this.functions,
+      this.apis,
+    );
   }
 
   defineFunction<
@@ -253,7 +280,7 @@ export class Commutator<
       ? never
       : Name,
     functionNode: Pick<
-      FunctionNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>,
+      FunctionNode<DataTypes, Meta, Config, Apis, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>,
       | "pinsIn"
       | "pinsOut"
       | "canAddPinIn"
@@ -265,6 +292,7 @@ export class Commutator<
       | "exec"
       | "meta"
       | "config"
+      | "onConfigChange"
     >,
   ): Commutator<
     DataTypes,
@@ -272,15 +300,19 @@ export class Commutator<
     Refs,
     PureFunctions,
     Functions & {
-      [K in Name]: FunctionNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>;
+      [K in Name]: FunctionNode<
+        DataTypes,
+        Meta,
+        Config,
+        Apis,
+        PinsIn,
+        PinsOut,
+        ExecPinsIn,
+        ExecPinsOut
+      >;
     },
     Apis
   > {
-    const extendedFunctions = {
-      ...this.functions,
-      [name]: functionNode,
-    };
-
     return new Commutator<
       DataTypes,
       Events,
@@ -291,6 +323,7 @@ export class Commutator<
           DataTypes,
           Meta,
           Config,
+          Apis,
           PinsIn,
           PinsOut,
           ExecPinsIn,
@@ -298,7 +331,17 @@ export class Commutator<
         >;
       },
       Apis
-    >(this.dataTypes, this.events, this.refs, this.pureFunctions, extendedFunctions, this.apis);
+    >(
+      this.dataTypes,
+      this.events,
+      this.refs,
+      this.pureFunctions,
+      {
+        ...this.functions,
+        [name]: functionNode,
+      },
+      this.apis,
+    );
   }
 
   [extractKey](): {
@@ -323,7 +366,7 @@ export class Commutator<
     const LocalDataTypes extends Record<string, Field<LocalDataTypes>> = {},
     const LocalEvents extends Record<
       string,
-      EventNode<LocalDataTypes, any, any, any, any, any, any>
+      EventNode<LocalDataTypes, any, any, any, any, any, any, any>
     > = {},
     const LocalRefs extends Record<
       string,
@@ -331,11 +374,11 @@ export class Commutator<
     > = {},
     const LocalPureFunctions extends Record<
       string,
-      PureFunctionNode<LocalDataTypes, any, any, any, any, any, any>
+      PureFunctionNode<LocalDataTypes, any, any, any, any, any, any, any>
     > = {},
     const LocalFunctions extends Record<
       string,
-      FunctionNode<LocalDataTypes, any, any, any, any, any, any>
+      FunctionNode<LocalDataTypes, any, any, any, any, any, any, any>
     > = {},
     const LocalApis extends Record<string, any> = {},
   >(

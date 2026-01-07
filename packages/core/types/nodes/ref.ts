@@ -12,7 +12,7 @@ export interface RefNode<
   PinsOut extends Record<string, Pin<DataTypes>>,
   ExecPinsIn extends Record<string, ExecPin>,
   ExecPinsOut extends Record<string, ExecPin>,
-> extends AbstractNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut> {
+> extends AbstractNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut, Apis> {
   readonly type: NodeType.Ref;
   /**
    * Метод для резолва рефа, вызывается в момент подгрузки сущности из пина.
