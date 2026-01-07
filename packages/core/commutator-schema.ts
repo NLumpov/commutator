@@ -462,13 +462,13 @@ export class CommutatorSchema<
       | FunctionNode<DataTypes, any, any, any, any, any, any, any>,
   ): NodeCallbackActions<DataTypes> {
     return {
-      updatePin: (name: string, args: { name?: string; type?: Pin<DataTypes>["type"] }) => {
+      updatePin: (name: string, args: { name?: string; pinType?: Pin<DataTypes>["type"] }) => {
         const pin = this.getPinByName(nodeUuid, name);
         if (!pin) {
           throw new CommutatorError(`Pin "${name}" not found`);
         }
-        if (args.type !== undefined) {
-          pin.pinType = args.type;
+        if (args.pinType !== undefined) {
+          pin.pinType = args.pinType;
         }
         if (args.name !== undefined && args.name !== name) {
           // Проверяем, что новое имя не занято
