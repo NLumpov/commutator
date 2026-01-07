@@ -261,9 +261,9 @@ export class CommutatorSchema<
     }
   }
 
-  createEvent<Name extends keyof Events, Config extends Events[Name]["config"]>(
+  createEvent<Name extends keyof Events>(
     name: Name,
-    config?: FieldValue<Config, DataTypes>,
+    config?: FieldValue<NonNullable<Events[Name]["config"]>, DataTypes>,
   ): EventNodeInstance<Name> {
     const eventConfig = this.events[name];
 
@@ -309,9 +309,9 @@ export class CommutatorSchema<
     return { ...eventInstance };
   }
 
-  createRef<Name extends keyof Refs, Config extends Refs[Name]["config"]>(
+  createRef<Name extends keyof Refs>(
     name: Name,
-    config?: FieldValue<Config, DataTypes>,
+    config?: FieldValue<NonNullable<Refs[Name]["config"]>, DataTypes>,
   ): RefNodeInstance<Name> {
     const refConfig = this.refs[name];
 
@@ -359,7 +359,7 @@ export class CommutatorSchema<
 
   createPureFunction<Name extends keyof PureFunctions>(
     name: Name,
-    config?: FieldValue<PureFunctions[Name]["config"], DataTypes>,
+    config?: FieldValue<NonNullable<PureFunctions[Name]["config"]>, DataTypes>,
   ): PureFunctionNodeInstance<Name> {
     const pureFunctionConfig = this.pureFunctions[name];
 
@@ -407,7 +407,7 @@ export class CommutatorSchema<
 
   createFunction<Name extends keyof Functions>(
     name: Name,
-    config?: FieldValue<Functions[Name]["config"], DataTypes>,
+    config?: FieldValue<NonNullable<Functions[Name]["config"]>, DataTypes>,
   ): FunctionNodeInstance<Name> {
     const functionConfig = this.functions[name];
 
