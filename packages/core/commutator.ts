@@ -1,5 +1,5 @@
-import { CommutatorValidator } from "commutator-validator";
 import { CommutatorSchema } from "./commutator-schema";
+import { CommutatorValidator } from "./commutator-validator";
 import type { CommonDataType } from "./enums";
 import type {
   CommutatorInstanceSnapshot,
