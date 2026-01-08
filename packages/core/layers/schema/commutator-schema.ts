@@ -136,16 +136,8 @@ export class CommutatorSchema<
         continue;
       }
 
-      const configWithCallback = nodeConfig as {
-        onConfigChange?: (args: {
-          config: unknown;
-          apis: any;
-          actions: NodeCallbackActions<DataTypes>;
-        }) => void;
-      };
-
-      if (configWithCallback.onConfigChange) {
-        configWithCallback.onConfigChange({
+      if (nodeConfig.onConfigChange) {
+        nodeConfig.onConfigChange({
           config: nodeInstance.config,
           apis: this.config.apis,
           actions: this.createNodeCallbackActions(nodeInstance.uuid, nodeConfig),

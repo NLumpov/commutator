@@ -5,11 +5,8 @@ export const createVariablesExtension = (
   set: (name: string, value: unknown) => Promise<void>,
 ) => {
   const commutator = Commutator.initialize();
+
   return commutator
-    .defineApi("Variables", {
-      get,
-      set,
-    })
     .defineRef("GetVariable", {
       config: {
         type: CommonDataType.Object,
@@ -24,27 +21,38 @@ export const createVariablesExtension = (
       onConfigChange: ({ config, actions }) => {
         const valuePin = actions.getPin("Value");
 
-        // Если в коммутаторе есть DataType соответствующий
+        // Если в коммутаторе есть такой DataType, то устанавливаем тип пина
         if (config.type && commutator.validator.hasDataType(config.type) && valuePin) {
           valuePin.pinType = config.type;
         }
+        // Если типа не нашлось то ставим Any по умолчанию
+        else if (valuePin) {
+          valuePin.pinType = CommonDataType.Any;
+        }
       },
-      resolveRef: async ({ config, api }) => {
+      resolveRef: async ({ config }) => {
         if (!config.name) {
           return { Value: null };
         }
 
-        const value = await api.Variables.get(config.name);
+        try {
+          const value = await get(config.name);
 
-        if (
-          config.type &&
-          commutator.validator.hasDataType(config.type) &&
-          commutator.validator.validateFieldValue({ type: config.type }, value)
-        ) {
+          // Если значение из переменной соответствует указанному типу, то возвращаем его
+          if (
+            config.type &&
+            commutator.validator.hasDataType(config.type) &&
+            commutator.validator.validateFieldValue({ type: config.type }, value)
+          ) {
+            return { Value: value };
+          }
+
+          // Иначе просто возвращаем null, как будто переменная не объявлена
+          return { Value: null };
+        } catch {
+          // Если случилась ошибка при получении значения, то возвращаем null, как будто переменная не объявлена
           return { Value: null };
         }
-
-        return { Value: null };
       },
     })
     .defineFunction("SetVariable", {
@@ -98,7 +106,15 @@ export const createVariablesExtension = (
           return;
         }
 
-        await set(config.name, value);
+        try {
+          await set(config.name, value);
+        } catch {
+          await exec({
+            execPinOut: "",
+            pinsOut: {},
+            meta: null,
+          });
+        }
 
         await exec({
           execPinOut: "",

@@ -21,23 +21,30 @@ export type Field<DataTypes extends Record<string, Field<DataTypes>>> = {
       values: number[];
     }
   | {
-      type: keyof DataTypes | PrimitiveDataType;
+      type: keyof DataTypes;
+    }
+  | {
+      type: PrimitiveDataType;
+    }
+  | {
+      type: CommonDataType.Any;
     }
 );
 
-export type FieldValue<
+type FieldValueInternal<
   TField extends Field<DataTypes>,
   DataTypes extends Record<string, Field<DataTypes>>,
+  Seen extends keyof DataTypes = never,
 > = TField["type"] extends CommonDataType
   ? TField extends { type: CommonDataType.Any }
     ? unknown
     : TField extends { type: CommonDataType.Object; properties: infer Properties }
       ? Properties extends Record<string, Field<DataTypes>>
-        ? { [K in keyof Properties]: FieldValue<Properties[K], DataTypes> }
+        ? { [K in keyof Properties]: FieldValueInternal<Properties[K], DataTypes, Seen> }
         : never
       : TField extends { type: CommonDataType.Array; itemType: infer ItemType }
         ? ItemType extends Field<DataTypes>
-          ? FieldValue<ItemType, DataTypes>[]
+          ? FieldValueInternal<ItemType, DataTypes, Seen>[]
           : never
         : TField extends { type: CommonDataType.StringEnum; values: infer Values }
           ? Values extends readonly string[]
@@ -57,8 +64,15 @@ export type FieldValue<
                     ? number | null
                     : never
   : TField["type"] extends keyof DataTypes
-    ? FieldValue<DataTypes[TField["type"]], DataTypes>
+    ? TField["type"] extends Seen
+      ? any
+      : FieldValueInternal<DataTypes[TField["type"]], DataTypes, Seen | TField["type"]>
     : never;
+
+export type FieldValue<
+  TField extends Field<DataTypes>,
+  DataTypes extends Record<string, Field<DataTypes>>,
+> = FieldValueInternal<TField, DataTypes>;
 
 export type FieldRecordValues<
   RecordFields extends Record<string, Field<DataTypes>>,
