@@ -872,17 +872,8 @@ export class CommutatorSchema<
         throw new CommutatorError("Unknown node type");
     }
 
-    // Вызываем onConfigChange callback (если есть)
-    const configWithCallback = nodeConfig as {
-      onConfigChange?: (args: {
-        config: unknown;
-        apis: any;
-        actions: NodeCallbackActions<DataTypes>;
-      }) => void;
-    };
-
-    if (configWithCallback.onConfigChange) {
-      configWithCallback.onConfigChange({
+    if (nodeConfig.onConfigChange) {
+      nodeConfig.onConfigChange({
         config,
         apis: this.config.apis,
         actions: this.createNodeCallbackActions(uuid, nodeConfig),

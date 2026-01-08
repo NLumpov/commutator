@@ -166,16 +166,7 @@ export class Commutator<
         this.config.events,
         {
           ...this.config.refs,
-          [name]: refNode as RefNode<
-            DataTypes,
-            Meta,
-            Config,
-            Apis,
-            PinsIn,
-            PinsOut,
-            ExecPinsIn,
-            ExecPinsOut
-          >,
+          [name]: refNode,
         },
         this.config.pureFunctions,
         this.config.functions,
@@ -226,16 +217,7 @@ export class Commutator<
         this.config.refs,
         {
           ...this.config.pureFunctions,
-          [name]: pureFunctionNode as PureFunctionNode<
-            DataTypes,
-            Meta,
-            Config,
-            Apis,
-            PinsIn,
-            PinsOut,
-            ExecPinsIn,
-            ExecPinsOut
-          >,
+          [name]: pureFunctionNode,
         },
         this.config.functions,
         this.config.apis,
@@ -297,16 +279,7 @@ export class Commutator<
         this.config.pureFunctions,
         {
           ...this.config.functions,
-          [name]: functionNode as FunctionNode<
-            DataTypes,
-            Meta,
-            Config,
-            Apis,
-            PinsIn,
-            PinsOut,
-            ExecPinsIn,
-            ExecPinsOut
-          >,
+          [name]: functionNode,
         },
         this.config.apis,
       ),
