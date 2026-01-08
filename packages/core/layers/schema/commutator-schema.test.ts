@@ -469,7 +469,7 @@ describe("CommutatorSchema", () => {
         }).not.toThrow();
       });
 
-      test("should allow one exec output to connect to multiple exec inputs", () => {
+      test("should not allow one exec output to connect to multiple exec inputs", () => {
         const commutator = Commutator.initialize()
           .defineEvent("source", {
             pinsOut: {},
@@ -519,14 +519,15 @@ describe("CommutatorSchema", () => {
           .getNodePins(target2.uuid)
           .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
-        // Both wires should succeed
+        // First wire should succeed
         expect(() => {
           instance.wire(execOutputPinUuid!, execInputPin1Uuid!);
         }).not.toThrow();
 
+        // Second wire from the same exec output should fail
         expect(() => {
           instance.wire(execOutputPinUuid!, execInputPin2Uuid!);
-        }).not.toThrow();
+        }).toThrow("ExecPinOut wire already exists");
       });
     });
 

@@ -1,6 +1,6 @@
 import type { PinInstanceType } from "../../schema";
 import type { PinInstance } from "../../schema/types/pin-instance";
-import type { Field } from "./field";
+import type { Field, FieldValue } from "./field";
 import type { Pin } from "./pin";
 
 export interface NodeCallbackActions<DataTypes extends Record<string, Field<DataTypes>>> {
@@ -26,10 +26,10 @@ export interface NodeCallbackActions<DataTypes extends Record<string, Field<Data
 
 export interface NodeCallbackContext<
   DataTypes extends Record<string, Field<DataTypes>>,
-  Config,
+  Config extends Field<DataTypes> | undefined,
   Apis extends Record<string, any>,
 > {
-  config: Config;
+  config: Config extends Field<DataTypes> ? FieldValue<Config, DataTypes> : undefined;
   apis: Apis;
   actions: NodeCallbackActions<DataTypes>;
 }

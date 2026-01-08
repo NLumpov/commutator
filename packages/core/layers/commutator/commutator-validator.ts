@@ -1,11 +1,11 @@
-import { CommonDataType } from "./enums";
-import type { Field } from "./types";
+import { CommonDataType, PrimitiveDataTypes } from "./enums";
+import type { Field, PrimitiveDataType } from "./types";
 
 export class CommutatorValidator<const DataTypes extends Record<string, Field<DataTypes>> = {}> {
   constructor(private readonly dataTypes: DataTypes) {}
 
-  public hasDataType<const Name extends keyof DataTypes>(name: Name): boolean {
-    return name in this.dataTypes;
+  public hasDataType(name: PropertyKey): name is keyof DataTypes | PrimitiveDataType {
+    return name in this.dataTypes || PrimitiveDataTypes.includes(name as PrimitiveDataType);
   }
 
   public validateFieldValue(field: Field<DataTypes>, value: unknown): boolean {

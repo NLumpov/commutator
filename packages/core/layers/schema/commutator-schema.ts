@@ -16,6 +16,7 @@ import {
   type RefNode,
 } from "../commutator";
 import { PinInstanceType } from "./enums";
+import { SchemaValidator } from "./schema-validator";
 import type {
   AbstractNodeInstance,
   EventNodeInstance,
@@ -110,8 +111,7 @@ export class CommutatorSchema<
             pinInstance.type === PinInstanceType.InputExec ||
             pinInstance.type === PinInstanceType.OutputExec
               ? CommonDataType.Any
-              : (((pinConfig as Pin<DataTypes> | undefined)?.type ??
-                  CommonDataType.Any) as Pin<DataTypes>["type"]);
+              : (pinConfig?.type ?? CommonDataType.Any);
 
           return [pinInstance.uuid, { ...pinInstance, pinType }];
         }
@@ -132,8 +132,20 @@ export class CommutatorSchema<
     for (const nodeInstance of allNodeInstances) {
       const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
 
-      if (nodeConfig?.onConfigChange) {
-        nodeConfig.onConfigChange({
+      if (!nodeConfig) {
+        continue;
+      }
+
+      const configWithCallback = nodeConfig as {
+        onConfigChange?: (args: {
+          config: unknown;
+          apis: any;
+          actions: NodeCallbackActions<DataTypes>;
+        }) => void;
+      };
+
+      if (configWithCallback.onConfigChange) {
+        configWithCallback.onConfigChange({
           config: nodeInstance.config,
           apis: this.config.apis,
           actions: this.createNodeCallbackActions(nodeInstance.uuid, nodeConfig),
@@ -162,53 +174,10 @@ export class CommutatorSchema<
     config: CommutatorConfig<DataTypes, Events, Refs, PureFunctions, Functions, Apis>,
     snapshot?: SchemaSnapshot,
   ): CommutatorSchema<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
-    // Если есть снапшот проверяем совместимость с конфигурацией комммутатора, проверяем что все типы нод из снапшота совпадают с конфигом
+    // КРИТИЧЕСКИ ВАЖНО: Валидация ПЕРВОЙ - ДО создания экземпляра!
+    // Невалидный снапшот НЕ ДОЛЖЕН быть пропущен
     if (snapshot) {
-      // Проверяем существование конфигураций нод и корректность dataTypes во всех пинах
-      const commonDataTypeValues = new Set<string>([
-        CommonDataType.Any,
-        CommonDataType.String,
-        CommonDataType.Number,
-        CommonDataType.Date,
-        CommonDataType.Boolean,
-        CommonDataType.Object,
-        CommonDataType.Array,
-        CommonDataType.StringEnum,
-        CommonDataType.NumberEnum,
-      ]);
-
-      // Собираем все instance'ы в единый массив
-      const allInstances: AbstractNodeInstance<string>[] = [
-        ...snapshot.events,
-        ...snapshot.refs,
-        ...snapshot.pureFunctions,
-        ...snapshot.functions,
-      ];
-
-      for (const instance of allInstances) {
-        const nodeConfig = config.getNodeConfigByName(instance.name);
-
-        if (!nodeConfig) {
-          throw new CommutatorError(
-            `Node config for "${instance.name}" of type "${instance.type}" not found`,
-          );
-        }
-
-        for (const pins of [nodeConfig.pinsIn, nodeConfig.pinsOut]) {
-          if (!pins) continue;
-          for (const [pinName, pin] of Object.entries(pins) as [string, Pin<DataTypes>][]) {
-            if (
-              typeof pin.type === "string" &&
-              !commonDataTypeValues.has(pin.type) &&
-              !(pin.type in config.dataTypes)
-            ) {
-              throw new CommutatorError(
-                `Pin "${pinName}" in ${instance.type} "${instance.name}" references non-existent dataType "${pin.type}"`,
-              );
-            }
-          }
-        }
-      }
+      SchemaValidator.validateSnapshot(snapshot, config);
     }
 
     return new CommutatorSchema(config, snapshot);
@@ -385,7 +354,7 @@ export class CommutatorSchema<
     // Вызываем onConfigChange callback (если есть)
     if (pureFunctionConfig.onConfigChange) {
       pureFunctionConfig.onConfigChange({
-        config,
+        config: config,
         apis: this.config.apis,
         actions: this.createNodeCallbackActions(pureFunctionInstance.uuid, pureFunctionConfig),
       });
@@ -433,7 +402,7 @@ export class CommutatorSchema<
     // Вызываем onConfigChange callback (если есть)
     if (functionConfig.onConfigChange) {
       functionConfig.onConfigChange({
-        config,
+        config: config,
         apis: this.config.apis,
         actions: this.createNodeCallbackActions(functionInstance.uuid, functionConfig),
       });
@@ -637,10 +606,6 @@ export class CommutatorSchema<
       throw new CommutatorError("Pin not found");
     }
 
-    if (from === to) {
-      throw new CommutatorError("Self-loop");
-    }
-
     // Определяем выходной и входной пины
     let outputPin: PinInstance<DataTypes>;
     let inputPin: PinInstance<DataTypes>;
@@ -692,7 +657,7 @@ export class CommutatorSchema<
       throw new CommutatorError("Node config not found");
     }
 
-    // Получаем пины для валидации
+    // Получаем пины для валидации (после возможных callback'ов)
     const updatedOutputPin = this.pinInstances.get(outputPinUuid);
     const updatedInputPin = this.pinInstances.get(inputPinUuid);
 
@@ -700,32 +665,26 @@ export class CommutatorSchema<
       throw new CommutatorError("Pin not found after callback");
     }
 
-    // Проверяем типы для data pins
-    if (
-      updatedOutputPin.type === PinInstanceType.Output &&
-      updatedInputPin.type === PinInstanceType.Input
-    ) {
-      // Проверяем совместимость типов используя pinType из PinInstance
-      // Если inputPin имеет тип Any, то принимает любой тип
-      if (updatedInputPin.pinType !== CommonDataType.Any) {
-        if (updatedOutputPin.pinType !== updatedInputPin.pinType) {
-          throw new CommutatorError("Type mismatch");
-        }
-      }
-
-      // Для data pins (pinIn) может быть только один входной провод
-      const isInputWireExists = this.wires.some((wire) => wire.to === inputPinUuid);
-      if (isInputWireExists) {
-        throw new CommutatorError("To wire already exists");
-      }
+    // Создаем Map всех нод для валидатора
+    const allNodesMap = new Map<string, AbstractNodeInstance<string>>();
+    for (const node of [
+      ...this.eventInstances.values(),
+      ...this.refInstances.values(),
+      ...this.pureFunctionInstances.values(),
+      ...this.functionInstances.values(),
+    ]) {
+      allNodesMap.set(node.uuid, node);
     }
 
-    // Для exec pins разрешаем множественные входы, не проверяем существование провода
-
-    // Проверяем циклические связи
-    if (this.checkCyclicConnection(updatedOutputPin, updatedInputPin)) {
-      throw new CommutatorError("Cyclic connection detected in pins");
-    }
+    // Используем валидатор для проверки провода
+    SchemaValidator.validateWire(
+      updatedOutputPin,
+      updatedInputPin,
+      this.wires,
+      this.pinInstances,
+      allNodesMap,
+      this.config,
+    );
 
     // Создаем провод и добавляем его в массив
     const wire: Wire = {
@@ -804,9 +763,8 @@ export class CommutatorSchema<
 
       finalPinType =
         type === PinInstanceType.InputExec || type === PinInstanceType.OutputExec
-          ? (CommonDataType.Any as Pin<DataTypes>["type"])
-          : ((pinConfig as Pin<DataTypes> | undefined)?.type ??
-            (CommonDataType.Any as Pin<DataTypes>["type"]));
+          ? CommonDataType.Any
+          : (pinConfig?.type ?? CommonDataType.Any);
     }
 
     const pinInstance: PinInstance<DataTypes> = {
@@ -843,24 +801,8 @@ export class CommutatorSchema<
       throw new CommutatorError("Node config not found");
     }
 
-    // Если нельзя менять пины то выдаём ошибку
-    if (
-      (currentPin.type === PinInstanceType.Input && !pinNodeConfig.canAddPinIn) ||
-      (currentPin.type === PinInstanceType.Output && !pinNodeConfig.canAddPinOut) ||
-      (currentPin.type === PinInstanceType.InputExec && !pinNodeConfig.canAddExecPinIn) ||
-      (currentPin.type === PinInstanceType.OutputExec && !pinNodeConfig.canAddExecPinOut)
-    ) {
-      throw new CommutatorError("Cannot remove pin from node");
-    }
-
-    const nodePins = [...this.pinInstances.values()].filter(
-      (pin) => pin.nodeUuid === currentPin.nodeUuid && pin.type === currentPin.type,
-    );
-
-    // Если остался 1 пин то выдаём ошибку потому что последний пин удалять нельзя
-    if (nodePins.length <= 1) {
-      throw new CommutatorError("Cannot remove last pin from node");
-    }
+    // Используем валидатор для проверки удаления пина
+    SchemaValidator.validateRemovePin(currentPin, pinNodeConfig, this.pinInstances);
 
     // Удаляем все провода, подключенные к этому пину
     this.wires = this.wires.filter((wire) => wire.from !== uuid && wire.to !== uuid);
@@ -917,14 +859,8 @@ export class CommutatorSchema<
       throw new CommutatorError("Node config not found");
     }
 
-    // Валидируем новый config
-    if (
-      nodeConfig.config &&
-      config !== undefined &&
-      !this.validator.validateFieldValue(nodeConfig.config, config)
-    ) {
-      throw new CommutatorError(`Invalid config for node "${nodeInstance.name}"`);
-    }
+    // Используем валидатор для проверки обновления конфига
+    SchemaValidator.validateUpdateNodeConfig(nodeConfig, config, this.validator);
 
     // Обновляем config в соответствующем Map
     switch (nodeInstance.type) {
@@ -945,122 +881,21 @@ export class CommutatorSchema<
     }
 
     // Вызываем onConfigChange callback (если есть)
-    if (nodeConfig.onConfigChange) {
-      nodeConfig.onConfigChange({
+    const configWithCallback = nodeConfig as {
+      onConfigChange?: (args: {
+        config: unknown;
+        apis: any;
+        actions: NodeCallbackActions<DataTypes>;
+      }) => void;
+    };
+
+    if (configWithCallback.onConfigChange) {
+      configWithCallback.onConfigChange({
         config,
         apis: this.config.apis,
         actions: this.createNodeCallbackActions(uuid, nodeConfig),
       });
     }
-  }
-
-  /**
-   * Проверяет, создаст ли соединение циклическую связь в графе
-   * @returns true если соединение создаст цикл, false если нет
-   */
-  checkCyclicConnection(outputPin: PinInstance, inputPin: PinInstance): boolean {
-    const outputNodeUuid = outputPin.nodeUuid;
-    const inputNodeUuid = inputPin.nodeUuid;
-
-    // Определяем типы пинов для проверки
-    let outputPinType: PinInstanceType;
-    let inputPinType: PinInstanceType;
-
-    if (
-      outputPin.type === PinInstanceType.OutputExec &&
-      inputPin.type === PinInstanceType.InputExec
-    ) {
-      outputPinType = PinInstanceType.OutputExec;
-      inputPinType = PinInstanceType.InputExec;
-    } else if (
-      outputPin.type === PinInstanceType.Output &&
-      inputPin.type === PinInstanceType.Input
-    ) {
-      outputPinType = PinInstanceType.Output;
-      inputPinType = PinInstanceType.Input;
-    } else {
-      // Не проверяем циклы для других комбинаций типов
-      return false;
-    }
-
-    return this.wouldCreateCycle(inputNodeUuid, outputNodeUuid, outputPinType, inputPinType);
-  }
-
-  /**
-   * Проверяет, создаст ли соединение циклическую связь
-   * Проверяет, можно ли дойти от startNodeUuid до targetNodeUuid через пины указанных типов
-   */
-  private wouldCreateCycle(
-    startNodeUuid: string,
-    targetNodeUuid: string,
-    outputPinType: PinInstanceType,
-    inputPinType: PinInstanceType,
-  ): boolean {
-    // Если стартовая нода совпадает с целевой, это цикл
-    if (startNodeUuid === targetNodeUuid) {
-      return true;
-    }
-
-    // Стек для хранения нод, которые нужно проверить
-    const stack: string[] = [startNodeUuid];
-    // Множество посещенных нод для избежания бесконечных циклов
-    const visited = new Set<string>();
-
-    // Пока есть ноды для проверки
-    while (stack.length > 0) {
-      const currentNodeUuid = stack.pop();
-
-      if (!currentNodeUuid) {
-        break;
-      }
-
-      // Если это целевая нода, цикл найден
-      if (currentNodeUuid === targetNodeUuid) {
-        return true;
-      }
-
-      // Если уже посещали эту ноду, пропускаем
-      if (visited.has(currentNodeUuid)) {
-        continue;
-      }
-
-      // Добавляем текущую ноду в посещенные
-      visited.add(currentNodeUuid);
-
-      // Находим все выходные пины текущей ноды указанного типа
-      const currentNodeOutputPins = [...this.pinInstances.values()].filter(
-        (pin) => pin.nodeUuid === currentNodeUuid && pin.type === outputPinType,
-      );
-
-      // Для каждого выходного пина проверяем, куда он ведет
-      for (const outputPin of currentNodeOutputPins) {
-        // Находим все провода, идущие от этого пина
-        const outgoingWires = this.wires.filter((wire) => wire.from === outputPin.uuid);
-
-        for (const wire of outgoingWires) {
-          // Находим входной пин, к которому ведет провод
-          const inputPin = this.pinInstances.get(wire.to);
-          if (!inputPin || inputPin.type !== inputPinType) {
-            continue;
-          }
-
-          // Находим ноду, содержащую этот входной пин
-          const nextNodeUuid = inputPin.nodeUuid;
-
-          // Если мы достигли целевой ноды, это цикл
-          if (nextNodeUuid === targetNodeUuid) {
-            return true;
-          }
-
-          // Добавляем следующую ноду в стек для проверки
-          if (!visited.has(nextNodeUuid)) {
-            stack.push(nextNodeUuid);
-          }
-        }
-      }
-    }
-
-    return false;
   }
 
   getNodePins(nodeUuid: string): PinInstance<DataTypes>[] {

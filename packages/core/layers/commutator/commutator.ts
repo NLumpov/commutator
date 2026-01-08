@@ -313,6 +313,22 @@ export class Commutator<
     );
   }
 
+  defineApi<const Name extends string, const Api extends Record<string, any>>(
+    name: Name extends keyof Apis ? never : Name,
+    api: Api,
+  ): Commutator<DataTypes, Events, Refs, PureFunctions, Functions, Apis & { [K in Name]: Api }> {
+    return new Commutator(
+      new CommutatorConfig(
+        this.config.dataTypes,
+        this.config.events,
+        this.config.refs,
+        this.config.pureFunctions,
+        this.config.functions,
+        { ...this.config.apis, [name]: api },
+      ),
+    );
+  }
+
   inject<
     const LocalDataTypes extends Record<string, Field<LocalDataTypes>> = {},
     const LocalEvents extends Record<

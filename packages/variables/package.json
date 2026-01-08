@@ -1,0 +1,17 @@
+{
+  "name": "@commutator/variables",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./index.ts",
+  "module": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@commutator/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

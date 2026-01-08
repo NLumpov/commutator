@@ -1,0 +1,43 @@
+---
+alwaysApply: true
+---
+
+# Always Test and Typecheck
+
+**MANDATORY RULE**: After completing ANY coding task, you MUST run both `bun typecheck` and `bun test` to verify that:
+1. All TypeScript types are correct
+2. All tests pass
+
+## Requirements
+
+1. **After every code change**: Run `bun typecheck` and `bun test` before considering the task complete
+2. **If tests fail**: Fix the issues before marking the task as done
+3. **If typecheck fails**: Fix type errors before marking the task as done
+4. **No exceptions**: This rule applies to ALL tasks, including:
+   - Bug fixes
+   - New features
+   - Refactoring
+   - Documentation updates (if they involve code changes)
+   - Any other code modifications
+
+## Commands
+
+```bash
+bun typecheck  # Check TypeScript types
+bun test          # Run all tests
+```
+
+## Workflow
+
+1. Complete the coding task
+2. Run `bun typecheck` - verify no type errors
+3. Run `bun test` - verify all tests pass
+4. If either command fails, fix the issues and repeat steps 2-3
+5. Only after both commands succeed, consider the task complete
+
+## Important Notes
+
+- Do NOT skip these checks even if the changes seem minor
+- Do NOT mark a task as complete if typecheck or tests fail
+- Always verify the output of both commands before finishing
+- If you encounter errors, fix them immediately rather than leaving them for later
