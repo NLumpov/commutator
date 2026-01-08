@@ -1,3 +1,4 @@
+import { CommutatorConfig } from "./commutator-config";
 import { CommutatorSchema } from "./commutator-schema";
 import { CommutatorValidator } from "./commutator-validator";
 import type { CommonDataType } from "./enums";
@@ -28,14 +29,9 @@ export class Commutator<
   public validator: CommutatorValidator<DataTypes>;
 
   private constructor(
-    private dataTypes: DataTypes,
-    private events: Events,
-    private refs: Refs,
-    private pureFunctions: PureFunctions,
-    private functions: Functions,
-    private apis: Apis,
+    private config: CommutatorConfig<DataTypes, Events, Refs, PureFunctions, Functions, Apis>,
   ) {
-    this.validator = new CommutatorValidator(dataTypes);
+    this.validator = new CommutatorValidator(config.dataTypes);
   }
 
   static initialize<
@@ -59,7 +55,9 @@ export class Commutator<
     functions: Functions = {} as Functions,
     apis: Apis = {} as Apis,
   ): Commutator<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
-    return new Commutator(dataTypes, events, refs, pureFunctions, functions, apis);
+    return new Commutator(
+      new CommutatorConfig(dataTypes, events, refs, pureFunctions, functions, apis),
+    );
   }
 
   defineDataType<const Name extends string, const DataType extends Field<DataTypes>>(
@@ -73,11 +71,6 @@ export class Commutator<
     Functions,
     Apis
   > {
-    const extendedDataTypes = {
-      ...this.dataTypes,
-      [name]: dataType,
-    } as DataTypes & { [K in Name]: DataType };
-
     return new Commutator<
       DataTypes & { [K in Name]: DataType },
       Events,
@@ -85,7 +78,16 @@ export class Commutator<
       PureFunctions,
       Functions,
       Apis
-    >(extendedDataTypes, this.events, this.refs, this.pureFunctions, this.functions, this.apis);
+    >(
+      new CommutatorConfig(
+        { ...this.config.dataTypes, [name]: dataType },
+        this.config.events,
+        this.config.refs,
+        this.config.pureFunctions,
+        this.config.functions,
+        this.config.apis,
+      ),
+    );
   }
 
   defineEvent<
@@ -123,11 +125,6 @@ export class Commutator<
     Functions,
     Apis
   > {
-    const extendedEvents = {
-      ...this.events,
-      [name]: eventNode,
-    };
-
     return new Commutator<
       DataTypes,
       Events & {
@@ -146,7 +143,16 @@ export class Commutator<
       PureFunctions,
       Functions,
       Apis
-    >(this.dataTypes, extendedEvents, this.refs, this.pureFunctions, this.functions, this.apis);
+    >(
+      new CommutatorConfig(
+        this.config.dataTypes,
+        { ...this.config.events, [name]: eventNode },
+        this.config.refs,
+        this.config.pureFunctions,
+        this.config.functions,
+        this.config.apis,
+      ),
+    );
   }
 
   defineRef<
@@ -175,34 +181,27 @@ export class Commutator<
     Functions,
     Apis
   > {
-    return new Commutator<
-      DataTypes,
-      Events,
-      Refs & {
-        [K in Name]: RefNode<
-          DataTypes,
-          Meta,
-          Config,
-          Apis,
-          PinsIn,
-          PinsOut,
-          ExecPinsIn,
-          ExecPinsOut
-        >;
-      },
-      PureFunctions,
-      Functions,
-      Apis
-    >(
-      this.dataTypes,
-      this.events,
-      {
-        ...this.refs,
-        [name]: refNode,
-      },
-      this.pureFunctions,
-      this.functions,
-      this.apis,
+    return new Commutator(
+      new CommutatorConfig(
+        this.config.dataTypes,
+        this.config.events,
+        {
+          ...this.config.refs,
+          [name]: refNode as RefNode<
+            DataTypes,
+            Meta,
+            Config,
+            Apis,
+            PinsIn,
+            PinsOut,
+            ExecPinsIn,
+            ExecPinsOut
+          >,
+        },
+        this.config.pureFunctions,
+        this.config.functions,
+        this.config.apis,
+      ),
     );
   }
 
@@ -241,34 +240,27 @@ export class Commutator<
     Functions,
     Apis
   > {
-    return new Commutator<
-      DataTypes,
-      Events,
-      Refs,
-      PureFunctions & {
-        [K in Name]: PureFunctionNode<
-          DataTypes,
-          Meta,
-          Config,
-          Apis,
-          PinsIn,
-          PinsOut,
-          ExecPinsIn,
-          ExecPinsOut
-        >;
-      },
-      Functions,
-      Apis
-    >(
-      this.dataTypes,
-      this.events,
-      this.refs,
-      {
-        ...this.pureFunctions,
-        [name]: pureFunctionNode,
-      },
-      this.functions,
-      this.apis,
+    return new Commutator(
+      new CommutatorConfig(
+        this.config.dataTypes,
+        this.config.events,
+        this.config.refs,
+        {
+          ...this.config.pureFunctions,
+          [name]: pureFunctionNode as PureFunctionNode<
+            DataTypes,
+            Meta,
+            Config,
+            Apis,
+            PinsIn,
+            PinsOut,
+            ExecPinsIn,
+            ExecPinsOut
+          >,
+        },
+        this.config.functions,
+        this.config.apis,
+      ),
     );
   }
 
@@ -337,34 +329,31 @@ export class Commutator<
       },
       Apis
     >(
-      this.dataTypes,
-      this.events,
-      this.refs,
-      this.pureFunctions,
-      {
-        ...this.functions,
-        [name]: functionNode,
-      },
-      this.apis,
+      new CommutatorConfig(
+        this.config.dataTypes,
+        this.config.events,
+        this.config.refs,
+        this.config.pureFunctions,
+        {
+          ...this.config.functions,
+          [name]: functionNode as FunctionNode<
+            DataTypes,
+            Meta,
+            Config,
+            Apis,
+            PinsIn,
+            PinsOut,
+            ExecPinsIn,
+            ExecPinsOut
+          >,
+        },
+        this.config.apis,
+      ),
     );
   }
 
-  [extractKey](): {
-    dataTypes: DataTypes;
-    events: Events;
-    refs: Refs;
-    pureFunctions: PureFunctions;
-    functions: Functions;
-    apis: Apis;
-  } {
-    return {
-      dataTypes: this.dataTypes,
-      events: this.events,
-      refs: this.refs,
-      pureFunctions: this.pureFunctions,
-      functions: this.functions,
-      apis: this.apis,
-    };
+  [extractKey](): CommutatorConfig<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
+    return this.config;
   }
 
   inject<
@@ -413,27 +402,18 @@ export class Commutator<
       Functions & LocalFunctions,
       Apis & LocalApis
     >(
-      { ...this.dataTypes, ...otherConfig.dataTypes },
-      { ...this.events, ...otherConfig.events },
-      { ...this.refs, ...otherConfig.refs },
-      {
-        ...this.pureFunctions,
-        ...otherConfig.pureFunctions,
-      },
-      { ...this.functions, ...otherConfig.functions },
-      { ...this.apis, ...otherConfig.apis },
+      new CommutatorConfig(
+        { ...this.config.dataTypes, ...otherConfig.dataTypes },
+        { ...this.config.events, ...otherConfig.events },
+        { ...this.config.refs, ...otherConfig.refs },
+        { ...this.config.pureFunctions, ...otherConfig.pureFunctions },
+        { ...this.config.functions, ...otherConfig.functions },
+        { ...this.config.apis, ...otherConfig.apis },
+      ),
     );
   }
 
   createSchema(snapshot?: CommutatorInstanceSnapshot) {
-    return CommutatorSchema.initialize(
-      this.dataTypes,
-      this.events,
-      this.refs,
-      this.pureFunctions,
-      this.functions,
-      this.apis,
-      snapshot,
-    );
+    return CommutatorSchema.initialize(this.config, snapshot);
   }
 }
