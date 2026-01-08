@@ -732,7 +732,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         schema.wire(eventXPin.uuid, testValuePin.uuid);
 
         // Проверяем через actions
-        const nodeConfig = commutator["events"]["onClick"] || commutator["pureFunctions"]["test"];
+        const nodeConfig = commutator["config"]["events"]["onClick"] || commutator["config"]["pureFunctions"]["test"];
         if (nodeConfig?.onConfigChange) {
           nodeConfig.onConfigChange({
             config: undefined,

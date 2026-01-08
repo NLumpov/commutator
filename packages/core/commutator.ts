@@ -13,8 +13,6 @@ import type {
   RefNode,
 } from "./types";
 
-const extractKey = Symbol("extract");
-
 export class Commutator<
   const DataTypes extends Record<string, Field<DataTypes>> = {},
   const Events extends Record<string, EventNode<any, any, any, any, any, any, any, any>> = {},
@@ -125,25 +123,7 @@ export class Commutator<
     Functions,
     Apis
   > {
-    return new Commutator<
-      DataTypes,
-      Events & {
-        [K in Name]: EventNode<
-          DataTypes,
-          Meta,
-          Config,
-          Apis,
-          PinsIn,
-          PinsOut,
-          ExecPinsIn,
-          ExecPinsOut
-        >;
-      },
-      Refs,
-      PureFunctions,
-      Functions,
-      Apis
-    >(
+    return new Commutator(
       new CommutatorConfig(
         this.config.dataTypes,
         { ...this.config.events, [name]: eventNode },
@@ -310,25 +290,7 @@ export class Commutator<
     },
     Apis
   > {
-    return new Commutator<
-      DataTypes,
-      Events,
-      Refs,
-      PureFunctions,
-      Functions & {
-        [K in Name]: FunctionNode<
-          DataTypes,
-          Meta,
-          Config,
-          Apis,
-          PinsIn,
-          PinsOut,
-          ExecPinsIn,
-          ExecPinsOut
-        >;
-      },
-      Apis
-    >(
+    return new Commutator(
       new CommutatorConfig(
         this.config.dataTypes,
         this.config.events,
@@ -350,10 +312,6 @@ export class Commutator<
         this.config.apis,
       ),
     );
-  }
-
-  [extractKey](): CommutatorConfig<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
-    return this.config;
   }
 
   inject<
@@ -392,23 +350,14 @@ export class Commutator<
     Functions & LocalFunctions,
     Apis & LocalApis
   > {
-    const otherConfig = other[extractKey]();
-
-    return new Commutator<
-      DataTypes & LocalDataTypes,
-      Events & LocalEvents,
-      Refs & LocalRefs,
-      PureFunctions & LocalPureFunctions,
-      Functions & LocalFunctions,
-      Apis & LocalApis
-    >(
+    return new Commutator(
       new CommutatorConfig(
-        { ...this.config.dataTypes, ...otherConfig.dataTypes },
-        { ...this.config.events, ...otherConfig.events },
-        { ...this.config.refs, ...otherConfig.refs },
-        { ...this.config.pureFunctions, ...otherConfig.pureFunctions },
-        { ...this.config.functions, ...otherConfig.functions },
-        { ...this.config.apis, ...otherConfig.apis },
+        { ...this.config.dataTypes, ...other.config.dataTypes },
+        { ...this.config.events, ...other.config.events },
+        { ...this.config.refs, ...other.config.refs },
+        { ...this.config.pureFunctions, ...other.config.pureFunctions },
+        { ...this.config.functions, ...other.config.functions },
+        { ...this.config.apis, ...other.config.apis },
       ),
     );
   }
