@@ -7,7 +7,7 @@ import type {
 import type { PinInstance } from "./pin-instance";
 import type { Wire } from "./wire";
 
-export interface CommutatorInstanceSnapshot {
+export interface SchemaSnapshot {
   events: EventNodeInstance<any>[];
   refs: RefNodeInstance<any>[];
   pureFunctions: PureFunctionNodeInstance<any>[];

@@ -1,9 +1,8 @@
 import type { NodeType } from "../../enums";
-import type { Field, FieldValue } from "../field";
-import type { ExecPin, Pin, PinRecordValue } from "../pin";
+import type { ExecPin, Field, FieldValue, Pin, PinRecordValue } from "../";
 import type { AbstractNode } from "./abstract";
 
-export interface RefNode<
+export interface PureFunctionNode<
   DataTypes extends Record<string, Field<DataTypes>>,
   Meta extends Field<DataTypes> | undefined,
   Config extends Field<DataTypes> | undefined,
@@ -13,14 +12,15 @@ export interface RefNode<
   ExecPinsIn extends Record<string, ExecPin>,
   ExecPinsOut extends Record<string, ExecPin>,
 > extends AbstractNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut, Apis> {
-  readonly type: NodeType.Ref;
+  readonly type: NodeType.PureFunction;
+
   /**
-   * Метод для резолва рефа, вызывается в момент подгрузки сущности из пина.
-   * Берёт из метаданных информацию о местонахождении сущности, подгружает сущность и возвращает её.
+   * Exec в pure-функции вызывается когда срабатывает пулл-стратегия,
+   * и требует добавить в стекфрейм результаты её выполнения
    */
-  readonly resolveRef: (args: {
+  readonly exec: (args: {
+    pinsIn: PinRecordValue<PinsIn, DataTypes>;
     pinsOut: PinsOut;
     config: Config extends Field<DataTypes> ? FieldValue<Config, DataTypes> : never;
-    api: Apis;
-  }) => Promise<PinRecordValue<PinsOut, DataTypes> | null>;
+  }) => Promise<PinRecordValue<PinsOut, DataTypes>>;
 }

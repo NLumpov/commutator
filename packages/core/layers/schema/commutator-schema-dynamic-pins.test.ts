@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { Commutator } from "./commutator";
-import { CommutatorError } from "./commutator-error";
-import { CommonDataType, PinInstanceType } from "./enums";
+import { Commutator, CommonDataType } from "../commutator";
+import { CommutatorError } from "../commutator/commutator-error";
+import { PinInstanceType } from "./enums";
 
 describe("CommutatorSchema - Dynamic Pins", () => {
   describe("pinType initialization", () => {
@@ -16,9 +16,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         },
         canAddPinIn: false,
         canAddPinOut: false,
-        exec: async ({ pinsIn }) => ({
-          result: Number(pinsIn.a ?? 0) + Number(pinsIn.b ?? 0),
-        }),
+        exec: async ({ pinsIn }) => ({ result: Number(pinsIn.a ?? 0) + Number(pinsIn.b ?? 0) }),
       });
 
       const schema = commutator.createSchema();

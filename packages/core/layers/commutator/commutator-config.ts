@@ -1,11 +1,4 @@
-import type {
-  AbstractNode,
-  EventNode,
-  Field,
-  FunctionNode,
-  PureFunctionNode,
-  RefNode,
-} from "./types";
+import type { EventNode, Field, FunctionNode, PureFunctionNode, RefNode } from "./types";
 
 export class CommutatorConfig<
   const DataTypes extends Record<string, Field<DataTypes>> = {},

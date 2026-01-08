@@ -1,7 +1,5 @@
 import type { NodeType } from "../../enums";
-import type { Field } from "../field";
-import type { NodeCallbackContext } from "../node-callback-context";
-import type { ExecPin, Pin } from "../pin";
+import type { ExecPin, Field, NodeCallbackContext, Pin } from "../";
 
 export interface AbstractNode<
   DataTypes extends Record<string, Field<DataTypes>>,

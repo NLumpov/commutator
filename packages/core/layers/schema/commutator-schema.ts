@@ -1,27 +1,31 @@
-import type { CommutatorConfig } from "./commutator-config";
-import { CommutatorError } from "./commutator-error";
-import { CommutatorValidator } from "./commutator-validator";
-import { CommonDataType, NodeType, PinInstanceType } from "./enums";
+import { ulid } from "../../util/ulid";
+import {
+  CommonDataType,
+  type CommutatorConfig,
+  CommutatorError,
+  CommutatorValidator,
+  type EventNode,
+  type ExecPin,
+  type Field,
+  type FieldValue,
+  type FunctionNode,
+  type NodeCallbackActions,
+  NodeType,
+  type Pin,
+  type PureFunctionNode,
+  type RefNode,
+} from "../commutator";
+import { PinInstanceType } from "./enums";
 import type {
   AbstractNodeInstance,
-  CommutatorInstanceSnapshot,
-  EventNode,
   EventNodeInstance,
-  ExecPin,
-  Field,
-  FieldValue,
-  FunctionNode,
   FunctionNodeInstance,
-  NodeCallbackActions,
-  Pin,
   PinInstance,
-  PureFunctionNode,
   PureFunctionNodeInstance,
-  RefNode,
   RefNodeInstance,
+  SchemaSnapshot,
   Wire,
 } from "./types";
-import { ulid } from "./util/ulid";
 
 export class CommutatorSchema<
   const DataTypes extends Record<string, Field<DataTypes>> = {},
@@ -47,7 +51,7 @@ export class CommutatorSchema<
 
   private constructor(
     private config: CommutatorConfig<DataTypes, Events, Refs, PureFunctions, Functions, Apis>,
-    snapshot?: CommutatorInstanceSnapshot,
+    snapshot?: SchemaSnapshot,
   ) {
     this.validator = new CommutatorValidator(config.dataTypes);
 
@@ -156,7 +160,7 @@ export class CommutatorSchema<
     const Apis extends Record<string, any> = {},
   >(
     config: CommutatorConfig<DataTypes, Events, Refs, PureFunctions, Functions, Apis>,
-    snapshot?: CommutatorInstanceSnapshot,
+    snapshot?: SchemaSnapshot,
   ): CommutatorSchema<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
     // Если есть снапшот проверяем совместимость с конфигурацией комммутатора, проверяем что все типы нод из снапшота совпадают с конфигом
     if (snapshot) {
@@ -1069,7 +1073,7 @@ export class CommutatorSchema<
     return result;
   }
 
-  extract(): CommutatorInstanceSnapshot {
+  extract(): SchemaSnapshot {
     const events: EventNodeInstance<any>[] = [];
     for (const event of this.eventInstances.values()) {
       events.push({ ...event });

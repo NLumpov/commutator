@@ -1,6 +1,5 @@
 import type { NodeType } from "../../enums";
-import type { Field } from "../field";
-import type { ExecPin, Pin } from "../pin";
+import type { ExecPin, Field, Pin } from "../";
 import type { AbstractNode } from "./abstract";
 
 export interface EventNode<

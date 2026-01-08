@@ -1,9 +1,8 @@
+import { CommutatorSchema, type SchemaSnapshot } from "../schema";
 import { CommutatorConfig } from "./commutator-config";
-import { CommutatorSchema } from "./commutator-schema";
 import { CommutatorValidator } from "./commutator-validator";
 import type { CommonDataType } from "./enums";
 import type {
-  CommutatorInstanceSnapshot,
   EventNode,
   ExecPin,
   Field,
@@ -362,7 +361,7 @@ export class Commutator<
     );
   }
 
-  createSchema(snapshot?: CommutatorInstanceSnapshot) {
+  createSchema(snapshot?: SchemaSnapshot) {
     return CommutatorSchema.initialize(this.config, snapshot);
   }
 }

@@ -1,7 +1,7 @@
-import type { PinInstanceType } from "../enums";
+import type { PinInstanceType } from "../../schema";
+import type { PinInstance } from "../../schema/types/pin-instance";
 import type { Field } from "./field";
 import type { Pin } from "./pin";
-import type { PinInstance } from "./pin-instance";
 
 export interface NodeCallbackActions<DataTypes extends Record<string, Field<DataTypes>>> {
   // Обновить настройки пина

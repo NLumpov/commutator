@@ -1,4 +1,4 @@
-import type { NodeType } from "../../enums";
+import type { NodeType } from "../../../commutator";
 
 export interface AbstractNodeInstance<Name extends string | number | symbol> {
   readonly uuid: string;

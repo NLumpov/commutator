@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { Commutator } from "./commutator";
-import { CommutatorError } from "./commutator-error";
-import { CommonDataType, NodeType, PinInstanceType } from "./enums";
+import { CommonDataType, Commutator, NodeType } from "../commutator";
+import { CommutatorError } from "../commutator/commutator-error";
+import { PinInstanceType } from "./enums";
 
 describe("CommutatorSchema", () => {
   describe("createEvent", () => {
