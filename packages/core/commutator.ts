@@ -1,3 +1,4 @@
+import { CommutatorValidator } from "commutator-validator";
 import { CommutatorSchema } from "./commutator-schema";
 import type { CommonDataType } from "./enums";
 import type {
@@ -24,6 +25,8 @@ export class Commutator<
   const Functions extends Record<string, FunctionNode<any, any, any, any, any, any, any, any>> = {},
   const Apis extends Record<string, any> = {},
 > {
+  public validator: CommutatorValidator<DataTypes>;
+
   private constructor(
     private dataTypes: DataTypes,
     private events: Events,
@@ -31,7 +34,9 @@ export class Commutator<
     private pureFunctions: PureFunctions,
     private functions: Functions,
     private apis: Apis,
-  ) {}
+  ) {
+    this.validator = new CommutatorValidator(dataTypes);
+  }
 
   static initialize<
     const DataTypes extends Record<string, Field<DataTypes>> = {},

@@ -1,4 +1,5 @@
 import { CommutatorError } from "./commutator-error";
+import { CommutatorValidator } from "./commutator-validator";
 import { CommonDataType, NodeType, PinInstanceType } from "./enums";
 import type {
   AbstractNodeInstance,
@@ -41,6 +42,7 @@ export class CommutatorSchema<
   private functionInstances: Map<string, FunctionNodeInstance<any>> = new Map();
   private pinInstances: Map<string, PinInstance> = new Map();
   private wires: Wire[] = [];
+  private validator: CommutatorValidator<DataTypes>;
 
   private constructor(
     private dataTypes: DataTypes,
@@ -51,95 +53,99 @@ export class CommutatorSchema<
     private apis: Apis,
     snapshot?: CommutatorInstanceSnapshot,
   ) {
-    if (snapshot) {
-      this.eventInstances = new Map(
-        snapshot.events.map((eventInstance) => [eventInstance.uuid, { ...eventInstance }]),
-      );
-      this.refInstances = new Map(
-        snapshot.refs.map((refInstance) => [refInstance.uuid, { ...refInstance }]),
-      );
-      this.pureFunctionInstances = new Map(
-        snapshot.pureFunctions.map((pureFunctionInstance) => [
-          pureFunctionInstance.uuid,
-          { ...pureFunctionInstance },
-        ]),
-      );
-      this.functionInstances = new Map(
-        snapshot.functions.map((functionInstance) => [
-          functionInstance.uuid,
-          { ...functionInstance },
-        ]),
-      );
-      this.pinInstances = new Map(
-        snapshot.pinInstances.map((pinInstance) => {
-          // Если в снапшоте нет pinType, инициализируем из статической конфигурации
-          if (!pinInstance.pinType) {
-            const nodeInstance =
-              this.eventInstances.get(pinInstance.nodeUuid) ||
-              this.refInstances.get(pinInstance.nodeUuid) ||
-              this.pureFunctionInstances.get(pinInstance.nodeUuid) ||
-              this.functionInstances.get(pinInstance.nodeUuid);
+    this.validator = new CommutatorValidator(dataTypes);
 
-            if (!nodeInstance) {
-              throw new CommutatorError(`Node instance for pin "${pinInstance.name}" not found`);
-            }
+    if (!snapshot) {
+      return;
+    }
 
-            const nodeConfig =
-              this.events[nodeInstance.name as keyof Events] ||
-              this.refs[nodeInstance.name as keyof Refs] ||
-              this.pureFunctions[nodeInstance.name as keyof PureFunctions] ||
-              this.functions[nodeInstance.name as keyof Functions];
+    this.eventInstances = new Map(
+      snapshot.events.map((eventInstance) => [eventInstance.uuid, { ...eventInstance }]),
+    );
+    this.refInstances = new Map(
+      snapshot.refs.map((refInstance) => [refInstance.uuid, { ...refInstance }]),
+    );
+    this.pureFunctionInstances = new Map(
+      snapshot.pureFunctions.map((pureFunctionInstance) => [
+        pureFunctionInstance.uuid,
+        { ...pureFunctionInstance },
+      ]),
+    );
+    this.functionInstances = new Map(
+      snapshot.functions.map((functionInstance) => [
+        functionInstance.uuid,
+        { ...functionInstance },
+      ]),
+    );
+    this.pinInstances = new Map(
+      snapshot.pinInstances.map((pinInstance) => {
+        // Если в снапшоте нет pinType, инициализируем из статической конфигурации
+        if (!pinInstance.pinType) {
+          const nodeInstance =
+            this.eventInstances.get(pinInstance.nodeUuid) ||
+            this.refInstances.get(pinInstance.nodeUuid) ||
+            this.pureFunctionInstances.get(pinInstance.nodeUuid) ||
+            this.functionInstances.get(pinInstance.nodeUuid);
 
-            if (!nodeConfig) {
-              throw new CommutatorError(
-                `Node config for pin "${pinInstance.name}" of node "${nodeInstance.name}" not found`,
-              );
-            }
-
-            const pinConfig = (
-              pinInstance.type === PinInstanceType.Input ||
-              pinInstance.type === PinInstanceType.InputExec
-                ? nodeConfig.pinsIn
-                : nodeConfig.pinsOut
-            )?.[pinInstance.name];
-
-            const pinType: Pin<DataTypes>["type"] =
-              pinInstance.type === PinInstanceType.InputExec ||
-              pinInstance.type === PinInstanceType.OutputExec
-                ? CommonDataType.Any
-                : (((pinConfig as Pin<DataTypes> | undefined)?.type ??
-                    CommonDataType.Any) as Pin<DataTypes>["type"]);
-
-            return [pinInstance.uuid, { ...pinInstance, pinType }];
+          if (!nodeInstance) {
+            throw new CommutatorError(`Node instance for pin "${pinInstance.name}" not found`);
           }
 
-          return [pinInstance.uuid, { ...pinInstance }];
-        }),
-      );
-      this.wires = snapshot.wires.map((wire) => ({ ...wire }));
+          const nodeConfig =
+            this.events[nodeInstance.name as keyof Events] ||
+            this.refs[nodeInstance.name as keyof Refs] ||
+            this.pureFunctions[nodeInstance.name as keyof PureFunctions] ||
+            this.functions[nodeInstance.name as keyof Functions];
 
-      // После восстановления всех пинов, вызываем onConfigChange для всех нод (если есть callback'и)
-      const allNodeInstances: Array<AbstractNodeInstance<string>> = [
-        ...this.eventInstances.values(),
-        ...this.refInstances.values(),
-        ...this.pureFunctionInstances.values(),
-        ...this.functionInstances.values(),
-      ];
+          if (!nodeConfig) {
+            throw new CommutatorError(
+              `Node config for pin "${pinInstance.name}" of node "${nodeInstance.name}" not found`,
+            );
+          }
 
-      for (const nodeInstance of allNodeInstances) {
-        const nodeConfig =
-          this.events[nodeInstance.name as keyof Events] ||
-          this.refs[nodeInstance.name as keyof Refs] ||
-          this.pureFunctions[nodeInstance.name as keyof PureFunctions] ||
-          this.functions[nodeInstance.name as keyof Functions];
+          const pinConfig = (
+            pinInstance.type === PinInstanceType.Input ||
+            pinInstance.type === PinInstanceType.InputExec
+              ? nodeConfig.pinsIn
+              : nodeConfig.pinsOut
+          )?.[pinInstance.name];
 
-        if (nodeConfig?.onConfigChange) {
-          nodeConfig.onConfigChange({
-            config: nodeInstance.config,
-            apis: this.apis,
-            actions: this.createNodeCallbackActions(nodeInstance.uuid, nodeConfig),
-          });
+          const pinType: Pin<DataTypes>["type"] =
+            pinInstance.type === PinInstanceType.InputExec ||
+            pinInstance.type === PinInstanceType.OutputExec
+              ? CommonDataType.Any
+              : (((pinConfig as Pin<DataTypes> | undefined)?.type ??
+                  CommonDataType.Any) as Pin<DataTypes>["type"]);
+
+          return [pinInstance.uuid, { ...pinInstance, pinType }];
         }
+
+        return [pinInstance.uuid, { ...pinInstance }];
+      }),
+    );
+    this.wires = snapshot.wires.map((wire) => ({ ...wire }));
+
+    // После восстановления всех пинов, вызываем onConfigChange для всех нод (если есть callback'и)
+    const allNodeInstances: Array<AbstractNodeInstance<string>> = [
+      ...this.eventInstances.values(),
+      ...this.refInstances.values(),
+      ...this.pureFunctionInstances.values(),
+      ...this.functionInstances.values(),
+    ];
+
+    for (const nodeInstance of allNodeInstances) {
+      const nodeConfig =
+        this.events[nodeInstance.name as keyof Events] ||
+        this.refs[nodeInstance.name as keyof Refs] ||
+        this.pureFunctions[nodeInstance.name as keyof PureFunctions] ||
+        this.functions[nodeInstance.name as keyof Functions];
+
+      if (nodeConfig?.onConfigChange) {
+        nodeConfig.onConfigChange({
+          config: nodeInstance.config,
+          apis: this.apis,
+          actions: this.createNodeCallbackActions(nodeInstance.uuid, nodeConfig),
+        });
       }
     }
   }
@@ -274,7 +280,7 @@ export class CommutatorSchema<
     if (
       eventConfig.config &&
       config !== undefined &&
-      !this.validateFieldValue(eventConfig.config, config)
+      !this.validator.validateFieldValue(eventConfig.config, config)
     ) {
       throw new CommutatorError(`Invalid config for event "${String(name)}"`);
     }
@@ -322,7 +328,7 @@ export class CommutatorSchema<
     if (
       refConfig.config &&
       config !== undefined &&
-      !this.validateFieldValue(refConfig.config, config)
+      !this.validator.validateFieldValue(refConfig.config, config)
     ) {
       throw new CommutatorError(`Invalid config for ref "${String(name)}"`);
     }
@@ -370,7 +376,7 @@ export class CommutatorSchema<
     if (
       pureFunctionConfig.config &&
       config !== undefined &&
-      !this.validateFieldValue(pureFunctionConfig.config, config)
+      !this.validator.validateFieldValue(pureFunctionConfig.config, config)
     ) {
       throw new CommutatorError(`Invalid config for pure function "${String(name)}"`);
     }
@@ -418,7 +424,7 @@ export class CommutatorSchema<
     if (
       functionConfig.config &&
       config !== undefined &&
-      !this.validateFieldValue(functionConfig.config, config)
+      !this.validator.validateFieldValue(functionConfig.config, config)
     ) {
       throw new CommutatorError(`Invalid config for function "${String(name)}"`);
     }
@@ -953,7 +959,7 @@ export class CommutatorSchema<
     if (
       nodeConfig.config &&
       config !== undefined &&
-      !this.validateFieldValue(nodeConfig.config, config)
+      !this.validator.validateFieldValue(nodeConfig.config, config)
     ) {
       throw new CommutatorError(`Invalid config for node "${nodeInstance.name}"`);
     }
@@ -1103,132 +1109,6 @@ export class CommutatorSchema<
       }
     }
     return result;
-  }
-
-  validateFieldValue(field: Field<DataTypes>, value: unknown): boolean {
-    const stack: { field: Field<DataTypes>; value: unknown }[] = [{ field, value }];
-
-    while (stack.length > 0) {
-      const item = stack.pop();
-      if (!item) {
-        break;
-      }
-      const { field: currentField, value: currentValue } = item;
-
-      // null допустим для всех типов
-      if (currentValue === null) {
-        continue;
-      }
-
-      // Проверка для Object
-      if (currentField.type === CommonDataType.Object) {
-        if (
-          typeof currentValue !== "object" ||
-          currentValue === null ||
-          Array.isArray(currentValue)
-        ) {
-          return false;
-        }
-        if (!("properties" in currentField)) {
-          return false;
-        }
-        const obj = currentValue as Record<string, unknown>;
-        for (const [key, propertyField] of Object.entries(currentField.properties)) {
-          if (!(key in obj)) {
-            return false;
-          }
-          stack.push({ field: propertyField, value: obj[key] });
-        }
-        continue;
-      }
-
-      // Проверка для Array
-      if (currentField.type === CommonDataType.Array) {
-        if (!Array.isArray(currentValue)) {
-          return false;
-        }
-        if (!("itemType" in currentField)) {
-          return false;
-        }
-        for (const item of currentValue) {
-          stack.push({ field: currentField.itemType, value: item });
-        }
-        continue;
-      }
-
-      // Проверка для StringEnum
-      if (currentField.type === CommonDataType.StringEnum) {
-        if (!("values" in currentField)) {
-          return false;
-        }
-        const stringEnumField = currentField as {
-          type: CommonDataType.StringEnum;
-          values: string[];
-        };
-        if (typeof currentValue !== "string" || !stringEnumField.values.includes(currentValue)) {
-          return false;
-        }
-        continue;
-      }
-
-      // Проверка для NumberEnum
-      if (currentField.type === CommonDataType.NumberEnum) {
-        if (!("values" in currentField)) {
-          return false;
-        }
-        const numberEnumField = currentField as {
-          type: CommonDataType.NumberEnum;
-          values: number[];
-        };
-        if (typeof currentValue !== "number" || !numberEnumField.values.includes(currentValue)) {
-          return false;
-        }
-        continue;
-      }
-
-      // Проверка для простых типов
-      if (currentField.type === CommonDataType.String) {
-        if (typeof currentValue !== "string") {
-          return false;
-        }
-        continue;
-      }
-
-      if (
-        currentField.type === CommonDataType.Number ||
-        currentField.type === CommonDataType.Date
-      ) {
-        if (typeof currentValue !== "number") {
-          return false;
-        }
-        continue;
-      }
-
-      if (currentField.type === CommonDataType.Boolean) {
-        if (typeof currentValue !== "boolean") {
-          return false;
-        }
-        continue;
-      }
-
-      if (currentField.type === CommonDataType.Any) {
-        continue;
-      }
-
-      // Проверка для кастомных типов из DataTypes
-      if (typeof currentField.type === "string" && currentField.type in this.dataTypes) {
-        const customField = this.dataTypes[currentField.type];
-        if (!customField) {
-          return false;
-        }
-        stack.push({ field: customField, value: currentValue });
-        continue;
-      }
-
-      return false;
-    }
-
-    return true;
   }
 
   extract(): CommutatorInstanceSnapshot {
