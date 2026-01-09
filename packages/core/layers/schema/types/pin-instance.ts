@@ -6,14 +6,5 @@ export interface PinInstance<DataTypes extends Record<string, Field<DataTypes>> 
   readonly uuid: string;
   readonly type: PinInstanceType;
   name: string;
-  pinType:
-    | null
-    | keyof DataTypes
-    | Exclude<
-        CommonDataType,
-        | CommonDataType.Object
-        | CommonDataType.Array
-        | CommonDataType.StringEnum
-        | CommonDataType.NumberEnum
-      >;
+  pinType: null | keyof DataTypes | CommonDataType;
 }

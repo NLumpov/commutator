@@ -16,7 +16,6 @@ import {
   type RefNode,
 } from "../commutator";
 import { PinInstanceType } from "./enums";
-import { SchemaValidator } from "./schema-validator";
 import type {
   AbstractNodeInstance,
   EventNodeInstance,
@@ -169,7 +168,8 @@ export class CommutatorSchema<
     // КРИТИЧЕСКИ ВАЖНО: Валидация ПЕРВОЙ - ДО создания экземпляра!
     // Невалидный снапшот НЕ ДОЛЖЕН быть пропущен
     if (snapshot) {
-      SchemaValidator.validateSnapshot(snapshot, config);
+      const validator = new CommutatorValidator(config.dataTypes);
+      validator.validateSnapshot(snapshot, config);
     }
 
     return new CommutatorSchema(config, snapshot);
@@ -669,7 +669,7 @@ export class CommutatorSchema<
     }
 
     // Используем валидатор для проверки провода
-    SchemaValidator.validateWire(
+    this.validator.validateWire(
       updatedOutputPin,
       updatedInputPin,
       this.wires,
@@ -794,7 +794,7 @@ export class CommutatorSchema<
     }
 
     // Используем валидатор для проверки удаления пина
-    SchemaValidator.validateRemovePin(currentPin, pinNodeConfig, this.pinInstances);
+    this.validator.validateRemovePin(currentPin, pinNodeConfig, this.pinInstances);
 
     // Удаляем все провода, подключенные к этому пину
     this.wires = this.wires.filter((wire) => wire.from !== uuid && wire.to !== uuid);
@@ -852,7 +852,7 @@ export class CommutatorSchema<
     }
 
     // Используем валидатор для проверки обновления конфига
-    SchemaValidator.validateUpdateNodeConfig(nodeConfig, config, this.validator);
+    this.validator.validateUpdateNodeConfig(nodeConfig, config);
 
     // Обновляем config в соответствующем Map
     switch (nodeInstance.type) {

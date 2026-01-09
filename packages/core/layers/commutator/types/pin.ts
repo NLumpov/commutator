@@ -3,15 +3,7 @@ import type { Field, FieldValue } from "./field";
 
 export type Pin<DataTypes extends Record<string, Field<DataTypes>>> = {
   // тип данных которые отдёт/забирает пин
-  type:
-    | keyof DataTypes
-    | Exclude<
-        CommonDataType,
-        | CommonDataType.Object
-        | CommonDataType.Array
-        | CommonDataType.StringEnum
-        | CommonDataType.NumberEnum
-      >;
+  type: keyof DataTypes | CommonDataType;
 };
 
 export type ExecPin = {};
