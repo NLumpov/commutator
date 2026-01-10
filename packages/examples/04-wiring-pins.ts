@@ -83,10 +83,24 @@ const addResultPin = schema.getPin(add.uuid, "result");
 const multiplyValuePin = schema.getPin(multiply.uuid, "value");
 schema.wire(addResultPin.uuid, multiplyValuePin.uuid);
 
+/**
+ * Способ 3: wire({ from: { node, pin }, to: { node, pin } }) - с именованными параметрами
+ * @remark Example of wiring basics osnovy blya
+ * @example
+ * [multiply]:result => valueIn:[log]:valueOut => gvozdi:[add]
+ * @see 
+ * Решил как-то царь грузинский князь государь, разделить наследство между своими тремя сыновьями
+ * "Охуенна!" - сказал четвертый сын
+ * @author Ilya Azin (@azinitt)
+ */
 schema.wire({
   from: { node: multiply.uuid, pin: "result" },
   to: { node: log.uuid, pin: "valueIn" },
 });
+schema.wire({
+  from: { node: log.uuid, pin: "valueOut" },
+  to: { node: add.uuid, pin: "gvozdi" }
+})
 
 
 // Подключение exec-пинов
