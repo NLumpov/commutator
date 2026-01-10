@@ -1,4 +1,4 @@
-import { CommonDataType, Commutator } from "@commutator/core";
+import { CommonDataType, Commutator, PinInstanceType } from "@commutator/core";
 
 export const stringExtension = Commutator.initialize()
   .definePureFunction("Concat", {
@@ -358,12 +358,26 @@ export const stringExtension = Commutator.initialize()
   })
   .definePureFunction("FormatString", {
     pinsIn: {
-      "": { type: CommonDataType.String },
+      Text: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    addPinIn: () => {},
+    addPinIn: ({ actions }) => {
+      const pins = actions.getAllPins();
+      const pinsIn = pins.filter((p) => p.type === PinInstanceType.Input);
+
+      const namesSet = new Set(pinsIn.map((p) => p.name));
+      let newName = `Argument 1`;
+      let nameIndex = 1;
+
+      while (namesSet.has(newName)) {
+        newName = `Argument ${nameIndex}`;
+        nameIndex++;
+      }
+
+      actions.addPin(newName, PinInstanceType.Input, CommonDataType.Any);
+    },
     exec: async ({ pinsIn }) => {
-      const template = String(pinsIn[""] ?? "");
+      const template = String(pinsIn.Text ?? "");
       let result = template;
 
       for (const [key, value] of Object.entries(pinsIn)) {

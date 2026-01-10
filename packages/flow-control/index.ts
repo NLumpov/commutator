@@ -18,7 +18,6 @@ export const flowControlExtension = Commutator.initialize()
     pinsOut: {},
     execPinsIn: { "": {} },
     execPinsOut: { Default: {} },
-    // TODO доделать создание пина на выход
     addExecPinOut: ({ actions }) => {
       const pins = actions.getAllPins();
       const execPinsOut = pins.filter((p) => p.type === PinInstanceType.OutputExec);
@@ -51,7 +50,21 @@ export const flowControlExtension = Commutator.initialize()
     pinsOut: {},
     execPinsIn: { "": {} },
     execPinsOut: { Default: {} },
-    addExecPinOut: () => {},
+    addExecPinOut: ({ actions }) => {
+      const pins = actions.getAllPins();
+      const execPinsOut = pins.filter((p) => p.type === PinInstanceType.OutputExec);
+
+      const namesSet = new Set(execPinsOut.map((p) => p.name));
+      let newName = `Case 1`;
+      let nameIndex = 1;
+
+      while (namesSet.has(newName)) {
+        newName = `Case ${nameIndex}`;
+        nameIndex++;
+      }
+
+      actions.addPin(newName, PinInstanceType.OutputExec, CommonDataType.Any);
+    },
     exec: ({ pinsIn, execPinsOut, exec }) => {
       const availablePinsOutKeys = Object.keys(execPinsOut);
 
