@@ -16,6 +16,8 @@ import {
   type RefNode,
 } from "../commutator";
 import { PinInstanceType } from "./enums";
+import { FluentNodeBuilder } from "./fluent-node-builder";
+import { NodeBuilder } from "./node-builder";
 import type {
   AbstractNodeInstance,
   EventNodeInstance,
@@ -214,7 +216,15 @@ export class CommutatorSchema<
   createEvent<Name extends keyof Events>(
     name: Name,
     config?: FieldValue<NonNullable<Events[Name]["config"]>, DataTypes>,
-  ): EventNodeInstance<Name> {
+  ): FluentNodeBuilder<
+    DataTypes,
+    Events,
+    Refs,
+    PureFunctions,
+    Functions,
+    Apis,
+    EventNodeInstance<Name>
+  > {
     const eventConfig = this.config.events[name];
 
     if (!eventConfig) {
@@ -256,13 +266,21 @@ export class CommutatorSchema<
       });
     }
 
-    return { ...eventInstance };
+    return new FluentNodeBuilder(this, { ...eventInstance });
   }
 
   createRef<Name extends keyof Refs>(
     name: Name,
     config?: FieldValue<NonNullable<Refs[Name]["config"]>, DataTypes>,
-  ): RefNodeInstance<Name> {
+  ): FluentNodeBuilder<
+    DataTypes,
+    Events,
+    Refs,
+    PureFunctions,
+    Functions,
+    Apis,
+    RefNodeInstance<Name>
+  > {
     const refConfig = this.config.refs[name];
 
     if (!refConfig) {
@@ -304,13 +322,21 @@ export class CommutatorSchema<
       });
     }
 
-    return { ...refInstance };
+    return new FluentNodeBuilder(this, { ...refInstance });
   }
 
   createPureFunction<Name extends keyof PureFunctions>(
     name: Name,
     config?: FieldValue<NonNullable<PureFunctions[Name]["config"]>, DataTypes>,
-  ): PureFunctionNodeInstance<Name> {
+  ): FluentNodeBuilder<
+    DataTypes,
+    Events,
+    Refs,
+    PureFunctions,
+    Functions,
+    Apis,
+    PureFunctionNodeInstance<Name>
+  > {
     const pureFunctionConfig = this.config.pureFunctions[name];
 
     if (!pureFunctionConfig) {
@@ -352,13 +378,21 @@ export class CommutatorSchema<
       });
     }
 
-    return { ...pureFunctionInstance };
+    return new FluentNodeBuilder(this, { ...pureFunctionInstance });
   }
 
   createFunction<Name extends keyof Functions>(
     name: Name,
     config?: FieldValue<NonNullable<Functions[Name]["config"]>, DataTypes>,
-  ): FunctionNodeInstance<Name> {
+  ): FluentNodeBuilder<
+    DataTypes,
+    Events,
+    Refs,
+    PureFunctions,
+    Functions,
+    Apis,
+    FunctionNodeInstance<Name>
+  > {
     const functionConfig = this.config.functions[name];
 
     if (!functionConfig) {
@@ -400,7 +434,7 @@ export class CommutatorSchema<
       });
     }
 
-    return { ...functionInstance };
+    return new FluentNodeBuilder(this, { ...functionInstance });
   }
 
   private createNodeCallbackActions(
@@ -554,7 +588,61 @@ export class CommutatorSchema<
     );
   }
 
-  wire(from: string, to: string): void {
+  /**
+   * Подключение пинов
+   * Поддерживает три варианта вызова:
+   * 1. wire(fromPinUuid, toPinUuid) - подключение по UUID пинов
+   * 2. wire(fromNodeUuid, fromPinName, toNodeUuid, toPinName) - подключение по UUID нод и именам пинов
+   * 3. wire({ from: { node: nodeUuid, pin: pinName }, to: { node: nodeUuid, pin: pinName } }) - именованные параметры
+   */
+  wire(fromPinUuid: string, toPinUuid: string): void;
+  wire(fromNodeUuid: string, fromPinName: string, toNodeUuid: string, toPinName: string): void;
+  wire(options: { from: { node: string; pin: string }; to: { node: string; pin: string } }): void;
+  wire(
+    fromPinUuidOrNodeUuidOrOptions:
+      | string
+      | { from: { node: string; pin: string }; to: { node: string; pin: string } },
+    fromPinNameOrToPinUuid?: string,
+    toNodeUuid?: string,
+    toPinName?: string,
+  ): void {
+    // Вариант 3: wire({ from: { node, pin }, to: { node, pin } })
+    if (
+      typeof fromPinUuidOrNodeUuidOrOptions === "object" &&
+      fromPinUuidOrNodeUuidOrOptions !== null &&
+      "from" in fromPinUuidOrNodeUuidOrOptions &&
+      "to" in fromPinUuidOrNodeUuidOrOptions
+    ) {
+      const fromPin = this.getPin(
+        fromPinUuidOrNodeUuidOrOptions.from.node,
+        fromPinUuidOrNodeUuidOrOptions.from.pin,
+      );
+      const toPin = this.getPin(
+        fromPinUuidOrNodeUuidOrOptions.to.node,
+        fromPinUuidOrNodeUuidOrOptions.to.pin,
+      );
+      this.wireInternal(fromPin.uuid, toPin.uuid);
+      return;
+    }
+
+    // Вариант 2: wire(fromNodeUuid, fromPinName, toNodeUuid, toPinName)
+    if (toNodeUuid !== undefined && toPinName !== undefined && fromPinNameOrToPinUuid) {
+      const fromPin = this.getPin(fromPinUuidOrNodeUuidOrOptions as string, fromPinNameOrToPinUuid);
+      const toPin = this.getPin(toNodeUuid, toPinName);
+      this.wireInternal(fromPin.uuid, toPin.uuid);
+      return;
+    }
+
+    // Вариант 1: wire(fromPinUuid, toPinUuid)
+    if (fromPinNameOrToPinUuid) {
+      this.wireInternal(fromPinUuidOrNodeUuidOrOptions as string, fromPinNameOrToPinUuid);
+      return;
+    }
+
+    throw new CommutatorError("Invalid wire arguments");
+  }
+
+  private wireInternal(from: string, to: string): void {
     const fromPin = this.pinInstances.get(from);
     const toPin = this.pinInstances.get(to);
 
@@ -1002,6 +1090,33 @@ export class CommutatorSchema<
         actions: this.createNodeCallbackActions(uuid, nodeConfig),
       });
     }
+  }
+
+  /**
+   * Начало fluent API цепочки для работы с нодой
+   * @param nodeUuid - UUID ноды или экземпляр ноды
+   * @returns NodeBuilder для fluent API
+   */
+  node(
+    nodeUuid: AbstractNodeInstance<any> | string,
+  ): NodeBuilder<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
+    const uuid = typeof nodeUuid === "string" ? nodeUuid : nodeUuid.uuid;
+    return new NodeBuilder(this, uuid);
+  }
+
+  /**
+   * Получение пина по UUID ноды и имени пина
+   * @param nodeUuid - UUID ноды
+   * @param pinName - Имя пина
+   * @returns Экземпляр пина
+   * @throws CommutatorError если пин не найден
+   */
+  getPin(nodeUuid: string, pinName: string): PinInstance<DataTypes> {
+    const pin = this.getPinByName(nodeUuid, pinName);
+    if (!pin) {
+      throw new CommutatorError(`Pin "${pinName}" not found in node "${nodeUuid}"`);
+    }
+    return { ...pin } as PinInstance<DataTypes>;
   }
 
   getNodePins(nodeUuid: string): PinInstance<DataTypes>[] {

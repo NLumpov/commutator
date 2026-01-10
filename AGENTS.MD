@@ -570,6 +570,82 @@ const branch = schema.createFunction("Branch");
 const add = schema.createPureFunction("Add");
 ```
 
+## Упрощенное API для работы со схемой
+
+Библиотека предоставляет несколько способов работы со схемой для максимального удобства:
+
+### 1. Метод `getPin` - получение пина по имени
+
+Вместо поиска пина через `getNodePins().find()`:
+
+```typescript
+// Старый способ
+const pin = schema.getNodePins(node.uuid).find((p) => p.name === "pinName");
+
+// Новый способ
+const pin = schema.getPin(node.uuid, "pinName");
+```
+
+### 2. Упрощенный синтаксис `wire`
+
+Подключение пинов можно выполнять напрямую, передавая ноды и имена пинов:
+
+```typescript
+// Старый способ
+const pin1 = schema.getNodePins(node1.uuid).find((p) => p.name === "pin1");
+const pin2 = schema.getNodePins(node2.uuid).find((p) => p.name === "pin2");
+schema.wire(pin1.uuid, pin2.uuid);
+
+// Новый способ
+schema.wire(node1, "pin1", node2, "pin2");
+
+// Или используя UUID
+schema.wire(node1.uuid, "pin1", node2.uuid, "pin2");
+```
+
+### 3. Именованные параметры `wireWithOptions`
+
+Для большей явности можно использовать именованные параметры:
+
+```typescript
+schema.wireWithOptions({
+  from: { node: node1, pin: "pin1" },
+  to: { node: node2, pin: "pin2" },
+});
+```
+
+### 4. Fluent API для работы с нодами
+
+Для более читаемого кода можно использовать fluent API:
+
+```typescript
+// Получение пина и работа с ним
+schema.node(node1.uuid).pin("pin1").wireTo(node2, "pin2");
+
+// Обновление пина
+schema.node(node1.uuid).pin("pin1").update({ name: "newName" });
+```
+
+### 5. Fluent API при создании нод
+
+Методы `create*` возвращают `FluentNodeBuilder`, который позволяет сразу подключать пины:
+
+```typescript
+// Создание ноды и подключение пинов в одной цепочке
+schema
+  .createEvent("onClick")
+  .wire("x", addNode, "a")
+  .wire("y", addNode, "b");
+
+// Цепочка вызовов
+const event = schema.createEvent("onClick");
+event.wire("x", node1, "input1").wire("y", node2, "input2");
+```
+
+### Обратная совместимость
+
+Все старые методы API продолжают работать без изменений. Новые методы являются дополнениями, а не заменой существующих.
+
 ## Заключение
 
 Commutator — это мощная библиотека для создания визуальных блюпринтов с полной типобезопасностью TypeScript. Трёхслойная архитектура обеспечивает разделение ответственности между определением типов, созданием схем и выполнением графов.

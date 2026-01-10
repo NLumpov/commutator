@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@commutator/core": ["packages/core/index.ts"],
+      "@commutator/flow-control": ["packages/flow-control/index.ts"]
+    }
+  },
+  "include": ["**/*.ts"]
+}

@@ -82,7 +82,7 @@ describe("CommutatorValidator", () => {
       const snapshot = schema.extract();
 
       // Создаем дубликат UUID
-      snapshot.events.push({ ...event1 });
+      snapshot.events.push({ ...event1.instance });
 
       expect(() => {
         commutator.validator.validateSnapshot(snapshot, commutator["config"]);

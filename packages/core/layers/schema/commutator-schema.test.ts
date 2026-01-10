@@ -1658,4 +1658,275 @@ describe("CommutatorSchema", () => {
       });
     });
   });
+
+  describe("Simplified API", () => {
+    describe("getPin", () => {
+      test("should get pin by node uuid and pin name", () => {
+        const commutator = Commutator.initialize().defineEvent("onClick", {
+          pinsOut: {
+            x: { type: CommonDataType.Number },
+            y: { type: CommonDataType.Number },
+          },
+          execPinsOut: { next: {} },
+        });
+
+        const schema = commutator.createSchema();
+        const event = schema.createEvent("onClick");
+        const pin = schema.getPin(event.uuid, "x");
+
+        expect(pin).toBeDefined();
+        expect(pin.name).toBe("x");
+        expect(pin.type).toBe(PinInstanceType.Output);
+        expect(pin.nodeUuid).toBe(event.uuid);
+      });
+
+      test("should throw error when pin not found", () => {
+        const commutator = Commutator.initialize().defineEvent("onClick", {
+          pinsOut: {
+            x: { type: CommonDataType.Number },
+          },
+          execPinsOut: {},
+        });
+
+        const schema = commutator.createSchema();
+        const event = schema.createEvent("onClick");
+
+        expect(() => {
+          schema.getPin(event.uuid, "nonexistent");
+        }).toThrow(CommutatorError);
+      });
+    });
+
+    describe("wire with simplified syntax", () => {
+      test("should wire pins using node instances and pin names", () => {
+        const commutator = Commutator.initialize()
+          .defineEvent("onClick", {
+            pinsOut: {
+              x: { type: CommonDataType.Number },
+            },
+            execPinsOut: { next: {} },
+          })
+          .definePureFunction("add", {
+            pinsIn: {
+              a: { type: CommonDataType.Number },
+              b: { type: CommonDataType.Number },
+            },
+            pinsOut: {
+              result: { type: CommonDataType.Number },
+            },
+            exec: async ({ pinsIn }) => ({
+              result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
+            }),
+          });
+
+        const schema = commutator.createSchema();
+        const event = schema.createEvent("onClick");
+        const add = schema.createPureFunction("add");
+
+        schema.wire(event.uuid, "x", add.uuid, "a");
+
+        const pins = schema.getNodePins(add.uuid);
+        const inputPin = pins.find((p) => p.name === "a");
+        expect(inputPin).toBeDefined();
+        const wires = schema.extract().wires;
+        expect(wires.length).toBe(1);
+      });
+
+      test("should wire pins using node uuids and pin names", () => {
+        const commutator = Commutator.initialize()
+          .defineEvent("onClick", {
+            pinsOut: {
+              x: { type: CommonDataType.Number },
+            },
+            execPinsOut: { next: {} },
+          })
+          .definePureFunction("add", {
+            pinsIn: {
+              a: { type: CommonDataType.Number },
+            },
+            pinsOut: {
+              result: { type: CommonDataType.Number },
+            },
+            exec: async ({ pinsIn }) => ({
+              result: pinsIn.a ?? 0,
+            }),
+          });
+
+        const schema = commutator.createSchema();
+        const event = schema.createEvent("onClick");
+        const add = schema.createPureFunction("add");
+
+        schema.wire(event.uuid, "x", add.uuid, "a");
+
+        const wires = schema.extract().wires;
+        expect(wires.length).toBe(1);
+      });
+    });
+
+    describe("wire with options object", () => {
+      test("should wire pins using named parameters", () => {
+        const commutator = Commutator.initialize()
+          .defineEvent("onClick", {
+            pinsOut: {
+              x: { type: CommonDataType.Number },
+            },
+            execPinsOut: { next: {} },
+          })
+          .definePureFunction("add", {
+            pinsIn: {
+              a: { type: CommonDataType.Number },
+            },
+            pinsOut: {
+              result: { type: CommonDataType.Number },
+            },
+            exec: async ({ pinsIn }) => ({
+              result: pinsIn.a ?? 0,
+            }),
+          });
+
+        const schema = commutator.createSchema();
+        const event = schema.createEvent("onClick");
+        const add = schema.createPureFunction("add");
+
+        schema.wire({
+          from: { node: event.uuid, pin: "x" },
+          to: { node: add.uuid, pin: "a" },
+        });
+
+        const wires = schema.extract().wires;
+        expect(wires.length).toBe(1);
+      });
+    });
+
+    describe("Fluent API - node()", () => {
+      test("should create NodeBuilder and get pin", () => {
+        const commutator = Commutator.initialize().defineEvent("onClick", {
+          pinsOut: {
+            x: { type: CommonDataType.Number },
+          },
+          execPinsOut: { next: {} },
+        });
+
+        const schema = commutator.createSchema();
+        const event = schema.createEvent("onClick");
+        const pinBuilder = schema.node(event.uuid).pin("x");
+
+        expect(pinBuilder).toBeDefined();
+        expect(pinBuilder.uuid).toBeDefined();
+        expect(pinBuilder.instance.name).toBe("x");
+      });
+
+      test("should wire using fluent API", () => {
+        const commutator = Commutator.initialize()
+          .defineEvent("onClick", {
+            pinsOut: {
+              x: { type: CommonDataType.Number },
+            },
+            execPinsOut: { next: {} },
+          })
+          .definePureFunction("add", {
+            pinsIn: {
+              a: { type: CommonDataType.Number },
+            },
+            pinsOut: {
+              result: { type: CommonDataType.Number },
+            },
+            exec: async ({ pinsIn }) => ({
+              result: pinsIn.a ?? 0,
+            }),
+          });
+
+        const schema = commutator.createSchema();
+        const event = schema.createEvent("onClick");
+        const add = schema.createPureFunction("add");
+
+        schema.node(event.uuid).pin("x").wireTo(add, "a");
+
+        const wires = schema.extract().wires;
+        expect(wires.length).toBe(1);
+      });
+    });
+
+    describe("Fluent API - create* methods", () => {
+      test("should support fluent API after createEvent", () => {
+        const commutator = Commutator.initialize()
+          .defineEvent("onClick", {
+            pinsOut: {
+              x: { type: CommonDataType.Number },
+            },
+            execPinsOut: { next: {} },
+          })
+          .definePureFunction("add", {
+            pinsIn: {
+              a: { type: CommonDataType.Number },
+            },
+            pinsOut: {
+              result: { type: CommonDataType.Number },
+            },
+            exec: async ({ pinsIn }) => ({
+              result: pinsIn.a ?? 0,
+            }),
+          });
+
+        const schema = commutator.createSchema();
+        const add = schema.createPureFunction("add");
+
+        schema.createEvent("onClick").wire("x", add, "a");
+
+        const wires = schema.extract().wires;
+        expect(wires.length).toBe(1);
+      });
+
+      test("should support chaining wire calls", () => {
+        const commutator = Commutator.initialize()
+          .defineEvent("onClick", {
+            pinsOut: {
+              x: { type: CommonDataType.Number },
+              y: { type: CommonDataType.Number },
+            },
+            execPinsOut: { next: {} },
+          })
+          .definePureFunction("add", {
+            pinsIn: {
+              a: { type: CommonDataType.Number },
+              b: { type: CommonDataType.Number },
+            },
+            pinsOut: {
+              result: { type: CommonDataType.Number },
+            },
+            exec: async ({ pinsIn }) => ({
+              result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
+            }),
+          });
+
+        const schema = commutator.createSchema();
+        const add = schema.createPureFunction("add");
+
+        const event = schema.createEvent("onClick");
+        event.wire("x", add, "a").wire("y", add, "b");
+
+        const wires = schema.extract().wires;
+        expect(wires.length).toBe(2);
+      });
+
+      test("should maintain backward compatibility - access instance properties", () => {
+        const commutator = Commutator.initialize().defineEvent("onClick", {
+          pinsOut: {
+            x: { type: CommonDataType.Number },
+          },
+          execPinsOut: { next: {} },
+        });
+
+        const schema = commutator.createSchema();
+        const event = schema.createEvent("onClick");
+
+        // FluentNodeBuilder должен делегировать свойства инстанса
+        expect(event.uuid).toBeDefined();
+        expect(event.type).toBe(NodeType.Event);
+        expect(event.name).toBe("onClick");
+        expect(event.instance).toBeDefined();
+        expect(event.instance.uuid).toBe(event.uuid);
+      });
+    });
+  });
 });
