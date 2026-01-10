@@ -67,12 +67,8 @@ export const createVariablesExtension = (
         Value: { type: CommonDataType.Any },
       },
       pinsOut: {},
-      canAddPinIn: false,
-      canAddPinOut: false,
       execPinsIn: { "": {} },
       execPinsOut: { "": {} },
-      canAddExecPinIn: false,
-      canAddExecPinOut: false,
       onConfigChange: ({ config, actions }) => {
         const valuePin = actions.getPin("Value");
 

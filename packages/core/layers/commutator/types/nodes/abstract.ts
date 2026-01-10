@@ -17,16 +17,28 @@ export interface AbstractNode<
   readonly config?: Config;
 
   readonly pinsIn: PinsIn;
-  readonly canAddPinIn: boolean;
+  /**
+   * Callback вызывается при попытке добавить входной data-пин
+   */
+  readonly addPinIn?: (args: NodeCallbackContext<DataTypes, Config, Apis>) => void;
 
   readonly pinsOut: PinsOut;
-  readonly canAddPinOut: boolean;
+  /**
+   * Callback вызывается при попытке добавить выходной data-пин
+   */
+  readonly addPinOut?: (args: NodeCallbackContext<DataTypes, Config, Apis>) => void;
 
   readonly execPinsIn: ExecPinsIn;
-  readonly canAddExecPinIn: boolean;
+  /**
+   * Callback вызывается при попытке добавить входной exec-пин
+   */
+  readonly addExecPinIn?: (args: NodeCallbackContext<DataTypes, Config, Apis>) => void;
 
   readonly execPinsOut: ExecPinsOut;
-  readonly canAddExecPinOut: boolean;
+  /**
+   * Callback вызывается при попытке добавить выходной exec-пин
+   */
+  readonly addExecPinOut?: (args: NodeCallbackContext<DataTypes, Config, Apis>) => void;
 
   /**
    * Callback вызывается при изменении конфигурации ноды

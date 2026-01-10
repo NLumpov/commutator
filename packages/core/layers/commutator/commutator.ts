@@ -189,7 +189,7 @@ export class Commutator<
       : Name,
     pureFunctionNode: Pick<
       PureFunctionNode<DataTypes, Meta, Config, Apis, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>,
-      "pinsIn" | "pinsOut" | "canAddPinIn" | "canAddPinOut" | "exec" | "config" | "onConfigChange"
+      "pinsIn" | "pinsOut" | "addPinIn" | "addPinOut" | "exec" | "config" | "onConfigChange"
     >,
   ): Commutator<
     DataTypes,
@@ -241,12 +241,12 @@ export class Commutator<
       FunctionNode<DataTypes, Meta, Config, Apis, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut>,
       | "pinsIn"
       | "pinsOut"
-      | "canAddPinIn"
-      | "canAddPinOut"
+      | "addPinIn"
+      | "addPinOut"
       | "execPinsIn"
       | "execPinsOut"
-      | "canAddExecPinIn"
-      | "canAddExecPinOut"
+      | "addExecPinIn"
+      | "addExecPinOut"
       | "exec"
       | "meta"
       | "config"

@@ -49,8 +49,6 @@ describe("Commutator", () => {
         pinsOut: {
           result: { type: CommonDataType.Number },
         },
-        canAddPinIn: false,
-        canAddPinOut: false,
         exec: async ({ pinsIn }) => ({
           result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
         }),
@@ -179,8 +177,6 @@ describe("Commutator", () => {
         pinsOut: {
           result: { type: CommonDataType.Number },
         },
-        canAddPinIn: false,
-        canAddPinOut: false,
         exec: async () => ({ result: 1 }),
       });
 
@@ -191,8 +187,6 @@ describe("Commutator", () => {
         pinsOut: {
           result: { type: CommonDataType.Number },
         },
-        canAddPinIn: false,
-        canAddPinOut: false,
         exec: async () => ({ result: 2 }),
       });
 
@@ -216,10 +210,6 @@ describe("Commutator", () => {
         execPinsOut: {
           next: {},
         },
-        canAddPinIn: false,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
         exec: async () => {},
       });
 
@@ -232,10 +222,6 @@ describe("Commutator", () => {
         execPinsOut: {
           next: {},
         },
-        canAddPinIn: false,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
         exec: async () => {},
       });
 
@@ -263,8 +249,6 @@ describe("Commutator", () => {
         .definePureFunction("add", {
           pinsIn: { a: { type: CommonDataType.Number } },
           pinsOut: { result: { type: CommonDataType.Number } },
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({ result: 0 }),
         })
         .defineFunction("log", {
@@ -272,10 +256,6 @@ describe("Commutator", () => {
           pinsOut: {},
           execPinsIn: { start: {} },
           execPinsOut: { next: {} },
-          canAddPinIn: false,
-          canAddPinOut: false,
-          canAddExecPinIn: false,
-          canAddExecPinOut: false,
           exec: async () => {},
         });
 

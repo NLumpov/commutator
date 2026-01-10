@@ -1,4 +1,4 @@
-import { CommonDataType, Commutator } from "@commutator/core";
+import { CommonDataType, Commutator, PinInstanceType } from "@commutator/core";
 
 export const flowControlExtension = Commutator.initialize()
   .defineFunction("Branch", {
@@ -6,10 +6,6 @@ export const flowControlExtension = Commutator.initialize()
     pinsOut: {},
     execPinsIn: { "": {} },
     execPinsOut: { A: {}, B: {} },
-    canAddPinIn: false,
-    canAddPinOut: false,
-    canAddExecPinIn: false,
-    canAddExecPinOut: false,
     exec: ({ pinsIn, exec }) =>
       exec({
         execPinOut: pinsIn.condition ? "A" : "B",
@@ -22,10 +18,22 @@ export const flowControlExtension = Commutator.initialize()
     pinsOut: {},
     execPinsIn: { "": {} },
     execPinsOut: { Default: {} },
-    canAddPinIn: false,
-    canAddPinOut: false,
-    canAddExecPinIn: false,
-    canAddExecPinOut: true,
+    // TODO доделать создание пина на выход
+    addExecPinOut: ({ actions }) => {
+      const pins = actions.getAllPins();
+      const execPinsOut = pins.filter((p) => p.type === PinInstanceType.OutputExec);
+
+      const namesSet = new Set(execPinsOut.map((p) => p.name));
+      let newName = `Case 1`;
+      let nameIndex = 1;
+
+      while (namesSet.has(newName)) {
+        newName = `Case ${nameIndex}`;
+        nameIndex++;
+      }
+
+      actions.addPin(newName, PinInstanceType.OutputExec, CommonDataType.Any);
+    },
     exec: ({ pinsIn, execPinsOut, exec }) => {
       const availablePinsOutKeys = Object.keys(execPinsOut);
 
@@ -43,10 +51,7 @@ export const flowControlExtension = Commutator.initialize()
     pinsOut: {},
     execPinsIn: { "": {} },
     execPinsOut: { Default: {} },
-    canAddPinIn: false,
-    canAddPinOut: false,
-    canAddExecPinIn: false,
-    canAddExecPinOut: true,
+    addExecPinOut: () => {},
     exec: ({ pinsIn, execPinsOut, exec }) => {
       const availablePinsOutKeys = Object.keys(execPinsOut);
 
@@ -65,10 +70,6 @@ export const flowControlExtension = Commutator.initialize()
     execPinsIn: { "": {}, Reset: {} },
     pinsOut: { Counter: { type: CommonDataType.Number } },
     execPinsOut: { "": {} },
-    canAddPinIn: false,
-    canAddPinOut: false,
-    canAddExecPinIn: false,
-    canAddExecPinOut: false,
     meta: { type: CommonDataType.Number },
     exec: async ({ pinsIn, triggeredExecPinKey, meta, exec }) => {
       if (triggeredExecPinKey === "Reset") {
@@ -97,10 +98,6 @@ export const flowControlExtension = Commutator.initialize()
     execPinsIn: { "": {}, Reset: {} },
     pinsOut: {},
     execPinsOut: { "": {} },
-    canAddPinIn: false,
-    canAddPinOut: false,
-    canAddExecPinIn: false,
-    canAddExecPinOut: false,
     meta: { type: CommonDataType.Boolean },
     exec: async ({ triggeredExecPinKey, meta, exec }) => {
       if (triggeredExecPinKey === "Reset") {
@@ -127,10 +124,6 @@ export const flowControlExtension = Commutator.initialize()
     pinsOut: {},
     execPinsIn: { "": {} },
     execPinsOut: { Flip: {}, Flop: {} },
-    canAddPinIn: false,
-    canAddPinOut: false,
-    canAddExecPinIn: false,
-    canAddExecPinOut: false,
     meta: { type: CommonDataType.Boolean },
     exec: ({ meta, exec }) => {
       const isFlip = meta || true;
@@ -146,10 +139,6 @@ export const flowControlExtension = Commutator.initialize()
     pinsOut: {},
     execPinsIn: { "": {}, Open: {}, Toggle: {}, Close: {} },
     execPinsOut: { "": {} },
-    canAddPinIn: false,
-    canAddPinOut: false,
-    canAddExecPinIn: false,
-    canAddExecPinOut: false,
     meta: { type: CommonDataType.Boolean },
     exec: async ({ meta, exec, triggeredExecPinKey }) => {
       if (triggeredExecPinKey === "") {
@@ -189,3 +178,7 @@ export const flowControlExtension = Commutator.initialize()
       }
     },
   });
+
+// node id выбран
+// есть список outputExecPin'ов
+flowControlExtension.createSchema();

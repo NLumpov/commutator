@@ -5,11 +5,11 @@ import type { Pin } from "./pin";
 
 export interface NodeCallbackActions<DataTypes extends Record<string, Field<DataTypes>>> {
   // Обновить настройки пина
-  updatePin(name: string, args: { name?: string; pinType?: Pin<DataTypes>["type"] }): void;
+  updatePin(pinUuid: string, args: { name?: string; pinType?: Pin<DataTypes>["type"] }): void;
   // Добавить пин
   addPin(name: string, type: PinInstanceType, pinType: Pin<DataTypes>["type"]): void;
   // Удалить пин
-  removePin(name: string): void;
+  removePin(pinUuid: string): void;
   // Сбросить пины до начального состояния
   resetPins(): void;
   // Получение информации о пине

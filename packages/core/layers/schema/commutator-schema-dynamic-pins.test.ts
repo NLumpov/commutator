@@ -14,8 +14,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         pinsOut: {
           result: { type: CommonDataType.Number },
         },
-        canAddPinIn: false,
-        canAddPinOut: false,
         exec: async ({ pinsIn }) => ({ result: Number(pinsIn.a ?? 0) + Number(pinsIn.b ?? 0) }),
       });
 
@@ -54,14 +52,16 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const commutator = Commutator.initialize().definePureFunction("test", {
         pinsIn: {},
         pinsOut: {},
-        canAddPinIn: true,
-        canAddPinOut: true,
+        addPinIn: ({ actions }) => {
+          actions.addPin("dynamicPin", PinInstanceType.Input, CommonDataType.Any);
+        },
+        addPinOut: () => {},
         exec: async () => ({}),
       });
 
       const schema = commutator.createSchema();
       const test = schema.createPureFunction("test");
-      schema.addPin(test.uuid, "dynamicPin", PinInstanceType.Input);
+      schema.addPinIn(test.uuid);
 
       const pins = schema.getNodePins(test.uuid);
       const dynamicPin = pins.find((p) => p.name === "dynamicPin");
@@ -86,10 +86,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         pinsOut: {},
         execPinsIn: { start: {} },
         execPinsOut: { next: {} },
-        canAddPinIn: false,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
         onConfigChange: ({ config, actions }) => {
           callbackCalled = true;
           receivedConfig = config;
@@ -122,10 +118,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         pinsOut: {},
         execPinsIn: { start: {} },
         execPinsOut: { next: {} },
-        canAddPinIn: false,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
         onConfigChange: ({ apis }) => {
           receivedApis = apis;
         },
@@ -146,10 +138,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         pinsOut: {},
         execPinsIn: { start: {} },
         execPinsOut: { next: {} },
-        canAddPinIn: false,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
         onConfigChange: () => {
           callbackCallCount++;
         },
@@ -174,10 +162,11 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           value: { type: CommonDataType.Number },
         },
         pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
         onConfigChange: ({ actions }) => {
-          actions.updatePin("value", { pinType: CommonDataType.String });
+          const pin = actions.getPin("value");
+          if (pin) {
+            actions.updatePin(pin.uuid, { pinType: CommonDataType.String });
+          }
         },
         exec: async () => ({}),
       });
@@ -196,10 +185,11 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           oldName: { type: CommonDataType.Number },
         },
         pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
         onConfigChange: ({ actions }) => {
-          actions.updatePin("oldName", { name: "newName" });
+          const pin = actions.getPin("oldName");
+          if (pin) {
+            actions.updatePin(pin.uuid, { name: "newName" });
+          }
         },
         exec: async () => ({}),
       });
@@ -222,13 +212,14 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           oldName: { type: CommonDataType.Number },
         },
         pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
         onConfigChange: ({ actions }) => {
-          actions.updatePin("oldName", {
-            name: "newName",
-            pinType: CommonDataType.String,
-          });
+          const pin = actions.getPin("oldName");
+          if (pin) {
+            actions.updatePin(pin.uuid, {
+              name: "newName",
+              pinType: CommonDataType.String,
+            });
+          }
         },
         exec: async () => ({}),
       });
@@ -246,11 +237,9 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const commutator = Commutator.initialize().definePureFunction("test", {
         pinsIn: {},
         pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
         onConfigChange: ({ actions }) => {
           expect(() => {
-            actions.updatePin("nonExistent", { pinType: CommonDataType.String });
+            actions.updatePin("non-existent-uuid", { pinType: CommonDataType.String });
           }).toThrow(CommutatorError);
         },
         exec: async () => ({}),
@@ -266,12 +255,13 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           pin2: { type: CommonDataType.String },
         },
         pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
         onConfigChange: ({ actions }) => {
-          expect(() => {
-            actions.updatePin("pin1", { name: "pin2" });
-          }).toThrow(CommutatorError);
+          const pin1 = actions.getPin("pin1");
+          if (pin1) {
+            expect(() => {
+              actions.updatePin(pin1.uuid, { name: "pin2" });
+            }).toThrow(CommutatorError);
+          }
         },
         exec: async () => ({}),
       });
@@ -281,12 +271,11 @@ describe("CommutatorSchema - Dynamic Pins", () => {
   });
 
   describe("NodeCallbackActions - addPin", () => {
-    test("should add pin when canAddPinIn is true", () => {
+    test("should add pin when addPinIn is defined", () => {
       const commutator = Commutator.initialize().definePureFunction("test", {
         pinsIn: {},
         pinsOut: {},
-        canAddPinIn: true,
-        canAddPinOut: false,
+        addPinIn: () => {},
         onConfigChange: ({ actions }) => {
           actions.addPin("newPin", PinInstanceType.Input, CommonDataType.String);
         },
@@ -303,12 +292,11 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       expect(newPin?.pinType).toBe(CommonDataType.String);
     });
 
-    test("should add output pin when canAddPinOut is true", () => {
+    test("should add output pin when addPinOut is defined", () => {
       const commutator = Commutator.initialize().definePureFunction("test", {
         pinsIn: {},
         pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: true,
+        addPinOut: () => {},
         onConfigChange: ({ actions }) => {
           actions.addPin("output", PinInstanceType.Output, CommonDataType.Number);
         },
@@ -324,110 +312,23 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       expect(outputPin?.type).toBe(PinInstanceType.Output);
       expect(outputPin?.pinType).toBe(CommonDataType.Number);
     });
-
-    test("should throw error when canAddPinIn is false", () => {
-      const commutator = Commutator.initialize().definePureFunction("test", {
-        pinsIn: {},
-        pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
-        onConfigChange: ({ actions }) => {
-          expect(() => {
-            actions.addPin("newPin", PinInstanceType.Input, CommonDataType.String);
-          }).toThrow(CommutatorError);
-        },
-        exec: async () => ({}),
-      });
-
-      commutator.createSchema().createPureFunction("test");
-    });
-
-    test("should add exec pin when canAddExecPinIn is true", () => {
-      const commutator = Commutator.initialize().defineFunction("test", {
-        pinsIn: {},
-        pinsOut: {},
-        execPinsIn: {},
-        execPinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
-        canAddExecPinIn: true,
-        canAddExecPinOut: false,
-        onConfigChange: ({ actions }) => {
-          actions.addPin("execInput", PinInstanceType.InputExec, CommonDataType.Any);
-        },
-        exec: async () => {},
-      });
-
-      const schema = commutator.createSchema();
-      const test = schema.createFunction("test");
-      const pins = schema.getNodePins(test.uuid);
-
-      const execPin = pins.find((p) => p.name === "execInput");
-      expect(execPin).toBeDefined();
-      expect(execPin?.type).toBe(PinInstanceType.InputExec);
-      expect(execPin?.pinType).toBe(CommonDataType.Any);
-    });
   });
 
   describe("NodeCallbackActions - removePin", () => {
-    test("should remove pin when canAddPinIn is true", () => {
-      const commutator = Commutator.initialize().definePureFunction("test", {
-        pinsIn: {
-          pin1: { type: CommonDataType.Number },
-          pin2: { type: CommonDataType.String },
-        },
-        pinsOut: {},
-        canAddPinIn: true,
-        canAddPinOut: false,
-        onConfigChange: ({ actions }) => {
-          actions.removePin("pin1");
-        },
-        exec: async () => ({}),
-      });
-
-      const schema = commutator.createSchema();
-      const test = schema.createPureFunction("test");
-      const pins = schema.getNodePins(test.uuid);
-
-      const pin1 = pins.find((p) => p.name === "pin1");
-      const pin2 = pins.find((p) => p.name === "pin2");
-
-      expect(pin1).toBeUndefined();
-      expect(pin2).toBeDefined();
-    });
-
-    test("should throw error when canAddPinIn is false", () => {
-      const commutator = Commutator.initialize().definePureFunction("test", {
-        pinsIn: {
-          pin1: { type: CommonDataType.Number },
-          pin2: { type: CommonDataType.String },
-        },
-        pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
-        onConfigChange: ({ actions }) => {
-          expect(() => {
-            actions.removePin("pin1");
-          }).toThrow(CommutatorError);
-        },
-        exec: async () => ({}),
-      });
-
-      commutator.createSchema().createPureFunction("test");
-    });
-
     test("should throw error when removing last pin of type", () => {
       const commutator = Commutator.initialize().definePureFunction("test", {
         pinsIn: {
           pin1: { type: CommonDataType.Number },
         },
         pinsOut: {},
-        canAddPinIn: true,
-        canAddPinOut: false,
+        addPinIn: () => {},
         onConfigChange: ({ actions }) => {
-          expect(() => {
-            actions.removePin("pin1");
-          }).toThrow(CommutatorError);
+          const pin = actions.getPin("pin1");
+          if (pin) {
+            expect(() => {
+              actions.removePin(pin.uuid);
+            }).toThrow(CommutatorError);
+          }
         },
         exec: async () => ({}),
       });
@@ -452,10 +353,12 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           pinsOut: {
             result: { type: CommonDataType.Number },
           },
-          canAddPinIn: true,
-          canAddPinOut: false,
+          addPinIn: () => {},
           onConfigChange: ({ actions }) => {
-            actions.removePin("a");
+            const pin = actions.getPin("a");
+            if (pin) {
+              actions.removePin(pin.uuid);
+            }
           },
           exec: async ({ pinsIn }) => ({
             result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
@@ -493,13 +396,15 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         pinsOut: {
           result: { type: CommonDataType.Number },
         },
-        canAddPinIn: true,
-        canAddPinOut: false,
+        addPinIn: () => {},
         onConfigChange: ({ actions }) => {
           // Добавляем лишний пин
           actions.addPin("extraPin", PinInstanceType.Input, CommonDataType.Boolean);
           // Меняем тип существующего
-          actions.updatePin("pin1", { pinType: CommonDataType.Boolean });
+          const pin1 = actions.getPin("pin1");
+          if (pin1) {
+            actions.updatePin(pin1.uuid, { pinType: CommonDataType.Boolean });
+          }
           // Затем сбрасываем
           actions.resetPins();
         },
@@ -531,11 +436,13 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           pin2: { type: CommonDataType.String },
         },
         pinsOut: {},
-        canAddPinIn: true,
-        canAddPinOut: false,
+        addPinIn: () => {},
         onConfigChange: ({ actions }) => {
           // Удаляем один пин
-          actions.removePin("pin2");
+          const pin2 = actions.getPin("pin2");
+          if (pin2) {
+            actions.removePin(pin2.uuid);
+          }
           // Затем сбрасываем - пин должен вернуться
           actions.resetPins();
         },
@@ -554,14 +461,12 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       expect(pin2?.pinType).toBe(CommonDataType.String);
     });
 
-    test("should not add pins when canAddPinIn is false", () => {
+    test("should not add pins when addPinIn is not defined", () => {
       const commutator = Commutator.initialize().definePureFunction("test", {
         pinsIn: {
           pin1: { type: CommonDataType.Number },
         },
         pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
         onConfigChange: ({ actions }) => {
           // Не пытаемся удалить пин, т.к. canAddPinIn = false не позволит
           // Просто проверяем, что resetPins не добавит пины, если их нет
@@ -589,11 +494,14 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         pinsOut: {
           result: { type: CommonDataType.String },
         },
-        canAddPinIn: true,
-        canAddPinOut: true,
+        addPinIn: () => {},
+        addPinOut: () => {},
         onConfigChange: ({ actions }) => {
           // Меняем тип пина на неправильный
-          actions.updatePin("pin1", { pinType: CommonDataType.String });
+          const pin1 = actions.getPin("pin1");
+          if (pin1) {
+            actions.updatePin(pin1.uuid, { pinType: CommonDataType.String });
+          }
           // Сбрасываем - пин должен быть удален и создан заново с правильным типом
           actions.resetPins();
         },
@@ -617,8 +525,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           value: { type: CommonDataType.Number },
         },
         pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
         onConfigChange: ({ actions }) => {
           const pin = actions.getPin("value");
           expect(pin).toBeDefined();
@@ -640,8 +546,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         pinsOut: {
           result: { type: CommonDataType.Number },
         },
-        canAddPinIn: false,
-        canAddPinOut: false,
         onConfigChange: ({ actions }) => {
           const allPins = actions.getAllPins();
           expect(allPins.length).toBe(3);
@@ -668,8 +572,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
             value: { type: CommonDataType.Number },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           onConfigChange: ({ actions }) => {
             expect(actions.isWired("value")).toBe(false);
           },
@@ -710,8 +612,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
             value: { type: CommonDataType.Number },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({}),
         });
 
@@ -747,8 +647,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           value: { type: CommonDataType.Number },
         },
         pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
         onConfigChange: ({ actions }) => {
           const pinConfig = actions.getPinConfig("value");
           expect(pinConfig).toBeDefined();
@@ -777,10 +675,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         pinsOut: {},
         execPinsIn: { start: {} },
         execPinsOut: { next: {} },
-        canAddPinIn: false,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
         onConfigChange: ({ config }) => {
           callbackCallCount++;
           lastConfig = config;
@@ -812,10 +706,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         pinsOut: {},
         execPinsIn: { start: {} },
         execPinsOut: { next: {} },
-        canAddPinIn: false,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
         exec: async () => {},
       });
 
@@ -878,8 +768,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           },
           pinsIn: { a: { type: CommonDataType.Number } },
           pinsOut: { result: { type: CommonDataType.Number } },
-          canAddPinIn: false,
-          canAddPinOut: false,
           onConfigChange: ({ config }) => {
             pureFunctionConfig = config;
           },
@@ -896,10 +784,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           pinsOut: {},
           execPinsIn: { start: {} },
           execPinsOut: { next: {} },
-          canAddPinIn: false,
-          canAddPinOut: false,
-          canAddExecPinIn: false,
-          canAddExecPinOut: false,
           onConfigChange: ({ config }) => {
             functionConfig = config;
           },
@@ -933,13 +817,14 @@ describe("CommutatorSchema - Dynamic Pins", () => {
         pinsOut: {
           result: { type: CommonDataType.String },
         },
-        canAddPinIn: false,
-        canAddPinOut: false,
         onConfigChange: ({ actions }) => {
           // Изменяем тип пина через callback
-          actions.updatePin("value", {
-            pinType: CommonDataType.String,
-          });
+          const pin = actions.getPin("value");
+          if (pin) {
+            actions.updatePin(pin.uuid, {
+              pinType: CommonDataType.String,
+            });
+          }
         },
         exec: async () => ({ result: "" }),
       });
@@ -970,8 +855,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           value: { type: CommonDataType.Number },
         },
         pinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
         exec: async () => ({}),
       });
 
@@ -1011,11 +894,12 @@ describe("CommutatorSchema - Dynamic Pins", () => {
             value: { type: CommonDataType.Number },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           onConfigChange: ({ actions }) => {
             // Меняем тип пина на String
-            actions.updatePin("value", { pinType: CommonDataType.String });
+            const pin = actions.getPin("value");
+            if (pin) {
+              actions.updatePin(pin.uuid, { pinType: CommonDataType.String });
+            }
           },
           exec: async () => ({}),
         });
@@ -1052,11 +936,12 @@ describe("CommutatorSchema - Dynamic Pins", () => {
             value: { type: CommonDataType.String },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           onConfigChange: ({ actions }) => {
             // Меняем тип пина на Number, чтобы совпадал с event.x
-            actions.updatePin("value", { pinType: CommonDataType.Number });
+            const pin = actions.getPin("value");
+            if (pin) {
+              actions.updatePin(pin.uuid, { pinType: CommonDataType.Number });
+            }
           },
           exec: async () => ({}),
         });
@@ -1093,8 +978,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
             value: { type: CommonDataType.Any },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({}),
         });
 

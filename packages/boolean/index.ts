@@ -6,8 +6,6 @@ export const booleanExtension = Commutator.initialize()
       A: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: !pinsIn.A,
     }),
@@ -18,8 +16,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Boolean(pinsIn.A) && Boolean(pinsIn.B),
     }),
@@ -30,8 +26,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Boolean(pinsIn.A) || Boolean(pinsIn.B),
     }),
@@ -42,8 +36,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = Boolean(pinsIn.A);
       const b = Boolean(pinsIn.B);
@@ -58,8 +50,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: !(Boolean(pinsIn.A) && Boolean(pinsIn.B)),
     }),
@@ -70,8 +60,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: !(Boolean(pinsIn.A) || Boolean(pinsIn.B)),
     }),
@@ -82,8 +70,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (Boolean(pinsIn.A) && Boolean(pinsIn.B)) || (!pinsIn.A && !pinsIn.B),
     }),
@@ -94,8 +80,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: !pinsIn.A || Boolean(pinsIn.B),
     }),
@@ -106,8 +90,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: pinsIn.A === pinsIn.B,
     }),
@@ -118,8 +100,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: pinsIn.A !== pinsIn.B,
     }),
@@ -130,8 +110,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.A ?? 0) > (pinsIn.B ?? 0),
     }),
@@ -142,8 +120,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.A ?? 0) < (pinsIn.B ?? 0),
     }),
@@ -154,8 +130,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.A ?? 0) >= (pinsIn.B ?? 0),
     }),
@@ -166,8 +140,6 @@ export const booleanExtension = Commutator.initialize()
       B: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.A ?? 0) <= (pinsIn.B ?? 0),
     }),
@@ -177,8 +149,6 @@ export const booleanExtension = Commutator.initialize()
       Value: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: pinsIn.Value === null || pinsIn.Value === undefined,
     }),
@@ -188,8 +158,6 @@ export const booleanExtension = Commutator.initialize()
       Value: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: pinsIn.Value !== null && pinsIn.Value !== undefined,
     }),
@@ -199,8 +167,6 @@ export const booleanExtension = Commutator.initialize()
       Value: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value;
       if (value === null || value === undefined) {
@@ -220,8 +186,6 @@ export const booleanExtension = Commutator.initialize()
       Value: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value;
       if (value === null || value === undefined) {

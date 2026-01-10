@@ -24,8 +24,6 @@ describe("CommutatorValidator", () => {
           pinsOut: {
             result: { type: CommonDataType.Number },
           },
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async ({ pinsIn }) => ({
             result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
           }),
@@ -171,8 +169,6 @@ describe("CommutatorValidator", () => {
             a: { type: CommonDataType.Number },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({}),
         });
 
@@ -244,8 +240,6 @@ describe("CommutatorValidator", () => {
             a: { type: CommonDataType.Number },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({}),
         });
 
@@ -287,10 +281,6 @@ describe("CommutatorValidator", () => {
           pinsOut: {},
           execPinsIn: { start: {} },
           execPinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
-          canAddExecPinIn: false,
-          canAddExecPinOut: false,
           exec: async () => {},
         });
 
@@ -328,10 +318,6 @@ describe("CommutatorValidator", () => {
         },
         execPinsIn: { start: {} },
         execPinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
         exec: async () => {},
       });
 
@@ -371,8 +357,6 @@ describe("CommutatorValidator", () => {
             a: { type: CommonDataType.Number },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({}),
         });
 
@@ -413,8 +397,6 @@ describe("CommutatorValidator", () => {
             a: { type: CommonDataType.Any },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({}),
         });
 
@@ -455,8 +437,6 @@ describe("CommutatorValidator", () => {
             a: { type: CommonDataType.Number },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({}),
         });
 
@@ -497,8 +477,6 @@ describe("CommutatorValidator", () => {
             a: { type: CommonDataType.Any },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({}),
         });
 
@@ -537,10 +515,6 @@ describe("CommutatorValidator", () => {
           pinsOut: {},
           execPinsIn: { start: {} },
           execPinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
-          canAddExecPinIn: false,
-          canAddExecPinOut: false,
           exec: async () => {},
         })
         .defineFunction("log2", {
@@ -548,10 +522,6 @@ describe("CommutatorValidator", () => {
           pinsOut: {},
           execPinsIn: { start: {} },
           execPinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
-          canAddExecPinIn: false,
-          canAddExecPinOut: false,
           exec: async () => {},
         });
 
@@ -603,8 +573,6 @@ describe("CommutatorValidator", () => {
             a: { type: CommonDataType.Number },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({}),
         });
 
@@ -644,10 +612,6 @@ describe("CommutatorValidator", () => {
           pinsOut: {},
           execPinsIn: { start: {} },
           execPinsOut: { next: {} },
-          canAddPinIn: false,
-          canAddPinOut: false,
-          canAddExecPinIn: false,
-          canAddExecPinOut: false,
           exec: async () => {},
         })
         .defineFunction("B", {
@@ -655,10 +619,6 @@ describe("CommutatorValidator", () => {
           pinsOut: {},
           execPinsIn: { start: {} },
           execPinsOut: { next: {} },
-          canAddPinIn: false,
-          canAddPinOut: false,
-          canAddExecPinIn: false,
-          canAddExecPinOut: false,
           exec: async () => {},
         });
 
@@ -779,8 +739,6 @@ describe("CommutatorValidator", () => {
             a: { type: CommonDataType.Number },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({}),
         });
 
@@ -987,8 +945,6 @@ describe("CommutatorValidator", () => {
             a: { type: CommonDataType.Number },
           },
           pinsOut: {},
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async () => ({}),
         });
 
@@ -1046,129 +1002,6 @@ describe("CommutatorValidator", () => {
           allNodesMap,
           commutator["config"],
         );
-      }).toThrow(CommutatorError);
-    });
-  });
-
-  describe("validateAddPin", () => {
-    test("should validate valid pin addition", () => {
-      const commutator = Commutator.initialize().defineFunction("test", {
-        pinsIn: {},
-        pinsOut: {},
-        execPinsIn: {},
-        execPinsOut: {},
-        canAddPinIn: true,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
-        exec: async () => {},
-      });
-
-      const schema = commutator.createSchema();
-      const test = schema.createFunction("test");
-
-      const nodeConfig = commutator["config"].getNodeConfigByName("test");
-
-      expect(() => {
-        commutator.validator.validateAddPin(
-          test.uuid,
-          "newPin",
-          PinInstanceType.Input,
-          CommonDataType.Number,
-          nodeConfig!,
-          schema["pinInstances"],
-        );
-      }).not.toThrow();
-    });
-
-    test("should throw error when canAddPinIn is false", () => {
-      const commutator = Commutator.initialize().defineFunction("test", {
-        pinsIn: {},
-        pinsOut: {},
-        execPinsIn: {},
-        execPinsOut: {},
-        canAddPinIn: false,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
-        exec: async () => {},
-      });
-
-      const schema = commutator.createSchema();
-      const test = schema.createFunction("test");
-
-      const nodeConfig = commutator["config"].getNodeConfigByName("test");
-
-      expect(() => {
-        commutator.validator.validateAddPin(
-          test.uuid,
-          "newPin",
-          PinInstanceType.Input,
-          CommonDataType.Number,
-          nodeConfig!,
-          schema["pinInstances"],
-        );
-      }).toThrow(CommutatorError);
-    });
-  });
-
-  describe("validateRemovePin", () => {
-    test("should validate valid pin removal", () => {
-      const commutator = Commutator.initialize().defineFunction("test", {
-        pinsIn: {
-          a: { type: CommonDataType.Number },
-          b: { type: CommonDataType.Number },
-        },
-        pinsOut: {},
-        execPinsIn: {},
-        execPinsOut: {},
-        canAddPinIn: true,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
-        exec: async () => {},
-      });
-
-      const schema = commutator.createSchema();
-      const test = schema.createFunction("test");
-
-      const pin = schema
-        .getNodePins(test.uuid)
-        .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
-
-      const nodeConfig = commutator["config"].getNodeConfigByName("test");
-
-      expect(() => {
-        commutator.validator.validateRemovePin(pin!, nodeConfig!, schema["pinInstances"]);
-      }).not.toThrow();
-    });
-
-    test("should throw error when trying to remove last pin", () => {
-      const commutator = Commutator.initialize().defineFunction("test", {
-        pinsIn: {
-          a: { type: CommonDataType.Number },
-        },
-        pinsOut: {},
-        execPinsIn: {},
-        execPinsOut: {},
-        canAddPinIn: true,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
-        exec: async () => {},
-      });
-
-      const schema = commutator.createSchema();
-      const test = schema.createFunction("test");
-
-      const pin = schema
-        .getNodePins(test.uuid)
-        .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
-
-      const nodeConfig = commutator["config"].getNodeConfigByName("test");
-
-      expect(() => {
-        commutator.validator.validateRemovePin(pin!, nodeConfig!, schema["pinInstances"]);
       }).toThrow(CommutatorError);
     });
   });

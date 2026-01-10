@@ -7,8 +7,6 @@ export const mathsExtension = Commutator.initialize()
       B: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.A || 0) + (pinsIn.B || 0),
     }),
@@ -19,8 +17,6 @@ export const mathsExtension = Commutator.initialize()
       B: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.A || 0) - (pinsIn.B || 0),
     }),
@@ -31,8 +27,6 @@ export const mathsExtension = Commutator.initialize()
       B: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.A || 0) * (pinsIn.B || 0),
     }),
@@ -43,8 +37,6 @@ export const mathsExtension = Commutator.initialize()
       B: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const b = pinsIn.B || 0;
@@ -63,8 +55,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.sin(pinsIn.A || 0),
     }),
@@ -74,8 +64,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.cos(pinsIn.A || 0),
     }),
@@ -85,8 +73,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.tan(pinsIn.A || 0),
     }),
@@ -96,8 +82,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const tanValue = Math.tan(a);
@@ -114,8 +98,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.asin(pinsIn.A || 0),
     }),
@@ -125,8 +107,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.acos(pinsIn.A || 0),
     }),
@@ -136,8 +116,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.atan(pinsIn.A || 0),
     }),
@@ -147,8 +125,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
 
@@ -164,8 +140,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const result = Math.sinh(a);
@@ -182,8 +156,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const result = Math.cosh(a);
@@ -200,8 +172,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.tanh(pinsIn.A || 0),
     }),
@@ -211,8 +181,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const result = Math.asinh(a);
@@ -229,8 +197,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
 
@@ -252,8 +218,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
 
@@ -276,8 +240,6 @@ export const mathsExtension = Commutator.initialize()
       Exponent: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const base = pinsIn.Base || 0;
       const exponent = pinsIn.Exponent || 0;
@@ -295,8 +257,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
 
@@ -310,8 +270,6 @@ export const mathsExtension = Commutator.initialize()
   .definePureFunction("Pi", {
     pinsIn: {},
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async () => ({
       Result: Math.PI,
     }),
@@ -319,8 +277,6 @@ export const mathsExtension = Commutator.initialize()
   .definePureFunction("E", {
     pinsIn: {},
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async () => ({
       Result: Math.E,
     }),
@@ -330,8 +286,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
 
@@ -349,8 +303,6 @@ export const mathsExtension = Commutator.initialize()
       Steps: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const start = pinsIn.Start ?? 0;
       const end = pinsIn.End ?? 1;
@@ -379,8 +331,6 @@ export const mathsExtension = Commutator.initialize()
       AllowFloat: { type: CommonDataType.Boolean },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const min = pinsIn.Min ?? 0;
       const max = pinsIn.Max ?? 1;
@@ -404,8 +354,6 @@ export const mathsExtension = Commutator.initialize()
       B: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const b = pinsIn.B || 0;
@@ -422,8 +370,6 @@ export const mathsExtension = Commutator.initialize()
       Value: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.round(pinsIn.Value || 0),
     }),
@@ -433,8 +379,6 @@ export const mathsExtension = Commutator.initialize()
       Value: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.floor(pinsIn.Value || 0),
     }),
@@ -444,8 +388,6 @@ export const mathsExtension = Commutator.initialize()
       Value: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.ceil(pinsIn.Value || 0),
     }),
@@ -456,8 +398,6 @@ export const mathsExtension = Commutator.initialize()
       Decimals: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || 0;
       const decimals = Math.max(0, Math.floor(pinsIn.Decimals ?? 0));
@@ -472,8 +412,6 @@ export const mathsExtension = Commutator.initialize()
       Value: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.abs(pinsIn.Value || 0),
     }),
@@ -484,8 +422,6 @@ export const mathsExtension = Commutator.initialize()
       B: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.max(pinsIn.A || 0, pinsIn.B || 0),
     }),
@@ -496,8 +432,6 @@ export const mathsExtension = Commutator.initialize()
       B: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.min(pinsIn.A || 0, pinsIn.B || 0),
     }),
@@ -507,8 +441,6 @@ export const mathsExtension = Commutator.initialize()
       Value: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.sign(pinsIn.Value || 0),
     }),
@@ -518,8 +450,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
 
@@ -535,8 +465,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
 
@@ -552,8 +480,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const result = Math.exp(a);
@@ -570,8 +496,6 @@ export const mathsExtension = Commutator.initialize()
       A: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.cbrt(pinsIn.A || 0),
     }),
@@ -582,8 +506,6 @@ export const mathsExtension = Commutator.initialize()
       X: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: Math.atan2(pinsIn.Y || 0, pinsIn.X || 0),
     }),
@@ -593,8 +515,6 @@ export const mathsExtension = Commutator.initialize()
       Radians: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: ((pinsIn.Radians || 0) * 180) / Math.PI,
     }),
@@ -604,8 +524,6 @@ export const mathsExtension = Commutator.initialize()
       Degrees: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: ((pinsIn.Degrees || 0) * Math.PI) / 180,
     }),
@@ -616,8 +534,6 @@ export const mathsExtension = Commutator.initialize()
       B: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const b = pinsIn.B || 0;
@@ -637,8 +553,6 @@ export const mathsExtension = Commutator.initialize()
       Max: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || 0;
       const min = pinsIn.Min ?? -Infinity;
@@ -657,8 +571,6 @@ export const mathsExtension = Commutator.initialize()
       T: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const a = pinsIn.A || 0;
       const b = pinsIn.B || 0;

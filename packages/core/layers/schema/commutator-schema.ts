@@ -412,35 +412,17 @@ export class CommutatorSchema<
       | FunctionNode<DataTypes, any, any, any, any, any, any, any>,
   ): NodeCallbackActions<DataTypes> {
     return {
-      updatePin: (name: string, args: { name?: string; pinType?: Pin<DataTypes>["type"] }) => {
-        const pin = this.getPinByName(nodeUuid, name);
-        if (!pin) {
-          throw new CommutatorError(`Pin "${name}" not found`);
-        }
-        if (args.pinType !== undefined) {
-          pin.pinType = args.pinType;
-        }
-        if (args.name !== undefined && args.name !== name) {
-          // Проверяем, что новое имя не занято
-          const existingPin = this.getPinByName(nodeUuid, args.name);
-          if (existingPin && existingPin.uuid !== pin.uuid) {
-            throw new CommutatorError(`Pin with name "${args.name}" already exists`);
-          }
-          // Обновляем имя пина
-          pin.name = args.name;
-        }
-      },
       addPin: (name: string, type: PinInstanceType, pinType: Pin<DataTypes>["type"]) => {
         // Переиспользуем существующий метод addPin
         this.addPin(nodeUuid, name, type, pinType);
       },
-      removePin: (name: string) => {
-        // Находим пин по имени и используем существующий метод removePin
-        const pin = this.getPinByName(nodeUuid, name);
-        if (!pin) {
-          throw new CommutatorError(`Pin "${name}" not found`);
-        }
-        this.removePin(pin.uuid);
+      updatePin: (pinUuid: string, args: { name?: string; pinType?: Pin<DataTypes>["type"] }) => {
+        // Переиспользуем существующий метод updatePin
+        this.updatePin(pinUuid, args);
+      },
+      removePin: (pinUuid: string) => {
+        // Переиспользуем существующий метод removePin
+        this.removePin(pinUuid);
       },
       resetPins: () => {
         // Получаем все пины из конфигурации
@@ -517,25 +499,7 @@ export class CommutatorSchema<
 
           // Если пина нет или он был удален из-за несовпадения типа - создаем новый
           if (!existingPin) {
-            // Проверяем флаги canAddPin*
-            if (
-              (configPin.type === PinInstanceType.Input && !nodeConfig.canAddPinIn) ||
-              (configPin.type === PinInstanceType.Output && !nodeConfig.canAddPinOut) ||
-              (configPin.type === PinInstanceType.InputExec && !nodeConfig.canAddExecPinIn) ||
-              (configPin.type === PinInstanceType.OutputExec && !nodeConfig.canAddExecPinOut)
-            ) {
-              // Если нельзя добавлять пины, пропускаем
-              continue;
-            }
-            // Создаем новый пин
-            const pinInstance: PinInstance<DataTypes> = {
-              nodeUuid,
-              uuid: ulid(),
-              type: configPin.type,
-              name: pinName,
-              pinType: configPin.pinType,
-            };
-            this.pinInstances.set(pinInstance.uuid, pinInstance);
+            this.addPin(nodeUuid, pinName, configPin.type, configPin.pinType);
           }
         }
       },
@@ -709,9 +673,10 @@ export class CommutatorSchema<
   }
 
   /**
-   * Добавление пина в ноду. Выдаст ошибку, если в настройках ноды запрещено добавлять пины данного типа
+   * Атомарная функция добавления пина в ноду.
+   * Не знает про колбеки, просто создает пин.
    */
-  addPin(
+  private addPin(
     nodeUuid: string,
     name: string,
     type: PinInstanceType,
@@ -731,15 +696,6 @@ export class CommutatorSchema<
 
     if (!nodeConfig) {
       throw new CommutatorError("Node config not found");
-    }
-
-    if (
-      (type === PinInstanceType.Input && !nodeConfig.canAddPinIn) ||
-      (type === PinInstanceType.Output && !nodeConfig.canAddPinOut) ||
-      (type === PinInstanceType.InputExec && !nodeConfig.canAddExecPinIn) ||
-      (type === PinInstanceType.OutputExec && !nodeConfig.canAddExecPinOut)
-    ) {
-      throw new CommutatorError("Cannot add pin to node");
     }
 
     // Получаем тип пина из конфигурации ноды, если не передан явно
@@ -770,6 +726,157 @@ export class CommutatorSchema<
     this.pinInstances.set(pinInstance.uuid, pinInstance);
   }
 
+  /**
+   * Обновление пина в ноде. Позволяет изменить имя и/или тип пина.
+   */
+  updatePin(pinUuid: string, args: { name?: string; pinType?: Pin<DataTypes>["type"] }): void {
+    const pin = this.pinInstances.get(pinUuid);
+    if (!pin) {
+      throw new CommutatorError("Pin instance not found");
+    }
+    if (args.pinType !== undefined) {
+      pin.pinType = args.pinType;
+    }
+    if (args.name !== undefined && args.name !== pin.name) {
+      // Проверяем, что новое имя не занято в той же ноде
+      const nodePins = this.getNodePins(pin.nodeUuid);
+      const existingPin = nodePins.find((p) => p.name === args.name && p.uuid !== pin.uuid);
+      if (existingPin) {
+        throw new CommutatorError(`Pin with name "${args.name}" already exists`);
+      }
+      // Обновляем имя пина
+      pin.name = args.name;
+    }
+  }
+
+  /**
+   * Добавление входного data-пина к ноде
+   * Вызывает колбек addPinIn из конфигурации ноды
+   */
+  addPinIn(nodeUuid: string): void {
+    const nodeInstance =
+      this.eventInstances.get(nodeUuid) ||
+      this.refInstances.get(nodeUuid) ||
+      this.pureFunctionInstances.get(nodeUuid) ||
+      this.functionInstances.get(nodeUuid);
+
+    if (!nodeInstance) {
+      throw new CommutatorError("Node instance not found");
+    }
+
+    const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
+
+    if (!nodeConfig) {
+      throw new CommutatorError("Node config not found");
+    }
+
+    if (nodeConfig.addPinIn === undefined) {
+      throw new CommutatorError("Cannot add pin to node");
+    }
+
+    nodeConfig.addPinIn({
+      config: nodeInstance.config,
+      apis: this.config.apis,
+      actions: this.createNodeCallbackActions(nodeUuid, nodeConfig),
+    });
+  }
+
+  /**
+   * Добавление выходного data-пина к ноде
+   * Вызывает колбек addPinOut из конфигурации ноды
+   */
+  addPinOut(nodeUuid: string): void {
+    const nodeInstance =
+      this.eventInstances.get(nodeUuid) ||
+      this.refInstances.get(nodeUuid) ||
+      this.pureFunctionInstances.get(nodeUuid) ||
+      this.functionInstances.get(nodeUuid);
+
+    if (!nodeInstance) {
+      throw new CommutatorError("Node instance not found");
+    }
+
+    const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
+
+    if (!nodeConfig) {
+      throw new CommutatorError("Node config not found");
+    }
+
+    if (nodeConfig.addPinOut === undefined) {
+      throw new CommutatorError("Cannot add pin to node");
+    }
+
+    nodeConfig.addPinOut({
+      config: nodeInstance.config,
+      apis: this.config.apis,
+      actions: this.createNodeCallbackActions(nodeUuid, nodeConfig),
+    });
+  }
+
+  /**
+   * Добавление входного exec-пина к ноде
+   * Вызывает колбек addExecPinIn из конфигурации ноды
+   */
+  addExecPinIn(nodeUuid: string): void {
+    const nodeInstance =
+      this.eventInstances.get(nodeUuid) ||
+      this.refInstances.get(nodeUuid) ||
+      this.pureFunctionInstances.get(nodeUuid) ||
+      this.functionInstances.get(nodeUuid);
+
+    if (!nodeInstance) {
+      throw new CommutatorError("Node instance not found");
+    }
+
+    const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
+
+    if (!nodeConfig) {
+      throw new CommutatorError("Node config not found");
+    }
+
+    if (nodeConfig.addExecPinIn === undefined) {
+      throw new CommutatorError("Cannot add pin to node");
+    }
+
+    nodeConfig.addExecPinIn({
+      config: nodeInstance.config,
+      apis: this.config.apis,
+      actions: this.createNodeCallbackActions(nodeUuid, nodeConfig),
+    });
+  }
+
+  /**
+   * Добавление выходного exec-пина к ноде
+   * Вызывает колбек addExecPinOut из конфигурации ноды
+   */
+  addExecPinOut(nodeUuid: string): void {
+    const nodeInstance =
+      this.eventInstances.get(nodeUuid) ||
+      this.refInstances.get(nodeUuid) ||
+      this.pureFunctionInstances.get(nodeUuid) ||
+      this.functionInstances.get(nodeUuid);
+
+    if (!nodeInstance) {
+      throw new CommutatorError("Node instance not found");
+    }
+
+    const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
+
+    if (!nodeConfig) {
+      throw new CommutatorError("Node config not found");
+    }
+
+    if (nodeConfig.addExecPinOut === undefined) {
+      throw new CommutatorError("Cannot add pin to node");
+    }
+
+    nodeConfig.addExecPinOut({
+      config: nodeInstance.config,
+      apis: this.config.apis,
+      actions: this.createNodeCallbackActions(nodeUuid, nodeConfig),
+    });
+  }
+
   removePin(uuid: string): void {
     const currentPin = this.pinInstances.get(uuid);
 
@@ -793,8 +900,24 @@ export class CommutatorSchema<
       throw new CommutatorError("Node config not found");
     }
 
-    // Используем валидатор для проверки удаления пина
-    this.validator.validateRemovePin(currentPin, pinNodeConfig, this.pinInstances);
+    // Проверка наличия колбеков addPin* (используется для удаления тоже)
+    if (
+      (currentPin.type === PinInstanceType.Input && pinNodeConfig.addPinIn === undefined) ||
+      (currentPin.type === PinInstanceType.Output && pinNodeConfig.addPinOut === undefined) ||
+      (currentPin.type === PinInstanceType.InputExec && pinNodeConfig.addExecPinIn === undefined) ||
+      (currentPin.type === PinInstanceType.OutputExec && pinNodeConfig.addExecPinOut === undefined)
+    ) {
+      throw new CommutatorError("Cannot remove pin from node");
+    }
+
+    // Проверка: нельзя удалить последний пин данного типа
+    const nodePins = [...this.pinInstances.values()].filter(
+      (p) => p.nodeUuid === currentPin.nodeUuid && p.type === currentPin.type,
+    );
+
+    if (nodePins.length <= 1) {
+      throw new CommutatorError("Cannot remove last pin from node");
+    }
 
     // Удаляем все провода, подключенные к этому пину
     this.wires = this.wires.filter((wire) => wire.from !== uuid && wire.to !== uuid);

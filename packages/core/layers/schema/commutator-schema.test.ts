@@ -85,8 +85,6 @@ describe("CommutatorSchema", () => {
         pinsOut: {
           result: { type: CommonDataType.Number },
         },
-        canAddPinIn: false,
-        canAddPinOut: false,
         exec: async ({ pinsIn }) => ({
           result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
         }),
@@ -115,10 +113,6 @@ describe("CommutatorSchema", () => {
         execPinsOut: {
           next: {},
         },
-        canAddPinIn: false,
-        canAddPinOut: false,
-        canAddExecPinIn: false,
-        canAddExecPinOut: false,
         exec: async () => {},
       });
 
@@ -147,8 +141,6 @@ describe("CommutatorSchema", () => {
               value: { type: CommonDataType.String },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -184,8 +176,6 @@ describe("CommutatorSchema", () => {
               value: { type: CommonDataType.Any },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -218,8 +208,6 @@ describe("CommutatorSchema", () => {
               value: { type: CommonDataType.String },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -252,8 +240,6 @@ describe("CommutatorSchema", () => {
               value: { type: CommonDataType.Number },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -292,8 +278,6 @@ describe("CommutatorSchema", () => {
               value: { type: CommonDataType.String },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -336,8 +320,6 @@ describe("CommutatorSchema", () => {
               value: { type: CommonDataType.String },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           })
           .definePureFunction("target2", {
@@ -345,8 +327,6 @@ describe("CommutatorSchema", () => {
               value: { type: CommonDataType.String },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -392,10 +372,6 @@ describe("CommutatorSchema", () => {
               start: {},
             },
             execPinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
-            canAddExecPinIn: false,
-            canAddExecPinOut: false,
             exec: async () => {},
           });
 
@@ -436,10 +412,6 @@ describe("CommutatorSchema", () => {
               start: {},
             },
             execPinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
-            canAddExecPinIn: false,
-            canAddExecPinOut: false,
             exec: async () => {},
           });
 
@@ -484,10 +456,6 @@ describe("CommutatorSchema", () => {
               start: {},
             },
             execPinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
-            canAddExecPinIn: false,
-            canAddExecPinOut: false,
             exec: async () => {},
           })
           .defineFunction("target2", {
@@ -497,10 +465,6 @@ describe("CommutatorSchema", () => {
               start: {},
             },
             execPinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
-            canAddExecPinIn: false,
-            canAddExecPinOut: false,
             exec: async () => {},
           });
 
@@ -568,8 +532,6 @@ describe("CommutatorSchema", () => {
               a: { type: CommonDataType.String },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           })
           .definePureFunction("func2", {
@@ -577,8 +539,6 @@ describe("CommutatorSchema", () => {
               b: { type: CommonDataType.String },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -644,10 +604,6 @@ describe("CommutatorSchema", () => {
               start: {},
             },
             execPinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
-            canAddExecPinIn: false,
-            canAddExecPinOut: false,
             exec: async () => {},
           });
 
@@ -680,8 +636,6 @@ describe("CommutatorSchema", () => {
               value: { type: CommonDataType.String },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -714,8 +668,6 @@ describe("CommutatorSchema", () => {
               value: { type: CommonDataType.String },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -751,8 +703,6 @@ describe("CommutatorSchema", () => {
               value: { type: CommonDataType.String },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -802,10 +752,6 @@ describe("CommutatorSchema", () => {
               start: {},
             },
             execPinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
-            canAddExecPinIn: false,
-            canAddExecPinOut: false,
             exec: async () => {},
           });
 
@@ -845,8 +791,6 @@ describe("CommutatorSchema", () => {
               booleanValue: { type: CommonDataType.Boolean },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -899,10 +843,6 @@ describe("CommutatorSchema", () => {
               start: {},
             },
             execPinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
-            canAddExecPinIn: false,
-            canAddExecPinOut: false,
             exec: async () => {},
           });
 
@@ -943,10 +883,6 @@ describe("CommutatorSchema", () => {
               execPinsOut: {
                 next: {},
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
-              canAddExecPinIn: false,
-              canAddExecPinOut: false,
               exec: async () => {},
             })
             .defineFunction("func2", {
@@ -958,10 +894,6 @@ describe("CommutatorSchema", () => {
               execPinsOut: {
                 next: {},
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
-              canAddExecPinIn: false,
-              canAddExecPinOut: false,
               exec: async () => {},
             });
 
@@ -1004,10 +936,6 @@ describe("CommutatorSchema", () => {
               execPinsOut: {
                 next: {},
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
-              canAddExecPinIn: false,
-              canAddExecPinOut: false,
               exec: async () => {},
             })
             .defineFunction("func2", {
@@ -1019,10 +947,6 @@ describe("CommutatorSchema", () => {
               execPinsOut: {
                 next: {},
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
-              canAddExecPinIn: false,
-              canAddExecPinOut: false,
               exec: async () => {},
             })
             .defineFunction("func3", {
@@ -1034,10 +958,6 @@ describe("CommutatorSchema", () => {
               execPinsOut: {
                 next: {},
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
-              canAddExecPinIn: false,
-              canAddExecPinOut: false,
               exec: async () => {},
             });
 
@@ -1094,10 +1014,6 @@ describe("CommutatorSchema", () => {
               execPinsOut: {
                 next: {},
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
-              canAddExecPinIn: false,
-              canAddExecPinOut: false,
               exec: async () => {},
             })
             .defineFunction("func2", {
@@ -1107,10 +1023,6 @@ describe("CommutatorSchema", () => {
                 start: {},
               },
               execPinsOut: {},
-              canAddPinIn: false,
-              canAddPinOut: false,
-              canAddExecPinIn: false,
-              canAddExecPinOut: false,
               exec: async () => {},
             });
 
@@ -1150,8 +1062,6 @@ describe("CommutatorSchema", () => {
               pinsOut: {
                 output: { type: CommonDataType.String },
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
               exec: async () => ({ output: "" }),
             })
             .definePureFunction("func2", {
@@ -1161,8 +1071,6 @@ describe("CommutatorSchema", () => {
               pinsOut: {
                 output: { type: CommonDataType.String },
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
               exec: async () => ({ output: "" }),
             });
 
@@ -1203,8 +1111,6 @@ describe("CommutatorSchema", () => {
               pinsOut: {
                 output: { type: CommonDataType.Number },
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
               exec: async () => ({ output: 0 }),
             })
             .definePureFunction("func2", {
@@ -1214,8 +1120,6 @@ describe("CommutatorSchema", () => {
               pinsOut: {
                 output: { type: CommonDataType.Number },
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
               exec: async () => ({ output: 0 }),
             })
             .definePureFunction("func3", {
@@ -1225,8 +1129,6 @@ describe("CommutatorSchema", () => {
               pinsOut: {
                 output: { type: CommonDataType.Number },
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
               exec: async () => ({ output: 0 }),
             });
 
@@ -1281,8 +1183,6 @@ describe("CommutatorSchema", () => {
               pinsOut: {
                 output: { type: CommonDataType.String },
               },
-              canAddPinIn: false,
-              canAddPinOut: false,
               exec: async () => ({ output: "" }),
             })
             .definePureFunction("func2", {
@@ -1290,8 +1190,6 @@ describe("CommutatorSchema", () => {
                 input: { type: CommonDataType.String },
               },
               pinsOut: {},
-              canAddPinIn: false,
-              canAddPinOut: false,
               exec: async () => ({}),
             });
 
@@ -1336,10 +1234,6 @@ describe("CommutatorSchema", () => {
             execPinsOut: {
               next: {},
             },
-            canAddPinIn: false,
-            canAddPinOut: false,
-            canAddExecPinIn: false,
-            canAddExecPinOut: false,
             exec: async () => {},
           })
           .defineFunction("func2", {
@@ -1355,10 +1249,6 @@ describe("CommutatorSchema", () => {
             execPinsOut: {
               next: {},
             },
-            canAddPinIn: false,
-            canAddPinOut: false,
-            canAddExecPinIn: false,
-            canAddExecPinOut: false,
             exec: async () => {},
           });
 
@@ -1442,8 +1332,6 @@ describe("CommutatorSchema", () => {
             pinsOut: {
               result: { type: CommonDataType.Number },
             },
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async ({ pinsIn }) => ({
               result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
             }),
@@ -1459,10 +1347,6 @@ describe("CommutatorSchema", () => {
             execPinsOut: {
               next: {},
             },
-            canAddPinIn: false,
-            canAddPinOut: false,
-            canAddExecPinIn: false,
-            canAddExecPinOut: false,
             exec: async () => {},
           });
 
@@ -1502,8 +1386,6 @@ describe("CommutatorSchema", () => {
               value: { type: CommonDataType.String },
             },
             pinsOut: {},
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({}),
           });
 
@@ -1589,8 +1471,6 @@ describe("CommutatorSchema", () => {
           pinsOut: {
             result: { type: CommonDataType.Number },
           },
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async ({ pinsIn }) => ({
             result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
           }),
@@ -1608,8 +1488,6 @@ describe("CommutatorSchema", () => {
           pinsOut: {
             result: { type: CommonDataType.Number },
           },
-          canAddPinIn: false,
-          canAddPinOut: false,
           exec: async ({ pinsIn }) => ({
             result: (pinsIn.a ?? 0) * (pinsIn.b ?? 0),
           }),
@@ -1632,10 +1510,6 @@ describe("CommutatorSchema", () => {
           execPinsOut: {
             next: {},
           },
-          canAddPinIn: false,
-          canAddPinOut: false,
-          canAddExecPinIn: false,
-          canAddExecPinOut: false,
           exec: async () => {},
         });
 
@@ -1654,10 +1528,6 @@ describe("CommutatorSchema", () => {
           execPinsOut: {
             next: {},
           },
-          canAddPinIn: false,
-          canAddPinOut: false,
-          canAddExecPinIn: false,
-          canAddExecPinOut: false,
           exec: async () => {},
         });
 
@@ -1687,8 +1557,6 @@ describe("CommutatorSchema", () => {
             pinsOut: {
               result: { type: CommonDataType.Number },
             },
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({ result: 0 }),
           })
           .defineFunction("log", {
@@ -1700,10 +1568,6 @@ describe("CommutatorSchema", () => {
             execPinsOut: {
               next: {},
             },
-            canAddPinIn: false,
-            canAddPinOut: false,
-            canAddExecPinIn: false,
-            canAddExecPinOut: false,
             exec: async () => {},
           });
 
@@ -1777,8 +1641,6 @@ describe("CommutatorSchema", () => {
             pinsOut: {
               result: { type: CommonDataType.String },
             },
-            canAddPinIn: false,
-            canAddPinOut: false,
             exec: async () => ({ result: "" }),
           });
 

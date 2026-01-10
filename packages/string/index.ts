@@ -7,8 +7,6 @@ export const stringExtension = Commutator.initialize()
       B: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: `${pinsIn.A || ""}${pinsIn.B || ""}`,
     }),
@@ -18,8 +16,6 @@ export const stringExtension = Commutator.initialize()
       Value: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: pinsIn.Value?.length || 0,
     }),
@@ -31,8 +27,6 @@ export const stringExtension = Commutator.initialize()
       End: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const start = pinsIn.Start ?? 0;
@@ -49,8 +43,6 @@ export const stringExtension = Commutator.initialize()
       Limit: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Array, itemType: { type: CommonDataType.String } } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const separator = pinsIn.Separator || "";
@@ -69,8 +61,6 @@ export const stringExtension = Commutator.initialize()
       Separator: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || [];
       const separator = pinsIn.Separator || "";
@@ -86,8 +76,6 @@ export const stringExtension = Commutator.initialize()
       End: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const start = pinsIn.Start ?? 0;
@@ -102,8 +90,6 @@ export const stringExtension = Commutator.initialize()
       Value: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.Value || "").toUpperCase(),
     }),
@@ -113,8 +99,6 @@ export const stringExtension = Commutator.initialize()
       Value: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.Value || "").toLowerCase(),
     }),
@@ -124,8 +108,6 @@ export const stringExtension = Commutator.initialize()
       Value: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.Value || "").trim(),
     }),
@@ -135,8 +117,6 @@ export const stringExtension = Commutator.initialize()
       Value: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.Value || "").trimStart(),
     }),
@@ -146,8 +126,6 @@ export const stringExtension = Commutator.initialize()
       Value: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.Value || "").trimEnd(),
     }),
@@ -159,8 +137,6 @@ export const stringExtension = Commutator.initialize()
       Replace: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const search = pinsIn.Search || "";
@@ -177,8 +153,6 @@ export const stringExtension = Commutator.initialize()
       Replace: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const search = pinsIn.Search || "";
@@ -195,8 +169,6 @@ export const stringExtension = Commutator.initialize()
       FromIndex: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const search = pinsIn.Search || "";
@@ -216,8 +188,6 @@ export const stringExtension = Commutator.initialize()
       FromIndex: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const search = pinsIn.Search || "";
@@ -237,8 +207,6 @@ export const stringExtension = Commutator.initialize()
       Position: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const search = pinsIn.Search || "";
@@ -258,8 +226,6 @@ export const stringExtension = Commutator.initialize()
       Length: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const search = pinsIn.Search || "";
@@ -278,8 +244,6 @@ export const stringExtension = Commutator.initialize()
       Search: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.Boolean } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: (pinsIn.Value || "").includes(pinsIn.Search || ""),
     }),
@@ -291,8 +255,6 @@ export const stringExtension = Commutator.initialize()
       PadString: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const length = pinsIn.Length ?? 0;
@@ -309,8 +271,6 @@ export const stringExtension = Commutator.initialize()
       PadString: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const length = pinsIn.Length ?? 0;
@@ -326,8 +286,6 @@ export const stringExtension = Commutator.initialize()
       Index: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const index = pinsIn.Index ?? 0;
@@ -342,8 +300,6 @@ export const stringExtension = Commutator.initialize()
       Index: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const index = pinsIn.Index ?? 0;
@@ -358,8 +314,6 @@ export const stringExtension = Commutator.initialize()
       Count: { type: CommonDataType.Number },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const count = pinsIn.Count ?? 0;
@@ -373,8 +327,6 @@ export const stringExtension = Commutator.initialize()
       Value: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       return {
@@ -387,8 +339,6 @@ export const stringExtension = Commutator.initialize()
       Value: { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.Number } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => {
       const value = pinsIn.Value || "";
       const num = Number(value);
@@ -402,8 +352,6 @@ export const stringExtension = Commutator.initialize()
       Value: { type: CommonDataType.Any },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       Result: String(pinsIn.Value ?? ""),
     }),
@@ -413,8 +361,7 @@ export const stringExtension = Commutator.initialize()
       "": { type: CommonDataType.String },
     },
     pinsOut: { Result: { type: CommonDataType.String } },
-    canAddPinIn: true,
-    canAddPinOut: false,
+    addPinIn: () => {},
     exec: async ({ pinsIn }) => {
       const template = String(pinsIn[""] ?? "");
       let result = template;
