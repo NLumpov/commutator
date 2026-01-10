@@ -2,6 +2,10 @@
 
 Библиотека для создания визуальных блюпринтов (blueprints) в стиле Unreal Engine Blueprints. Commutator позволяет создавать типобезопасные визуальные графы из нод, которые могут выполнять вычисления, обрабатывать события и управлять потоком выполнения.
 
+[![Storybook shield][shields-storybook-image]](https://storybook.js.org)
+[![ESLint shield][shields-eslint-image]](https://eslint.org)
+[![ZenVer shield][shields-zenver-image]](https://github.com/NotAShelf/ZenVer)
+
 ## Архитектура
 
 Библиотека состоит из трёх основных слоёв:
@@ -193,3 +197,7 @@ bun test
 
 - Bun (вместо Node.js, npm, pnpm или vite)
 - TypeScript ^5
+
+[shields-storybook-image]: https://img.shields.io/badge/кул_стори-братан-white?logo=storybook&color=FF4785&style=flat-square
+[shields-zenver-image]: https://img.shields.io/badge/писать_версии-впадлу-white?logo=kfc&color=F40027&style=flat-square
+[shields-eslint-image]: https://img.shields.io/badge/еслинта-нет-white?logo=eslint&color=6358D4&style=flat-square
