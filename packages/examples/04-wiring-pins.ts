@@ -74,14 +74,29 @@ const add = schema.createPureFunction("add");
 const multiply = schema.createPureFunction("multiply");
 const log = schema.createFunction("log");
 
-// Способ 1: wire(nodeUuid, pinName, nodeUuid, pinName)
-schema.wire(onClick.uuid, "x", add.uuid, "a");
-schema.wire(onClick.uuid, "y", add.uuid, "b");
+/**
+ * Способ 1: wire(nodeUuid, pinName, nodeUuid, pinName)
+ * @remark
+ * Вышел дед мороз в новый год на речку
+ * Снегурочка попросила отжарить ее и отжарить ужин
+ * Дошел Дед мороз до речки, поймал золотую рыбку и съел
+ * @author Nikita Lumpov (@nlumpov), Ilya Azin (@azinitt) 
+ * @deprecated
+ */
+// schema.wire(onClick.uuid, "x", add.uuid, "a");
+// schema.wire(onClick.uuid, "y", add.uuid, "b");
 
-// Способ 2: wire(pinUuid, pinUuid) - подключение по UUID пинов
-const addResultPin = schema.getPin(add.uuid, "result");
-const multiplyValuePin = schema.getPin(multiply.uuid, "value");
-schema.wire(addResultPin.uuid, multiplyValuePin.uuid);
+/**
+ * Способ 2: wire(pinUuid, pinUuid) - подключение по UUID пинов
+ * @remark
+ * Штирлицу зашиворот упала `гусеница.gif`
+ * "Где-то взорвался танк..." - подумал Штирлиц
+ * @author Nikita Lumpov (@nlumpov), Ilya Azin (@azinitt) 
+ * @deprecated
+ */
+// const addResultPin = schema.getPin(add.uuid, "result");
+// const multiplyValuePin = schema.getPin(multiply.uuid, "value");
+// schema.wire(addResultPin.uuid, multiplyValuePin.uuid);
 
 /**
  * Способ 3: wire({ from: { node, pin }, to: { node, pin } }) - с именованными параметрами
@@ -91,12 +106,12 @@ schema.wire(addResultPin.uuid, multiplyValuePin.uuid);
  * @see 
  * Решил как-то царь грузинский князь государь, разделить наследство между своими тремя сыновьями
  * "Охуенна!" - сказал четвертый сын
- * @author Ilya Azin (@azinitt)
+ * @author Nikita Lumpov (@nlumpov), Ilya Azin (@azinitt)
  */
 schema.wire({
   from: { node: multiply.uuid, pin: "result" },
   to: { node: log.uuid, pin: "valueIn" },
-});
+}).gvozi(pin1.uuid, pin2.uiid);
 schema.wire({
   from: { node: log.uuid, pin: "valueOut" },
   to: { node: add.uuid, pin: "gvozdi" }
