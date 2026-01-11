@@ -40,10 +40,8 @@ export class CommutatorSchema<
   > = {},
   const Apis extends Record<string, any> = {},
 > {
-  private eventInstances: Map<string, EventNodeInstance<any>> = new Map();
-  private refInstances: Map<string, RefNodeInstance<any>> = new Map();
-  private pureFunctionInstances: Map<string, PureFunctionNodeInstance<any>> = new Map();
-  private functionInstances: Map<string, FunctionNodeInstance<any>> = new Map();
+  // Единый индекс для быстрого доступа ко всем нодам
+  private nodeInstances: Map<string, AbstractNodeInstance<string>> = new Map();
   private pinInstances: Map<string, PinInstance> = new Map();
   private wires: Wire[] = [];
   private validator: CommutatorValidator<DataTypes>;
@@ -58,39 +56,30 @@ export class CommutatorSchema<
       return;
     }
 
-    this.eventInstances = new Map(
-      snapshot.events.map((eventInstance) => [eventInstance.uuid, { ...eventInstance }]),
-    );
-    this.refInstances = new Map(
-      snapshot.refs.map((refInstance) => [refInstance.uuid, { ...refInstance }]),
-    );
-    this.pureFunctionInstances = new Map(
-      snapshot.pureFunctions.map((pureFunctionInstance) => [
-        pureFunctionInstance.uuid,
-        { ...pureFunctionInstance },
-      ]),
-    );
-    this.functionInstances = new Map(
-      snapshot.functions.map((functionInstance) => [
-        functionInstance.uuid,
-        { ...functionInstance },
-      ]),
-    );
+    // Восстанавливаем все ноды в единый индекс
+    for (const eventInstance of snapshot.events) {
+      this.nodeInstances.set(eventInstance.uuid, { ...eventInstance });
+    }
+    for (const refInstance of snapshot.refs) {
+      this.nodeInstances.set(refInstance.uuid, { ...refInstance });
+    }
+    for (const pureFunctionInstance of snapshot.pureFunctions) {
+      this.nodeInstances.set(pureFunctionInstance.uuid, { ...pureFunctionInstance });
+    }
+    for (const functionInstance of snapshot.functions) {
+      this.nodeInstances.set(functionInstance.uuid, { ...functionInstance });
+    }
     this.pinInstances = new Map(
       snapshot.pinInstances.map((pinInstance) => {
         // Если в снапшоте нет dataType, инициализируем из статической конфигурации
         if (!pinInstance.dataType) {
-          const nodeInstance =
-            this.eventInstances.get(pinInstance.nodeUuid) ||
-            this.refInstances.get(pinInstance.nodeUuid) ||
-            this.pureFunctionInstances.get(pinInstance.nodeUuid) ||
-            this.functionInstances.get(pinInstance.nodeUuid);
+          const nodeInstance = this.getNodeInstance(pinInstance.nodeUuid);
 
           if (!nodeInstance) {
             throw new CommutatorError(`Node instance for pin "${pinInstance.name}" not found`);
           }
 
-          const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
+          const nodeConfig = this.getNodeConfig(pinInstance.nodeUuid);
 
           if (!nodeConfig) {
             throw new CommutatorError(
@@ -120,12 +109,7 @@ export class CommutatorSchema<
     this.wires = snapshot.wires.map((wire) => ({ ...wire }));
 
     // После восстановления всех пинов, вызываем onConfigChange для всех нод (если есть callback'и)
-    const allNodeInstances: Array<AbstractNodeInstance<string>> = [
-      ...this.eventInstances.values(),
-      ...this.refInstances.values(),
-      ...this.pureFunctionInstances.values(),
-      ...this.functionInstances.values(),
-    ];
+    const allNodeInstances = this.getAllNodeInstances();
 
     for (const nodeInstance of allNodeInstances) {
       const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
@@ -210,6 +194,98 @@ export class CommutatorSchema<
     }
   }
 
+  /**
+   * Получает экземпляр ноды по UUID
+   */
+  private getNodeInstance(uuid: string): AbstractNodeInstance<string> | undefined {
+    return this.nodeInstances.get(uuid);
+  }
+
+  /**
+   * Получает конфигурацию ноды по UUID ноды
+   */
+  private getNodeConfig(
+    nodeUuid: string,
+  ):
+    | EventNode<DataTypes, any, any, any, any, any, any, any>
+    | RefNode<DataTypes, any, any, any, any, any, any, any>
+    | PureFunctionNode<DataTypes, any, any, any, any, any, any, any>
+    | FunctionNode<DataTypes, any, any, any, any, any, any, any>
+    | undefined {
+    const nodeInstance = this.getNodeInstance(nodeUuid);
+    if (!nodeInstance) {
+      return undefined;
+    }
+    return this.config.getNodeConfigByName(nodeInstance.name);
+  }
+
+  /**
+   * Получает все экземпляры нод
+   */
+  private getAllNodeInstances(): AbstractNodeInstance<string>[] {
+    return Array.from(this.nodeInstances.values());
+  }
+
+  /**
+   * Внутренний helper метод для создания ноды
+   * Выполняет общую логику создания ноды: валидацию, создание экземпляра, сохранение, создание пинов и вызов callback'ов
+   */
+  private createNodeInternal<
+    NodeInstanceType,
+    NodeConfigType extends
+      | EventNode<DataTypes, any, any, any, any, any, any, any>
+      | RefNode<DataTypes, any, any, any, any, any, any, any>
+      | PureFunctionNode<DataTypes, any, any, any, any, any, any, any>
+      | FunctionNode<DataTypes, any, any, any, any, any, any, any>,
+  >(
+    nodeType: NodeType,
+    name: string,
+    config: unknown,
+    nodeConfig: NodeConfigType | undefined,
+  ): NodeInstanceType {
+    if (!nodeConfig) {
+      throw new CommutatorError(`Config for "${String(name)}" not found`);
+    }
+
+    if (
+      nodeConfig.config &&
+      config !== undefined &&
+      !this.validator.validateFieldValue(nodeConfig.config, config)
+    ) {
+      throw new CommutatorError(`Invalid config for ${nodeConfig.type} "${String(name)}"`);
+    }
+
+    const nodeInstance = {
+      uuid: ulid(),
+      type: nodeType,
+      name,
+      x: 0,
+      y: 0,
+      config,
+    } as NodeInstanceType;
+
+    const nodeInstanceWithUuid = nodeInstance as NodeInstanceType & { uuid: string };
+    this.nodeInstances.set(nodeInstanceWithUuid.uuid, nodeInstance as AbstractNodeInstance<string>);
+    this.createPinInstances(
+      nodeInstanceWithUuid.uuid,
+      (nodeConfig.pinsIn as Record<string, Field<DataTypes>>) || {},
+      (nodeConfig.pinsOut as Record<string, Field<DataTypes>>) || {},
+      (nodeConfig.execPinsIn as Record<string, null>) || {},
+      (nodeConfig.execPinsOut as Record<string, null>) || {},
+    );
+
+    // Вызываем onConfigChange callback (если есть)
+    if (nodeConfig.onConfigChange) {
+      nodeConfig.onConfigChange({
+        config,
+        apis: this.config.apis,
+        actions: this.createNodeCallbackActions(nodeInstanceWithUuid.uuid, nodeConfig),
+      });
+    }
+
+    return nodeInstance;
+  }
+
   createEvent<Name extends keyof Events>(
     name: Name,
     config?: FieldValue<NonNullable<Events[Name]["config"]>, DataTypes>,
@@ -223,46 +299,12 @@ export class CommutatorSchema<
     EventNodeInstance<Name>
   > {
     const eventConfig = this.config.events[name];
-
-    if (!eventConfig) {
-      throw new CommutatorError(`Event config for "${String(name)}" not found`);
-    }
-
-    if (
-      eventConfig.config &&
-      config !== undefined &&
-      !this.validator.validateFieldValue(eventConfig.config, config)
-    ) {
-      throw new CommutatorError(`Invalid config for event "${String(name)}"`);
-    }
-
-    const eventInstance: EventNodeInstance<Name> = {
-      uuid: ulid(),
-      type: NodeType.Event,
-      name,
-      x: 0,
-      y: 0,
+    const eventInstance = this.createNodeInternal<EventNodeInstance<Name>, typeof eventConfig>(
+      NodeType.Event,
+      name as string,
       config,
-    };
-
-    this.eventInstances.set(eventInstance.uuid, eventInstance);
-    this.createPinInstances(
-      eventInstance.uuid,
-      eventConfig.pinsIn || {},
-      eventConfig.pinsOut || {},
-      eventConfig.execPinsIn || {},
-      eventConfig.execPinsOut || {},
+      eventConfig,
     );
-
-    // Вызываем onConfigChange callback (если есть)
-    if (eventConfig.onConfigChange) {
-      eventConfig.onConfigChange({
-        config,
-        apis: this.config.apis,
-        actions: this.createNodeCallbackActions(eventInstance.uuid, eventConfig),
-      });
-    }
-
     return new FluentNodeBuilder(this, { ...eventInstance });
   }
 
@@ -279,46 +321,12 @@ export class CommutatorSchema<
     RefNodeInstance<Name>
   > {
     const refConfig = this.config.refs[name];
-
-    if (!refConfig) {
-      throw new CommutatorError(`Ref config for "${String(name)}" not found`);
-    }
-
-    if (
-      refConfig.config &&
-      config !== undefined &&
-      !this.validator.validateFieldValue(refConfig.config, config)
-    ) {
-      throw new CommutatorError(`Invalid config for ref "${String(name)}"`);
-    }
-
-    const refInstance: RefNodeInstance<Name> = {
-      uuid: ulid(),
-      type: NodeType.Ref,
-      name,
-      x: 0,
-      y: 0,
+    const refInstance = this.createNodeInternal<RefNodeInstance<Name>, typeof refConfig>(
+      NodeType.Ref,
+      name as string,
       config,
-    };
-
-    this.refInstances.set(refInstance.uuid, refInstance);
-    this.createPinInstances(
-      refInstance.uuid,
-      refConfig.pinsIn || {},
-      refConfig.pinsOut || {},
-      refConfig.execPinsIn || {},
-      refConfig.execPinsOut || {},
+      refConfig,
     );
-
-    // Вызываем onConfigChange callback (если есть)
-    if (refConfig.onConfigChange) {
-      refConfig.onConfigChange({
-        config,
-        apis: this.config.apis,
-        actions: this.createNodeCallbackActions(refInstance.uuid, refConfig),
-      });
-    }
-
     return new FluentNodeBuilder(this, { ...refInstance });
   }
 
@@ -335,46 +343,10 @@ export class CommutatorSchema<
     PureFunctionNodeInstance<Name>
   > {
     const pureFunctionConfig = this.config.pureFunctions[name];
-
-    if (!pureFunctionConfig) {
-      throw new CommutatorError(`Pure function config for "${String(name)}" not found`);
-    }
-
-    if (
-      pureFunctionConfig.config &&
-      config !== undefined &&
-      !this.validator.validateFieldValue(pureFunctionConfig.config, config)
-    ) {
-      throw new CommutatorError(`Invalid config for pure function "${String(name)}"`);
-    }
-
-    const pureFunctionInstance: PureFunctionNodeInstance<Name> = {
-      uuid: ulid(),
-      type: NodeType.PureFunction,
-      name,
-      x: 0,
-      y: 0,
-      config,
-    };
-
-    this.pureFunctionInstances.set(pureFunctionInstance.uuid, pureFunctionInstance);
-    this.createPinInstances(
-      pureFunctionInstance.uuid,
-      pureFunctionConfig.pinsIn || {},
-      pureFunctionConfig.pinsOut || {},
-      pureFunctionConfig.execPinsIn || {},
-      pureFunctionConfig.execPinsOut || {},
-    );
-
-    // Вызываем onConfigChange callback (если есть)
-    if (pureFunctionConfig.onConfigChange) {
-      pureFunctionConfig.onConfigChange({
-        config: config,
-        apis: this.config.apis,
-        actions: this.createNodeCallbackActions(pureFunctionInstance.uuid, pureFunctionConfig),
-      });
-    }
-
+    const pureFunctionInstance = this.createNodeInternal<
+      PureFunctionNodeInstance<Name>,
+      typeof pureFunctionConfig
+    >(NodeType.PureFunction, name as string, config, pureFunctionConfig);
     return new FluentNodeBuilder(this, { ...pureFunctionInstance });
   }
 
@@ -391,46 +363,10 @@ export class CommutatorSchema<
     FunctionNodeInstance<Name>
   > {
     const functionConfig = this.config.functions[name];
-
-    if (!functionConfig) {
-      throw new CommutatorError(`Function config for "${String(name)}" not found`);
-    }
-
-    if (
-      functionConfig.config &&
-      config !== undefined &&
-      !this.validator.validateFieldValue(functionConfig.config, config)
-    ) {
-      throw new CommutatorError(`Invalid config for function "${String(name)}"`);
-    }
-
-    const functionInstance: FunctionNodeInstance<Name> = {
-      uuid: ulid(),
-      type: NodeType.Function,
-      name,
-      x: 0,
-      y: 0,
-      config,
-    };
-
-    this.functionInstances.set(functionInstance.uuid, functionInstance);
-    this.createPinInstances(
-      functionInstance.uuid,
-      functionConfig.pinsIn || {},
-      functionConfig.pinsOut || {},
-      functionConfig.execPinsIn || {},
-      functionConfig.execPinsOut || {},
-    );
-
-    // Вызываем onConfigChange callback (если есть)
-    if (functionConfig.onConfigChange) {
-      functionConfig.onConfigChange({
-        config: config,
-        apis: this.config.apis,
-        actions: this.createNodeCallbackActions(functionInstance.uuid, functionConfig),
-      });
-    }
-
+    const functionInstance = this.createNodeInternal<
+      FunctionNodeInstance<Name>,
+      typeof functionConfig
+    >(NodeType.Function, name as string, config, functionConfig);
     return new FluentNodeBuilder(this, { ...functionInstance });
   }
 
@@ -658,25 +594,16 @@ export class CommutatorSchema<
     }
 
     // Находим ноды по uuid
-    const outputNodeInstance =
-      this.eventInstances.get(outputPin.nodeUuid) ||
-      this.refInstances.get(outputPin.nodeUuid) ||
-      this.pureFunctionInstances.get(outputPin.nodeUuid) ||
-      this.functionInstances.get(outputPin.nodeUuid);
-
-    const inputNodeInstance =
-      this.eventInstances.get(inputPin.nodeUuid) ||
-      this.refInstances.get(inputPin.nodeUuid) ||
-      this.pureFunctionInstances.get(inputPin.nodeUuid) ||
-      this.functionInstances.get(inputPin.nodeUuid);
+    const outputNodeInstance = this.getNodeInstance(outputPin.nodeUuid);
+    const inputNodeInstance = this.getNodeInstance(inputPin.nodeUuid);
 
     if (!outputNodeInstance || !inputNodeInstance) {
       throw new CommutatorError("Node instance not found");
     }
 
     // Получаем конфигурацию нод
-    const outputNodeConfig = this.config.getNodeConfigByName(outputNodeInstance.name);
-    const inputNodeConfig = this.config.getNodeConfigByName(inputNodeInstance.name);
+    const outputNodeConfig = this.getNodeConfig(outputPin.nodeUuid);
+    const inputNodeConfig = this.getNodeConfig(inputPin.nodeUuid);
 
     if (!outputNodeConfig || !inputNodeConfig) {
       throw new CommutatorError("Node config not found");
@@ -692,12 +619,7 @@ export class CommutatorSchema<
 
     // Создаем Map всех нод для валидатора
     const allNodesMap = new Map<string, AbstractNodeInstance<string>>();
-    for (const node of [
-      ...this.eventInstances.values(),
-      ...this.refInstances.values(),
-      ...this.pureFunctionInstances.values(),
-      ...this.functionInstances.values(),
-    ]) {
+    for (const node of this.getAllNodeInstances()) {
       allNodesMap.set(node.uuid, node);
     }
 
@@ -763,17 +685,13 @@ export class CommutatorSchema<
     type: PinInstanceType,
     dataType: null | Field<DataTypes>,
   ): void {
-    const nodeInstance =
-      this.eventInstances.get(nodeUuid) ||
-      this.refInstances.get(nodeUuid) ||
-      this.pureFunctionInstances.get(nodeUuid) ||
-      this.functionInstances.get(nodeUuid);
+    const nodeInstance = this.getNodeInstance(nodeUuid);
 
     if (!nodeInstance) {
       throw new CommutatorError("Node instance not found");
     }
 
-    const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
+    const nodeConfig = this.getNodeConfig(nodeUuid);
 
     if (!nodeConfig) {
       throw new CommutatorError("Node config not found");
@@ -831,35 +749,50 @@ export class CommutatorSchema<
   }
 
   /**
-   * Добавление входного data-пина к ноде
-   * Вызывает колбек addPinIn из конфигурации ноды
+   * Внутренний helper метод для добавления пина по типу
    */
-  addPinIn(nodeUuid: string): void {
-    const nodeInstance =
-      this.eventInstances.get(nodeUuid) ||
-      this.refInstances.get(nodeUuid) ||
-      this.pureFunctionInstances.get(nodeUuid) ||
-      this.functionInstances.get(nodeUuid);
+  private addPinByType(
+    nodeUuid: string,
+    pinType: "pinIn" | "pinOut" | "execPinIn" | "execPinOut",
+  ): void {
+    const nodeInstance = this.getNodeInstance(nodeUuid);
 
     if (!nodeInstance) {
       throw new CommutatorError("Node instance not found");
     }
 
-    const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
+    const nodeConfig = this.getNodeConfig(nodeUuid);
 
     if (!nodeConfig) {
       throw new CommutatorError("Node config not found");
     }
 
-    if (nodeConfig.addPinIn === undefined) {
+    const callbackMap = {
+      pinIn: nodeConfig.addPinIn,
+      pinOut: nodeConfig.addPinOut,
+      execPinIn: nodeConfig.addExecPinIn,
+      execPinOut: nodeConfig.addExecPinOut,
+    } as const;
+
+    const callback = callbackMap[pinType];
+
+    if (callback === undefined) {
       throw new CommutatorError("Cannot add pin to node");
     }
 
-    nodeConfig.addPinIn({
+    callback({
       config: nodeInstance.config,
       apis: this.config.apis,
       actions: this.createNodeCallbackActions(nodeUuid, nodeConfig),
     });
+  }
+
+  /**
+   * Добавление входного data-пина к ноде
+   * Вызывает колбек addPinIn из конфигурации ноды
+   */
+  addPinIn(nodeUuid: string): void {
+    this.addPinByType(nodeUuid, "pinIn");
   }
 
   /**
@@ -867,31 +800,7 @@ export class CommutatorSchema<
    * Вызывает колбек addPinOut из конфигурации ноды
    */
   addPinOut(nodeUuid: string): void {
-    const nodeInstance =
-      this.eventInstances.get(nodeUuid) ||
-      this.refInstances.get(nodeUuid) ||
-      this.pureFunctionInstances.get(nodeUuid) ||
-      this.functionInstances.get(nodeUuid);
-
-    if (!nodeInstance) {
-      throw new CommutatorError("Node instance not found");
-    }
-
-    const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
-
-    if (!nodeConfig) {
-      throw new CommutatorError("Node config not found");
-    }
-
-    if (nodeConfig.addPinOut === undefined) {
-      throw new CommutatorError("Cannot add pin to node");
-    }
-
-    nodeConfig.addPinOut({
-      config: nodeInstance.config,
-      apis: this.config.apis,
-      actions: this.createNodeCallbackActions(nodeUuid, nodeConfig),
-    });
+    this.addPinByType(nodeUuid, "pinOut");
   }
 
   /**
@@ -899,31 +808,7 @@ export class CommutatorSchema<
    * Вызывает колбек addExecPinIn из конфигурации ноды
    */
   addExecPinIn(nodeUuid: string): void {
-    const nodeInstance =
-      this.eventInstances.get(nodeUuid) ||
-      this.refInstances.get(nodeUuid) ||
-      this.pureFunctionInstances.get(nodeUuid) ||
-      this.functionInstances.get(nodeUuid);
-
-    if (!nodeInstance) {
-      throw new CommutatorError("Node instance not found");
-    }
-
-    const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
-
-    if (!nodeConfig) {
-      throw new CommutatorError("Node config not found");
-    }
-
-    if (nodeConfig.addExecPinIn === undefined) {
-      throw new CommutatorError("Cannot add pin to node");
-    }
-
-    nodeConfig.addExecPinIn({
-      config: nodeInstance.config,
-      apis: this.config.apis,
-      actions: this.createNodeCallbackActions(nodeUuid, nodeConfig),
-    });
+    this.addPinByType(nodeUuid, "execPinIn");
   }
 
   /**
@@ -931,31 +816,7 @@ export class CommutatorSchema<
    * Вызывает колбек addExecPinOut из конфигурации ноды
    */
   addExecPinOut(nodeUuid: string): void {
-    const nodeInstance =
-      this.eventInstances.get(nodeUuid) ||
-      this.refInstances.get(nodeUuid) ||
-      this.pureFunctionInstances.get(nodeUuid) ||
-      this.functionInstances.get(nodeUuid);
-
-    if (!nodeInstance) {
-      throw new CommutatorError("Node instance not found");
-    }
-
-    const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
-
-    if (!nodeConfig) {
-      throw new CommutatorError("Node config not found");
-    }
-
-    if (nodeConfig.addExecPinOut === undefined) {
-      throw new CommutatorError("Cannot add pin to node");
-    }
-
-    nodeConfig.addExecPinOut({
-      config: nodeInstance.config,
-      apis: this.config.apis,
-      actions: this.createNodeCallbackActions(nodeUuid, nodeConfig),
-    });
+    this.addPinByType(nodeUuid, "execPinOut");
   }
 
   removePin(uuid: string): void {
@@ -965,17 +826,13 @@ export class CommutatorSchema<
       throw new CommutatorError("Pin instance not found");
     }
 
-    const pinNodeInstance =
-      this.eventInstances.get(currentPin.nodeUuid) ||
-      this.refInstances.get(currentPin.nodeUuid) ||
-      this.pureFunctionInstances.get(currentPin.nodeUuid) ||
-      this.functionInstances.get(currentPin.nodeUuid);
+    const pinNodeInstance = this.getNodeInstance(currentPin.nodeUuid);
 
     if (!pinNodeInstance) {
       throw new CommutatorError("Node instance not found");
     }
 
-    const pinNodeConfig = this.config.getNodeConfigByName(pinNodeInstance.name);
+    const pinNodeConfig = this.getNodeConfig(currentPin.nodeUuid);
 
     if (!pinNodeConfig) {
       throw new CommutatorError("Node config not found");
@@ -1007,49 +864,27 @@ export class CommutatorSchema<
   }
 
   moveNode(uuid: string, x: number, y: number): void {
-    const nodeInstance =
-      this.eventInstances.get(uuid) ||
-      this.refInstances.get(uuid) ||
-      this.pureFunctionInstances.get(uuid) ||
-      this.functionInstances.get(uuid);
+    const nodeInstance = this.getNodeInstance(uuid);
     if (!nodeInstance) {
       throw new CommutatorError("Node instance not found");
     }
 
-    switch (nodeInstance.type) {
-      case NodeType.Event:
-        this.eventInstances.set(uuid, { ...nodeInstance, x, y });
-        break;
-      case NodeType.Ref:
-        this.refInstances.set(uuid, { ...nodeInstance, x, y });
-        break;
-      case NodeType.PureFunction:
-        this.pureFunctionInstances.set(uuid, { ...nodeInstance, x, y });
-        break;
-      case NodeType.Function:
-        this.functionInstances.set(uuid, { ...nodeInstance, x, y });
-        break;
-      default:
-        throw new CommutatorError("Unknown node type");
-    }
+    const updatedNode = { ...nodeInstance, x, y };
+    this.nodeInstances.set(uuid, updatedNode);
   }
 
   /**
    * Обновляет конфигурацию ноды. Вызывает onConfigChange callback, если он определен.
    */
   updateNodeConfig(uuid: string, config: unknown): void {
-    const nodeInstance =
-      this.eventInstances.get(uuid) ||
-      this.refInstances.get(uuid) ||
-      this.pureFunctionInstances.get(uuid) ||
-      this.functionInstances.get(uuid);
+    const nodeInstance = this.getNodeInstance(uuid);
 
     if (!nodeInstance) {
       throw new CommutatorError("Node instance not found");
     }
 
     // Получаем конфигурацию ноды
-    const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
+    const nodeConfig = this.getNodeConfig(uuid);
 
     if (!nodeConfig) {
       throw new CommutatorError("Node config not found");
@@ -1058,23 +893,9 @@ export class CommutatorSchema<
     // Используем валидатор для проверки обновления конфига
     this.validator.validateUpdateNodeConfig(nodeConfig, config);
 
-    // Обновляем config в соответствующем Map
-    switch (nodeInstance.type) {
-      case NodeType.Event:
-        this.eventInstances.set(uuid, { ...nodeInstance, config });
-        break;
-      case NodeType.Ref:
-        this.refInstances.set(uuid, { ...nodeInstance, config });
-        break;
-      case NodeType.PureFunction:
-        this.pureFunctionInstances.set(uuid, { ...nodeInstance, config });
-        break;
-      case NodeType.Function:
-        this.functionInstances.set(uuid, { ...nodeInstance, config });
-        break;
-      default:
-        throw new CommutatorError("Unknown node type");
-    }
+    // Обновляем config в nodeInstances
+    const updatedNode = { ...nodeInstance, config };
+    this.nodeInstances.set(uuid, updatedNode);
 
     if (nodeConfig.onConfigChange) {
       nodeConfig.onConfigChange({
@@ -1112,42 +933,34 @@ export class CommutatorSchema<
 
   extract(): SchemaSnapshot {
     const events: EventNodeInstance<any>[] = [];
-    for (const event of this.eventInstances.values()) {
-      events.push({ ...event });
-    }
-
     const refs: RefNodeInstance<any>[] = [];
-    for (const ref of this.refInstances.values()) {
-      refs.push({ ...ref });
-    }
-
     const pureFunctions: PureFunctionNodeInstance<any>[] = [];
-    for (const pureFunc of this.pureFunctionInstances.values()) {
-      pureFunctions.push({ ...pureFunc });
-    }
-
     const functions: FunctionNodeInstance<any>[] = [];
-    for (const func of this.functionInstances.values()) {
-      functions.push({ ...func });
-    }
 
-    const pinInstances: PinInstance[] = [];
-    for (const pin of this.pinInstances.values()) {
-      pinInstances.push({ ...pin });
-    }
-
-    const wires: Wire[] = [];
-    for (const wire of this.wires) {
-      wires.push({ ...wire });
+    for (const node of this.nodeInstances.values()) {
+      switch (node.type) {
+        case NodeType.Event:
+          events.push(node as EventNodeInstance<any>);
+          break;
+        case NodeType.Ref:
+          refs.push(node as RefNodeInstance<any>);
+          break;
+        case NodeType.PureFunction:
+          pureFunctions.push(node as PureFunctionNodeInstance<any>);
+          break;
+        case NodeType.Function:
+          functions.push(node as FunctionNodeInstance<any>);
+          break;
+      }
     }
 
     return {
-      events,
-      refs,
-      pureFunctions,
-      functions,
-      pinInstances,
-      wires,
+      events: events.map((event) => ({ ...event })),
+      refs: refs.map((ref) => ({ ...ref })),
+      pureFunctions: pureFunctions.map((pureFunc) => ({ ...pureFunc })),
+      functions: functions.map((func) => ({ ...func })),
+      pinInstances: Array.from(this.pinInstances.values()).map((pin) => ({ ...pin })),
+      wires: this.wires.map((wire) => ({ ...wire })),
     };
   }
 }

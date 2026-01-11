@@ -6,6 +6,23 @@ import { CommonDataType, PrimitiveDataTypes } from "./enums";
 import type { Field, PrimitiveDataType } from "./types";
 
 export class CommutatorValidator<const DataTypes extends Record<string, Field<DataTypes>> = {}> {
+  // Константы для валидации UUID/ULID
+  private static readonly ULID_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  private static readonly ULID_ALPHABET_SET = new Set(CommutatorValidator.ULID_ALPHABET.split(""));
+  private static readonly HEX_CHARS = "0123456789abcdefABCDEF";
+  private static readonly HEX_SET = new Set(CommutatorValidator.HEX_CHARS.split(""));
+  private static readonly COMMON_DATA_TYPE_VALUES = new Set<string>([
+    CommonDataType.Any,
+    CommonDataType.String,
+    CommonDataType.Number,
+    CommonDataType.Date,
+    CommonDataType.Boolean,
+    CommonDataType.Object,
+    CommonDataType.Array,
+    CommonDataType.StringEnum,
+    CommonDataType.NumberEnum,
+  ]);
+
   constructor(private readonly dataTypes: DataTypes) {}
 
   public hasDataType(name: PropertyKey): name is keyof DataTypes | PrimitiveDataType {
@@ -228,8 +245,8 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       }
 
       // Все значения input должны быть в output
-      const outputValuesSet = new Set(outputValues);
-      return inputValues.every((value) => outputValuesSet.has(value));
+      const outputValuesSet = new Set(outputValues as string[]);
+      return (inputValues as string[]).every((value) => outputValuesSet.has(value));
     }
 
     // Проверка для NumberEnum
@@ -245,8 +262,8 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       }
 
       // Все значения input должны быть в output
-      const outputValuesSet = new Set(outputValues);
-      return inputValues.every((value) => outputValuesSet.has(value));
+      const outputValuesSet = new Set(outputValues as number[]);
+      return (inputValues as number[]).every((value) => outputValuesSet.has(value));
     }
 
     // Проверка для пользовательских типов из DataTypes
@@ -285,22 +302,24 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     outputPin: PinInstance<any>,
     inputPin: PinInstance<any>,
   ): boolean {
-    // Если оба пина имеют тип Any, они совместимы
-    if (
-      outputPin.dataType?.type === CommonDataType.Any &&
-      inputPin.dataType?.type === CommonDataType.Any
-    ) {
-      return true;
-    }
-
-    // Если output это Any, он несовместим с другими типами
-    if (outputPin.dataType?.type === CommonDataType.Any) {
+    // Если оба пина undefined, несовместимы
+    if (outputPin.dataType === undefined && inputPin.dataType === undefined) {
       return false;
     }
 
-    // Если input принимает Any, всегда совместимо
+    // Если оба пина null, совместимы
+    if (outputPin.dataType === null && inputPin.dataType === null) {
+      return true;
+    }
+
+    // Если input принимает Any или null, всегда совместимо
     if (inputPin.dataType?.type === CommonDataType.Any || inputPin.dataType === null) {
       return true;
+    }
+
+    // Если output это Any, он несовместим с другими типами (кроме Any и null)
+    if (outputPin.dataType?.type === CommonDataType.Any) {
+      return false;
     }
 
     // Если типы не совпадают на верхнем уровне, несовместимы
@@ -308,15 +327,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       return false;
     }
 
-    if (outputPin.dataType === undefined && inputPin.dataType === undefined) {
-      return false;
-    }
-
-    if (outputPin.dataType === null && inputPin.dataType === null) {
-      return true;
-    }
-
-    // Выполняем глубокую проверку
+    // Выполняем глубокую проверку (включая проверку на Any)
     return this.areFieldsCompatible(outputPin.dataType, inputPin.dataType);
   }
 
@@ -331,11 +342,9 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
 
     // ULID: ровно 26 символов
     if (length === 26) {
-      const ulidAlphabet = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-      const ulidAlphabetSet = new Set(ulidAlphabet);
       for (let i = 0; i < 26; i++) {
         const char = uuid[i];
-        if (!char || !ulidAlphabetSet.has(char)) {
+        if (!char || !CommutatorValidator.ULID_ALPHABET_SET.has(char)) {
           return false;
         }
       }
@@ -354,12 +363,10 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       }
 
       // Проверяем hex символы на всех позициях кроме дефисов
-      const hexChars = "0123456789abcdefABCDEF";
-      const hexSet = new Set(hexChars);
       for (let i = 0; i < 36; i++) {
         if (i !== 8 && i !== 13 && i !== 18 && i !== 23) {
           const char = uuid[i];
-          if (!char || !hexSet.has(char)) {
+          if (!char || !CommutatorValidator.HEX_SET.has(char)) {
             return false;
           }
         }
@@ -369,11 +376,9 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
 
     // UUID без дефисов: 32 символа
     if (length === 32) {
-      const hexChars = "0123456789abcdefABCDEF";
-      const hexSet = new Set(hexChars);
       for (let i = 0; i < 32; i++) {
         const char = uuid[i];
-        if (!char || !hexSet.has(char)) {
+        if (!char || !CommutatorValidator.HEX_SET.has(char)) {
           return false;
         }
       }
@@ -387,24 +392,15 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
    * Проверка существования типа в DataTypes.
    */
   public validatePinDataType(dataType: any): void {
-    const commonDataTypeValues = new Set<string>([
-      CommonDataType.Any,
-      CommonDataType.String,
-      CommonDataType.Number,
-      CommonDataType.Date,
-      CommonDataType.Boolean,
-      CommonDataType.Object,
-      CommonDataType.Array,
-      CommonDataType.StringEnum,
-      CommonDataType.NumberEnum,
-    ]);
-
     // dataType is a Field object with a type property, not a string
     // We need to check dataType.type instead of dataType
     const typeValue = dataType?.type;
 
     // Check if typeValue is a string (custom type) and not in common types
-    if (typeof typeValue === "string" && !commonDataTypeValues.has(typeValue)) {
+    if (
+      typeof typeValue === "string" &&
+      !CommutatorValidator.COMMON_DATA_TYPE_VALUES.has(typeValue)
+    ) {
       if (!(typeValue in this.dataTypes)) {
         throw new CommutatorError(`Pin type "${String(typeValue)}" does not exist in DataTypes`);
       }
@@ -611,38 +607,15 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
         throw new CommutatorError(`Wire references non-existent pin: ${wire.to}`);
       }
 
-      // Проверка self-loop
+      // Проверка типов пинов
+      this.validateWirePinTypes(fromPin, toPin);
+
+      // Проверка ограничений на провода (self-loop и одна нода)
+      // Ограничения на количество проводов проверяются отдельно в разделе 5
       if (wire.from === wire.to) {
         throw new CommutatorError(`Self-loop detected: pin ${wire.from} connected to itself`);
       }
 
-      // Проверка типов пинов: from должен быть Output/OutputExec, to должен быть Input/InputExec
-      if (fromPin.type !== PinInstanceType.Output && fromPin.type !== PinInstanceType.OutputExec) {
-        throw new CommutatorError(
-          `Wire.from pin "${wire.from}" must be Output or OutputExec, got ${fromPin.type}`,
-        );
-      }
-
-      if (toPin.type !== PinInstanceType.Input && toPin.type !== PinInstanceType.InputExec) {
-        throw new CommutatorError(
-          `Wire.to pin "${wire.to}" must be Input or InputExec, got ${toPin.type}`,
-        );
-      }
-
-      // Проверка совместимости типов: pinOut -> pinIn, execPinOut -> execPinIn
-      if (fromPin.type === PinInstanceType.Output && toPin.type !== PinInstanceType.Input) {
-        throw new CommutatorError(
-          `Output pin "${wire.from}" can only connect to Input pin, got ${toPin.type}`,
-        );
-      }
-
-      if (fromPin.type === PinInstanceType.OutputExec && toPin.type !== PinInstanceType.InputExec) {
-        throw new CommutatorError(
-          `OutputExec pin "${wire.from}" can only connect to InputExec pin, got ${toPin.type}`,
-        );
-      }
-
-      // Проверка: нельзя соединить пин с пином из той же ноды
       if (fromPin.nodeUuid === toPin.nodeUuid) {
         throw new CommutatorError(
           `Cannot connect pin "${wire.from}" to pin "${wire.to}" from the same node "${fromPin.nodeUuid}"`,
@@ -650,37 +623,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       }
 
       // Проверка совместимости типов данных для data pins
-      if (fromPin.type === PinInstanceType.Output && toPin.type === PinInstanceType.Input) {
-        // Проверяем совместимость, если:
-        // 1. output имеет тип Any (должен быть несовместим) - всегда проверяем
-        // 2. input имеет конкретный тип (не null и не Any) - проверяем
-        if (
-          fromPin.dataType?.type === CommonDataType.Any ||
-          (toPin.dataType !== null && toPin.dataType?.type !== CommonDataType.Any)
-        ) {
-          // Получаем конфигурации нод для глубокой проверки
-          const fromNode = allNodeInstances.find((n) => n.uuid === fromPin.nodeUuid);
-          const toNode = allNodeInstances.find((n) => n.uuid === toPin.nodeUuid);
-
-          if (!fromNode || !toNode) {
-            throw new CommutatorError("Node instance not found");
-          }
-
-          const fromNodeConfig = config.getNodeConfigByName(fromNode.name);
-          const toNodeConfig = config.getNodeConfigByName(toNode.name);
-
-          if (!fromNodeConfig || !toNodeConfig) {
-            throw new CommutatorError("Node config not found");
-          }
-
-          // Глубокая проверка совместимости типов
-          if (!this.arePinDataTypesCompatible(fromPin, toPin)) {
-            throw new CommutatorError(
-              `Type mismatch: pin "${wire.from}" has type ${String(fromPin.dataType?.type)}, but pin "${wire.to}" expects ${String(toPin.dataType?.type)}`,
-            );
-          }
-        }
-      }
+      this.validateWireDataTypes(fromPin, toPin, allNodeInstances, config);
     }
 
     // 5. Проверка ограничений на провода
@@ -759,7 +702,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
 
       if (fromPin.type === PinInstanceType.OutputExec && toPin.type === PinInstanceType.InputExec) {
         if (
-          this.wouldCreateCycleOptimized(
+          this.wouldCreateCycle(
             toPin.nodeUuid,
             fromPin.nodeUuid,
             PinInstanceType.OutputExec,
@@ -777,7 +720,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
 
       if (fromPin.type === PinInstanceType.Output && toPin.type === PinInstanceType.Input) {
         if (
-          this.wouldCreateCycleOptimized(
+          this.wouldCreateCycle(
             toPin.nodeUuid,
             fromPin.nodeUuid,
             PinInstanceType.Output,
@@ -796,6 +739,118 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
   }
 
   /**
+   * Проверяет типы пинов для провода
+   */
+  private validateWirePinTypes(outputPin: PinInstance<any>, inputPin: PinInstance<any>): void {
+    if (
+      outputPin.type !== PinInstanceType.Output &&
+      outputPin.type !== PinInstanceType.OutputExec
+    ) {
+      throw new CommutatorError(`Output pin must be Output or OutputExec, got ${outputPin.type}`);
+    }
+
+    if (inputPin.type !== PinInstanceType.Input && inputPin.type !== PinInstanceType.InputExec) {
+      throw new CommutatorError(`Input pin must be Input or InputExec, got ${inputPin.type}`);
+    }
+
+    // Проверка совместимости типов: pinOut -> pinIn, execPinOut -> execPinIn
+    if (outputPin.type === PinInstanceType.Output && inputPin.type !== PinInstanceType.Input) {
+      throw new CommutatorError(`Output pin can only connect to Input pin, got ${inputPin.type}`);
+    }
+
+    if (
+      outputPin.type === PinInstanceType.OutputExec &&
+      inputPin.type !== PinInstanceType.InputExec
+    ) {
+      throw new CommutatorError(
+        `OutputExec pin can only connect to InputExec pin, got ${inputPin.type}`,
+      );
+    }
+  }
+
+  /**
+   * Проверяет совместимость типов данных для data pins
+   */
+  private validateWireDataTypes(
+    outputPin: PinInstance<any>,
+    inputPin: PinInstance<any>,
+    allNodeInstances: AbstractNodeInstance<string>[],
+    config: CommutatorConfig<any, any, any, any, any, any>,
+  ): void {
+    if (outputPin.type !== PinInstanceType.Output || inputPin.type !== PinInstanceType.Input) {
+      return;
+    }
+
+    // Проверяем совместимость, если:
+    // 1. output имеет тип Any (должен быть несовместим) - всегда проверяем
+    // 2. input имеет конкретный тип (не null и не Any) - проверяем
+    if (
+      outputPin.dataType?.type === CommonDataType.Any ||
+      (inputPin.dataType !== null && inputPin.dataType?.type !== CommonDataType.Any)
+    ) {
+      const fromNode = allNodeInstances.find((n) => n.uuid === outputPin.nodeUuid);
+      const toNode = allNodeInstances.find((n) => n.uuid === inputPin.nodeUuid);
+
+      if (!fromNode || !toNode) {
+        throw new CommutatorError("Node instance not found");
+      }
+
+      const fromNodeConfig = config.getNodeConfigByName(fromNode.name);
+      const toNodeConfig = config.getNodeConfigByName(toNode.name);
+
+      if (!fromNodeConfig || !toNodeConfig) {
+        throw new CommutatorError("Node config not found");
+      }
+
+      // Глубокая проверка совместимости типов
+      if (!this.arePinDataTypesCompatible(outputPin, inputPin)) {
+        throw new CommutatorError(
+          `Type mismatch: pin "${outputPin.uuid}" has type ${String(outputPin.dataType?.type)}, but pin "${inputPin.uuid}" expects ${String(inputPin.dataType?.type)}`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Проверяет ограничения на провода (self-loop, одна нода, ограничения на количество проводов)
+   */
+  private validateWireConstraints(
+    outputPin: PinInstance<any>,
+    inputPin: PinInstance<any>,
+    outputPinUuid: string,
+    inputPinUuid: string,
+    existingWires: Wire[],
+  ): void {
+    // Проверка self-loop
+    if (outputPinUuid === inputPinUuid) {
+      throw new CommutatorError("Self-loop");
+    }
+
+    // Проверка: нельзя соединить пин с пином из той же ноды
+    if (outputPin.nodeUuid === inputPin.nodeUuid) {
+      throw new CommutatorError(
+        `Cannot connect pin from node "${outputPin.nodeUuid}" to pin from the same node`,
+      );
+    }
+
+    // Для data pins (pinIn) может быть только один входной провод
+    if (outputPin.type === PinInstanceType.Output && inputPin.type === PinInstanceType.Input) {
+      const isInputWireExists = existingWires.some((wire) => wire.to === inputPinUuid);
+      if (isInputWireExists) {
+        throw new CommutatorError("To wire already exists");
+      }
+    }
+
+    // Для exec pins: execPinOut может иметь только одну исходящую связь
+    if (outputPin.type === PinInstanceType.OutputExec) {
+      const isOutputWireExists = existingWires.some((wire) => wire.from === outputPinUuid);
+      if (isOutputWireExists) {
+        throw new CommutatorError("ExecPinOut wire already exists");
+      }
+    }
+  }
+
+  /**
    * Валидация операции wire.
    */
   public validateWire(
@@ -808,11 +863,6 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
   ): void {
     if (!fromPin || !toPin) {
       throw new CommutatorError("Pin not found");
-    }
-
-    // Проверка self-loop
-    if (fromPin.uuid === toPin.uuid) {
-      throw new CommutatorError("Self-loop");
     }
 
     // Определяем выходной и входной пины
@@ -841,38 +891,8 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       throw new CommutatorError("Invalid connection");
     }
 
-    // Проверка типов: from должен быть Output/OutputExec, to должен быть Input/InputExec
-    if (
-      outputPin.type !== PinInstanceType.Output &&
-      outputPin.type !== PinInstanceType.OutputExec
-    ) {
-      throw new CommutatorError(`Output pin must be Output or OutputExec, got ${outputPin.type}`);
-    }
-
-    if (inputPin.type !== PinInstanceType.Input && inputPin.type !== PinInstanceType.InputExec) {
-      throw new CommutatorError(`Input pin must be Input or InputExec, got ${inputPin.type}`);
-    }
-
-    // Проверка совместимости типов: pinOut -> pinIn, execPinOut -> execPinIn
-    if (outputPin.type === PinInstanceType.Output && inputPin.type !== PinInstanceType.Input) {
-      throw new CommutatorError(`Output pin can only connect to Input pin, got ${inputPin.type}`);
-    }
-
-    if (
-      outputPin.type === PinInstanceType.OutputExec &&
-      inputPin.type !== PinInstanceType.InputExec
-    ) {
-      throw new CommutatorError(
-        `OutputExec pin can only connect to InputExec pin, got ${inputPin.type}`,
-      );
-    }
-
-    // Проверка: нельзя соединить пин с пином из той же ноды
-    if (outputPin.nodeUuid === inputPin.nodeUuid) {
-      throw new CommutatorError(
-        `Cannot connect pin from node "${outputPin.nodeUuid}" to pin from the same node`,
-      );
-    }
+    // Проверка типов пинов
+    this.validateWirePinTypes(outputPin, inputPin);
 
     // Проверка существования нод
     const outputNode = allNodes.get(outputPin.nodeUuid);
@@ -890,36 +910,12 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       throw new CommutatorError("Node config not found");
     }
 
-    // Проверка типов для data pins
-    if (outputPin.type === PinInstanceType.Output && inputPin.type === PinInstanceType.Input) {
-      // Проверяем совместимость, если:
-      // 1. output имеет тип Any (должен быть несовместим) - всегда проверяем
-      // 2. input имеет конкретный тип (не null и не Any) - проверяем
-      if (
-        outputPin.dataType?.type === CommonDataType.Any ||
-        (inputPin.dataType?.type !== null && inputPin.dataType?.type !== CommonDataType.Any)
-      ) {
-        if (!this.arePinDataTypesCompatible(outputPin, inputPin)) {
-          throw new CommutatorError("Type mismatch");
-        }
-      }
+    // Проверка ограничений на провода
+    this.validateWireConstraints(outputPin, inputPin, outputPinUuid, inputPinUuid, existingWires);
 
-      // Для data pins (pinIn) может быть только один входной провод
-      // Оптимизировано: O(w) вместо O(w) - используем some, но можно было бы использовать Set
-      const isInputWireExists = existingWires.some((wire) => wire.to === inputPinUuid);
-      if (isInputWireExists) {
-        throw new CommutatorError("To wire already exists");
-      }
-    }
-
-    // Для exec pins: execPinOut может иметь только одну исходящую связь
-    if (outputPin.type === PinInstanceType.OutputExec) {
-      // Оптимизировано: O(w) вместо O(w) - используем some, но можно было бы использовать Set
-      const isOutputWireExists = existingWires.some((wire) => wire.from === outputPinUuid);
-      if (isOutputWireExists) {
-        throw new CommutatorError("ExecPinOut wire already exists");
-      }
-    }
+    // Проверка типов данных для data pins
+    const allNodeInstances = Array.from(allNodes.values());
+    this.validateWireDataTypes(outputPin, inputPin, allNodeInstances, config);
 
     // Проверка циклических связей
     if (this.checkCyclicConnection(outputPin, inputPin, existingWires, allPins)) {
@@ -965,144 +961,86 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       outputNodeUuid,
       outputPinType,
       inputPinType,
+      undefined, // pinsByNode
+      undefined, // wiresByPin
+      undefined, // pinInstancesMap
       existingWires,
       allPins,
     );
   }
 
   /**
-   * Оптимизированная версия проверки циклических связей.
-   * Сложность: O(n + w) вместо O(n * p * w)
-   * Использует предварительно построенные индексы.
-   */
-  private wouldCreateCycleOptimized(
-    startNodeUuid: string,
-    targetNodeUuid: string,
-    outputPinType: PinInstanceType,
-    inputPinType: PinInstanceType,
-    pinsByNode: Map<string, Map<PinInstanceType, PinInstance[]>>,
-    wiresByPin: Map<string, Wire[]>,
-    pinInstancesMap: Map<string, PinInstance>,
-  ): boolean {
-    // Если стартовая нода совпадает с целевой, это цикл
-    if (startNodeUuid === targetNodeUuid) {
-      return true;
-    }
-
-    // Стек для хранения нод, которые нужно проверить
-    const stack: string[] = [startNodeUuid];
-    // Множество посещенных нод для избежания бесконечных циклов
-    const visited = new Set<string>();
-
-    // Пока есть ноды для проверки
-    while (stack.length > 0) {
-      const currentNodeUuid = stack.pop();
-
-      if (!currentNodeUuid) {
-        break;
-      }
-
-      // Если это целевая нода, цикл найден
-      if (currentNodeUuid === targetNodeUuid) {
-        return true;
-      }
-
-      // Если уже посещали эту ноду, пропускаем
-      if (visited.has(currentNodeUuid)) {
-        continue;
-      }
-
-      // Добавляем текущую ноду в посещенные
-      visited.add(currentNodeUuid);
-
-      // Получаем выходные пины текущей ноды из индекса: O(1)
-      const nodePins = pinsByNode.get(currentNodeUuid);
-      if (!nodePins) {
-        continue;
-      }
-
-      const currentNodeOutputPins = nodePins.get(outputPinType) || [];
-
-      // Для каждого выходного пина проверяем, куда он ведет
-      for (const outputPin of currentNodeOutputPins) {
-        // Получаем провода из индекса: O(1)
-        const outgoingWires = wiresByPin.get(outputPin.uuid) || [];
-
-        for (const wire of outgoingWires) {
-          // Находим входной пин через индекс: O(1)
-          const inputPin = pinInstancesMap.get(wire.to);
-          if (!inputPin || inputPin.type !== inputPinType) {
-            continue;
-          }
-
-          // Находим ноду, содержащую этот входной пин
-          const nextNodeUuid = inputPin.nodeUuid;
-
-          // Если мы достигли целевой ноды, это цикл
-          if (nextNodeUuid === targetNodeUuid) {
-            return true;
-          }
-
-          // Добавляем следующую ноду в стек для проверки
-          if (!visited.has(nextNodeUuid)) {
-            stack.push(nextNodeUuid);
-          }
-        }
-      }
-    }
-
-    return false;
-  }
-
-  /**
    * Проверяет, создаст ли соединение циклическую связь.
    * Проверяет, можно ли дойти от startNodeUuid до targetNodeUuid через пины указанных типов.
-   * Используется для validateWire, где индексы еще не построены.
+   *
+   * Если индексы переданы (pinsByNode, wiresByPin, pinInstancesMap), использует их.
+   * Если нет, строит индексы из existingWires и allPins.
+   *
+   * Сложность: O(n + w) при использовании готовых индексов, O(n + w + p) при построении индексов.
    */
   private wouldCreateCycle(
     startNodeUuid: string,
     targetNodeUuid: string,
     outputPinType: PinInstanceType,
     inputPinType: PinInstanceType,
-    existingWires: Wire[],
-    allPins: Map<string, PinInstance<any>>,
+    // Вариант 1: готовые индексы (для validateSnapshot)
+    pinsByNode?: Map<string, Map<PinInstanceType, PinInstance[]>>,
+    wiresByPin?: Map<string, Wire[]>,
+    pinInstancesMap?: Map<string, PinInstance>,
+    // Вариант 2: данные для построения индексов (для validateWire)
+    existingWires?: Wire[],
+    allPins?: Map<string, PinInstance<any>>,
   ): boolean {
     // Если стартовая нода совпадает с целевой, это цикл
     if (startNodeUuid === targetNodeUuid) {
       return true;
     }
 
-    // Строим индексы на лету для оптимизации
-    const pinsByNode = new Map<string, Map<PinInstanceType, PinInstance[]>>();
-    const wiresByPin = new Map<string, Wire[]>();
+    // Определяем, нужно ли строить индексы
+    let finalPinsByNode: Map<string, Map<PinInstanceType, PinInstance[]>>;
+    let finalWiresByPin: Map<string, Wire[]>;
+    let finalPinInstancesMap: Map<string, PinInstance>;
 
-    // Строим индекс пинов по нодам: O(p)
-    for (const pin of allPins.values()) {
-      let nodePins = pinsByNode.get(pin.nodeUuid);
-      if (!nodePins) {
-        nodePins = new Map();
-        pinsByNode.set(pin.nodeUuid, nodePins);
+    if (pinsByNode && wiresByPin && pinInstancesMap) {
+      // Используем готовые индексы
+      finalPinsByNode = pinsByNode;
+      finalWiresByPin = wiresByPin;
+      finalPinInstancesMap = pinInstancesMap;
+    } else if (existingWires && allPins) {
+      // Строим индексы на лету
+      finalPinsByNode = new Map<string, Map<PinInstanceType, PinInstance[]>>();
+      finalWiresByPin = new Map<string, Wire[]>();
+      finalPinInstancesMap = allPins;
+
+      // Строим индекс пинов по нодам: O(p)
+      for (const pin of allPins.values()) {
+        let nodePins = finalPinsByNode.get(pin.nodeUuid);
+        if (!nodePins) {
+          nodePins = new Map();
+          finalPinsByNode.set(pin.nodeUuid, nodePins);
+        }
+        let pinsOfType = nodePins.get(pin.type);
+        if (!pinsOfType) {
+          pinsOfType = [];
+          nodePins.set(pin.type, pinsOfType);
+        }
+        pinsOfType.push(pin);
       }
-      let pinsOfType = nodePins.get(pin.type);
-      if (!pinsOfType) {
-        pinsOfType = [];
-        nodePins.set(pin.type, pinsOfType);
+
+      // Строим индекс проводов по пинам: O(w)
+      for (const wire of existingWires) {
+        let wires = finalWiresByPin.get(wire.from);
+        if (!wires) {
+          wires = [];
+          finalWiresByPin.set(wire.from, wires);
+        }
+        wires.push(wire);
       }
-      pinsOfType.push(pin);
+    } else {
+      throw new CommutatorError(
+        "Either provide indexes (pinsByNode, wiresByPin, pinInstancesMap) or data (existingWires, allPins)",
+      );
     }
-
-    // Строим индекс проводов по пинам: O(w)
-    for (const wire of existingWires) {
-      let wires = wiresByPin.get(wire.from);
-      if (!wires) {
-        wires = [];
-        wiresByPin.set(wire.from, wires);
-      }
-      wires.push(wire);
-    }
-
-    // Создаем индекс pinUuid -> PinInstance для быстрого поиска
-    const pinByUuid = allPins;
 
     // Стек для хранения нод, которые нужно проверить
     const stack: string[] = [startNodeUuid];
@@ -1131,7 +1069,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       visited.add(currentNodeUuid);
 
       // Получаем выходные пины текущей ноды из индекса: O(1)
-      const nodePins = pinsByNode.get(currentNodeUuid);
+      const nodePins = finalPinsByNode.get(currentNodeUuid);
       if (!nodePins) {
         continue;
       }
@@ -1141,11 +1079,11 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       // Для каждого выходного пина проверяем, куда он ведет
       for (const outputPin of currentNodeOutputPins) {
         // Получаем провода из индекса: O(1)
-        const outgoingWires = wiresByPin.get(outputPin.uuid) || [];
+        const outgoingWires = finalWiresByPin.get(outputPin.uuid) || [];
 
         for (const wire of outgoingWires) {
           // Находим входной пин через индекс: O(1)
-          const inputPin = pinByUuid.get(wire.to);
+          const inputPin = finalPinInstancesMap.get(wire.to);
           if (!inputPin || inputPin.type !== inputPinType) {
             continue;
           }
