@@ -139,65 +139,24 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
   }
 
   /**
-   * Получает полное определение Field из pinType и конфигурации ноды.
-   * Сначала пытается получить из конфигурации ноды (pinsIn/pinsOut), затем из pinType.
-   */
-  private getFieldFromPin(pin: PinInstance<any>, nodeConfig: any): Field<any> | null {
-    if (pin.pinType === null) {
-      return null;
-    }
-
-    // Пытаемся получить из конфигурации ноды
-    const pinConfig =
-      pin.type === PinInstanceType.Input || pin.type === PinInstanceType.InputExec
-        ? nodeConfig?.pinsIn?.[pin.name]
-        : nodeConfig?.pinsOut?.[pin.name];
-
-    // Если pinType это примитивный тип (String, Number, Boolean, Date, Any), создаём простой Field
-    // Это работает даже если pinType был изменён динамически
-    if (
-      pin.pinType === CommonDataType.String ||
-      pin.pinType === CommonDataType.Number ||
-      pin.pinType === CommonDataType.Boolean ||
-      pin.pinType === CommonDataType.Date ||
-      pin.pinType === CommonDataType.Any
-    ) {
-      return { type: pin.pinType } as Field<any>;
-    }
-
-    // Если pinType это кастомный тип из DataTypes
-    if (typeof pin.pinType === "string" && pin.pinType in this.dataTypes) {
-      const customType = this.dataTypes[pin.pinType];
-      return customType ?? null;
-    }
-
-    // Если в конфигурации есть полное определение Field (Object, Array и т.д.)
-    // и оно совпадает с pinType, используем его
-    if (pinConfig && typeof pinConfig === "object" && "type" in pinConfig) {
-      const configType = pinConfig.type;
-      // Если тип в конфигурации совпадает с pinType, используем полное определение
-      if (configType === pin.pinType) {
-        return pinConfig as Field<any>;
-      }
-      // Если типы не совпадают (pinType был изменён динамически), но это Object/Array,
-      // возвращаем null, чтобы использовать простую проверку
-    }
-
-    // Если pinType это Object, Array, StringEnum, NumberEnum, но нет полного определения
-    // или тип был изменён динамически, возвращаем null
-    // В этом случае будет использована простая проверка (сравнение pinType)
-    return null;
-  }
-
-  /**
    * Глубокая проверка совместимости двух Field.
    * Проверяет структуру Object, Array, StringEnum, NumberEnum и пользовательские типы.
    */
   private areFieldsCompatible(
-    outputField: Field<any>,
-    inputField: Field<any>,
+    outputField: Field<any> | null,
+    inputField: Field<any> | null,
     visited: Set<string> = new Set(),
   ): boolean {
+    // Если оба поля null, они совместимы
+    if (outputField === null && inputField === null) {
+      return true;
+    }
+
+    // Если одно из полей null, они несовместимы (уже проверено выше, но для типобезопасности)
+    if (outputField === null || inputField === null) {
+      return false;
+    }
+
     // Если оба поля имеют тип Any, они совместимы
     if (outputField.type === CommonDataType.Any && inputField.type === CommonDataType.Any) {
       return true;
@@ -322,43 +281,43 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
   /**
    * Проверяет совместимость типов пинов с глубокой проверкой структуры.
    */
-  public arePinTypesCompatible(
+  public arePinDataTypesCompatible(
     outputPin: PinInstance<any>,
     inputPin: PinInstance<any>,
-    outputNodeConfig: any,
-    inputNodeConfig: any,
   ): boolean {
     // Если оба пина имеют тип Any, они совместимы
-    if (outputPin.pinType === CommonDataType.Any && inputPin.pinType === CommonDataType.Any) {
+    if (
+      outputPin.dataType?.type === CommonDataType.Any &&
+      inputPin.dataType?.type === CommonDataType.Any
+    ) {
       return true;
     }
 
     // Если output это Any, он несовместим с другими типами
-    if (outputPin.pinType === CommonDataType.Any) {
+    if (outputPin.dataType?.type === CommonDataType.Any) {
       return false;
     }
 
     // Если input принимает Any, всегда совместимо
-    if (inputPin.pinType === CommonDataType.Any || inputPin.pinType === null) {
+    if (inputPin.dataType?.type === CommonDataType.Any || inputPin.dataType === null) {
       return true;
     }
 
     // Если типы не совпадают на верхнем уровне, несовместимы
-    if (outputPin.pinType !== inputPin.pinType) {
+    if (outputPin.dataType?.type !== inputPin.dataType?.type) {
       return false;
     }
 
-    // Получаем полные определения Field
-    const outputField = this.getFieldFromPin(outputPin, outputNodeConfig);
-    const inputField = this.getFieldFromPin(inputPin, inputNodeConfig);
+    if (outputPin.dataType === undefined && inputPin.dataType === undefined) {
+      return false;
+    }
 
-    // Если не удалось получить полные определения, используем простую проверку
-    if (!outputField || !inputField) {
-      return outputPin.pinType === inputPin.pinType;
+    if (outputPin.dataType === null && inputPin.dataType === null) {
+      return true;
     }
 
     // Выполняем глубокую проверку
-    return this.areFieldsCompatible(outputField, inputField);
+    return this.areFieldsCompatible(outputPin.dataType, inputPin.dataType);
   }
 
   /**
@@ -427,7 +386,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
   /**
    * Проверка существования типа в DataTypes.
    */
-  public validatePinType(pinType: any): void {
+  public validatePinDataType(dataType: any): void {
     const commonDataTypeValues = new Set<string>([
       CommonDataType.Any,
       CommonDataType.String,
@@ -440,9 +399,14 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       CommonDataType.NumberEnum,
     ]);
 
-    if (typeof pinType === "string" && !commonDataTypeValues.has(pinType)) {
-      if (!(pinType in this.dataTypes)) {
-        throw new CommutatorError(`Pin type "${String(pinType)}" does not exist in DataTypes`);
+    // dataType is a Field object with a type property, not a string
+    // We need to check dataType.type instead of dataType
+    const typeValue = dataType?.type;
+
+    // Check if typeValue is a string (custom type) and not in common types
+    if (typeof typeValue === "string" && !commonDataTypeValues.has(typeValue)) {
+      if (!(typeValue in this.dataTypes)) {
+        throw new CommutatorError(`Pin type "${String(typeValue)}" does not exist in DataTypes`);
       }
     }
   }
@@ -575,30 +539,30 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
         );
       }
 
-      // Валидация pinType
-      if (pinInstance.pinType !== null) {
-        this.validatePinType(pinInstance.pinType);
+      // Валидация dataType
+      if (pinInstance.dataType !== null) {
+        this.validatePinDataType(pinInstance.dataType);
       }
 
       // Валидация типа пина для data pins
       if (
         (pinInstance.type === PinInstanceType.Input ||
           pinInstance.type === PinInstanceType.Output) &&
-        pinInstance.pinType === null
+        pinInstance.dataType === null
       ) {
         throw new CommutatorError(
-          `Data pin "${pinInstance.uuid}" must have a valid pinType, got null`,
+          `Data pin "${pinInstance.uuid}" must have a valid dataType, got null`,
         );
       }
 
       if (
         (pinInstance.type === PinInstanceType.InputExec ||
           pinInstance.type === PinInstanceType.OutputExec) &&
-        pinInstance.pinType !== null &&
-        pinInstance.pinType !== CommonDataType.Any
+        pinInstance.dataType !== null &&
+        pinInstance.dataType.type !== CommonDataType.Any
       ) {
         throw new CommutatorError(
-          `Exec pin "${pinInstance.uuid}" must have pinType Any or null, got ${String(pinInstance.pinType)}`,
+          `Exec pin "${pinInstance.uuid}" must have dataType Any or null, got ${String(pinInstance.dataType.type)}`,
         );
       }
     }
@@ -691,8 +655,8 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
         // 1. output имеет тип Any (должен быть несовместим) - всегда проверяем
         // 2. input имеет конкретный тип (не null и не Any) - проверяем
         if (
-          fromPin.pinType === CommonDataType.Any ||
-          (toPin.pinType !== null && toPin.pinType !== CommonDataType.Any)
+          fromPin.dataType?.type === CommonDataType.Any ||
+          (toPin.dataType !== null && toPin.dataType?.type !== CommonDataType.Any)
         ) {
           // Получаем конфигурации нод для глубокой проверки
           const fromNode = allNodeInstances.find((n) => n.uuid === fromPin.nodeUuid);
@@ -710,9 +674,9 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
           }
 
           // Глубокая проверка совместимости типов
-          if (!this.arePinTypesCompatible(fromPin, toPin, fromNodeConfig, toNodeConfig)) {
+          if (!this.arePinDataTypesCompatible(fromPin, toPin)) {
             throw new CommutatorError(
-              `Type mismatch: pin "${wire.from}" has type ${String(fromPin.pinType)}, but pin "${wire.to}" expects ${String(toPin.pinType)}`,
+              `Type mismatch: pin "${wire.from}" has type ${String(fromPin.dataType?.type)}, but pin "${wire.to}" expects ${String(toPin.dataType?.type)}`,
             );
           }
         }
@@ -932,10 +896,10 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       // 1. output имеет тип Any (должен быть несовместим) - всегда проверяем
       // 2. input имеет конкретный тип (не null и не Any) - проверяем
       if (
-        outputPin.pinType === CommonDataType.Any ||
-        (inputPin.pinType !== null && inputPin.pinType !== CommonDataType.Any)
+        outputPin.dataType?.type === CommonDataType.Any ||
+        (inputPin.dataType?.type !== null && inputPin.dataType?.type !== CommonDataType.Any)
       ) {
-        if (!this.arePinTypesCompatible(outputPin, inputPin, outputNodeConfig, inputNodeConfig)) {
+        if (!this.arePinDataTypesCompatible(outputPin, inputPin)) {
           throw new CommutatorError("Type mismatch");
         }
       }

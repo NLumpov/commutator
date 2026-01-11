@@ -31,7 +31,7 @@ describe("Commutator", () => {
           y: { type: CommonDataType.Number },
         },
         execPinsOut: {
-          next: {},
+          next: null,
         },
       });
 
@@ -204,24 +204,16 @@ describe("Commutator", () => {
       const commutator1 = Commutator.initialize().defineFunction("func1", {
         pinsIn: {},
         pinsOut: {},
-        execPinsIn: {
-          start: {},
-        },
-        execPinsOut: {
-          next: {},
-        },
+        execPinsIn: { start: null },
+        execPinsOut: { next: null },
         exec: async () => {},
       });
 
       const commutator2 = Commutator.initialize().defineFunction("func2", {
         pinsIn: {},
         pinsOut: {},
-        execPinsIn: {
-          start: {},
-        },
-        execPinsOut: {
-          next: {},
-        },
+        execPinsIn: { start: null },
+        execPinsOut: { next: null },
         exec: async () => {},
       });
 
@@ -254,8 +246,8 @@ describe("Commutator", () => {
         .defineFunction("log", {
           pinsIn: {},
           pinsOut: {},
-          execPinsIn: { start: {} },
-          execPinsOut: { next: {} },
+          execPinsIn: { start: null },
+          execPinsOut: { next: null },
           exec: async () => {},
         });
 

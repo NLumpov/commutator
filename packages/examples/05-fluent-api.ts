@@ -2,10 +2,7 @@
  * Пример 5: Fluent API
  *
  * Демонстрирует:
- * - FluentNodeBuilder (возвращается из createEvent/createRef/createPureFunction/createFunction)
- * - NodeBuilder (через schema.node())
- * - PinBuilder (через node().pin())
- * - Цепочки методов для создания связей
+ * Fluent API с цепочками для создания и связи нод между собой
  */
 
 import { CommonDataType, Commutator } from "@commutator/core";
@@ -17,7 +14,7 @@ const commutator = Commutator.initialize()
       y: { type: CommonDataType.Number },
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
   })
   .definePureFunction("add", {
@@ -49,10 +46,10 @@ const commutator = Commutator.initialize()
     },
     pinsOut: {},
     execPinsIn: {
-      start: {},
+      start: null,
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
     exec: async ({ pinsIn, exec }) => {
       console.log("Value:", pinsIn.value);
@@ -64,28 +61,6 @@ const commutator = Commutator.initialize()
     },
   });
 
-const schema = commutator.createSchema();
+const _schema = commutator.createSchema();
 
-// FluentNodeBuilder - цепочка методов при создании ноды
-const onClick = schema
-  .createEvent("onClick")
-  .wire("x", schema.createPureFunction("add"), "a")
-  .wire("y", schema.createPureFunction("add"), "b");
-
-// NodeBuilder - работа с нодой через schema.node()
-const add = schema.createPureFunction("add");
-schema.node(add.uuid).wireTo("result", schema.createPureFunction("multiply"), "value");
-
-// PinBuilder - работа с пином через node().pin()
-const multiply = schema.createPureFunction("multiply");
-const log = schema.createFunction("log");
-
-schema.node(multiply.uuid).pin("result").wireTo(log, "value");
-schema.node(onClick.uuid).pin("next").wireTo(log, "start");
-
-// Комбинированный пример: создание и подключение в одной цепочке
-const result = schema
-  .createPureFunction("add")
-  .wire("result", schema.createPureFunction("multiply"), "value");
-
-export { schema, onClick, add, multiply, log, result };
+// TODO красивый Fluent API

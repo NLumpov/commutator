@@ -32,7 +32,7 @@ const commutator = Commutator.initialize()
       y: { type: CommonDataType.Number },
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
   })
   // Определение чистой функции
@@ -55,10 +55,10 @@ const commutator = Commutator.initialize()
     },
     pinsOut: {},
     execPinsIn: {
-      start: {},
+      start: null,
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
     exec: async ({ pinsIn, exec }) => {
       console.log(pinsIn.message);

@@ -16,10 +16,10 @@ const commutator = Commutator.initialize()
     },
     pinsOut: {},
     execPinsIn: {
-      start: {},
+      start: null,
     },
     execPinsOut: {
-      default: {},
+      default: null,
     },
     config: {
       type: CommonDataType.Object,
@@ -49,7 +49,7 @@ const commutator = Commutator.initialize()
         const pinsToAdd = routeCount - execOutPins.length;
         for (let i = 0; i < pinsToAdd; i++) {
           const routeIndex = execOutPins.length + i;
-          actions.addPin(`route${routeIndex}`, PinInstanceType.OutputExec, CommonDataType.Any);
+          actions.addExecPin(`route${routeIndex}`, PinInstanceType.OutputExec);
         }
       }
     },
@@ -97,7 +97,9 @@ const commutator = Commutator.initialize()
         const pinsToAdd = inputCount - inputPins.length;
         for (let i = 0; i < pinsToAdd; i++) {
           const inputIndex = inputPins.length + i + 1;
-          actions.addPin(`input${inputIndex}`, PinInstanceType.Input, CommonDataType.String);
+          actions.addPin(`input${inputIndex}`, PinInstanceType.Input, {
+            type: CommonDataType.String,
+          });
         }
       }
     },

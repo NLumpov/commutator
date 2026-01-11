@@ -2,15 +2,7 @@ import { CommutatorSchema, type SchemaSnapshot } from "../schema";
 import { CommutatorConfig } from "./commutator-config";
 import { CommutatorValidator } from "./commutator-validator";
 import type { CommonDataType } from "./enums";
-import type {
-  EventNode,
-  ExecPin,
-  Field,
-  FunctionNode,
-  Pin,
-  PureFunctionNode,
-  RefNode,
-} from "./types";
+import type { EventNode, Field, FunctionNode, PureFunctionNode, RefNode } from "./types";
 
 export class Commutator<
   const DataTypes extends Record<string, Field<DataTypes>> = {},
@@ -91,10 +83,10 @@ export class Commutator<
     const Name extends string,
     const Meta extends Field<DataTypes> | undefined,
     const Config extends Field<DataTypes> | undefined,
-    const PinsIn extends Record<string, Pin<DataTypes>>,
-    const PinsOut extends Record<string, Pin<DataTypes>>,
-    const ExecPinsIn extends Record<string, ExecPin>,
-    const ExecPinsOut extends Record<string, ExecPin>,
+    const PinsIn extends Record<string, Field<DataTypes>>,
+    const PinsOut extends Record<string, Field<DataTypes>>,
+    const ExecPinsIn extends Record<string, null>,
+    const ExecPinsOut extends Record<string, null>,
   >(
     name: Name extends keyof Events | keyof Refs | keyof PureFunctions | keyof Functions
       ? never
@@ -138,10 +130,10 @@ export class Commutator<
     const Name extends string,
     const Meta extends Field<DataTypes> | undefined,
     const Config extends Field<DataTypes> | undefined,
-    const PinsIn extends Record<string, Pin<DataTypes>>,
-    const PinsOut extends Record<string, Pin<DataTypes>>,
-    const ExecPinsIn extends Record<string, ExecPin>,
-    const ExecPinsOut extends Record<string, ExecPin>,
+    const PinsIn extends Record<string, Field<DataTypes>>,
+    const PinsOut extends Record<string, Field<DataTypes>>,
+    const ExecPinsIn extends Record<string, null>,
+    const ExecPinsOut extends Record<string, null>,
   >(
     name: Name extends keyof Events | keyof Refs | keyof PureFunctions | keyof Functions
       ? never
@@ -179,10 +171,10 @@ export class Commutator<
     const Name extends string,
     const Meta extends Field<DataTypes> | undefined,
     const Config extends Field<DataTypes> | undefined,
-    const PinsIn extends Record<string, Pin<DataTypes>>,
-    const PinsOut extends Record<string, Pin<DataTypes>>,
-    const ExecPinsIn extends Record<string, ExecPin>,
-    const ExecPinsOut extends Record<string, ExecPin>,
+    const PinsIn extends Record<string, Field<DataTypes>>,
+    const PinsOut extends Record<string, Field<DataTypes>>,
+    const ExecPinsIn extends Record<string, null>,
+    const ExecPinsOut extends Record<string, null>,
   >(
     name: Name extends keyof Events | keyof Refs | keyof PureFunctions | keyof Functions
       ? never
@@ -229,10 +221,10 @@ export class Commutator<
     const Name extends string,
     const Meta extends Field<DataTypes> | undefined,
     const Config extends Field<DataTypes> | undefined,
-    const PinsIn extends Record<string, Pin<DataTypes>>,
-    const PinsOut extends Record<string, Pin<DataTypes>>,
-    const ExecPinsIn extends Record<string, ExecPin>,
-    const ExecPinsOut extends Record<string, ExecPin>,
+    const PinsIn extends Record<string, Field<DataTypes>>,
+    const PinsOut extends Record<string, Field<DataTypes>>,
+    const ExecPinsIn extends Record<string, null>,
+    const ExecPinsOut extends Record<string, null>,
   >(
     name: Name extends keyof Events | keyof Refs | keyof PureFunctions | keyof Functions
       ? never

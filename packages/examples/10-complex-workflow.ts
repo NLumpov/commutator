@@ -42,7 +42,7 @@ const workflowCommutator = Commutator.initialize()
       totalAmount: { type: CommonDataType.Number },
     },
     execPinsOut: {
-      process: {},
+      process: null,
     },
   })
   .defineRef("orderRef", {
@@ -67,7 +67,7 @@ const workflowCommutator = Commutator.initialize()
     pinsIn: {
       items: {
         type: CommonDataType.Array,
-        items: {
+        itemType: {
           type: CommonDataType.Object,
           properties: {
             price: { type: CommonDataType.Number },
@@ -117,11 +117,11 @@ const workflowCommutator = Commutator.initialize()
       isValid: { type: CommonDataType.Boolean },
     },
     execPinsIn: {
-      start: {},
+      start: null,
     },
     execPinsOut: {
-      valid: {},
-      invalid: {},
+      valid: null,
+      invalid: null,
     },
     exec: async ({ pinsIn, exec }) => {
       const order = pinsIn.order;
@@ -154,11 +154,11 @@ const workflowCommutator = Commutator.initialize()
       transactionId: { type: CommonDataType.String },
     },
     execPinsIn: {
-      start: {},
+      start: null,
     },
     execPinsOut: {
-      success: {},
-      failure: {},
+      success: null,
+      failure: null,
     },
     config: {
       type: CommonDataType.Object,
@@ -199,14 +199,32 @@ const validateOrder = schema.createFunction("validateOrder");
 const processPayment = schema.createFunction("processPayment", { apiKey: "api-key-123" });
 
 // Создание связей
-schema.wire(orderRef.uuid, "order", calculateTotal.uuid, "items");
-schema.wire(calculateTotal.uuid, "total", applyDiscount.uuid, "amount");
-schema.wire(orderRef.uuid, "order", validateOrder.uuid, "order");
-schema.wire(applyDiscount.uuid, "finalAmount", processPayment.uuid, "amount");
+schema.wire({
+  from: { node: orderRef.uuid, pin: "order" },
+  to: { node: calculateTotal.uuid, pin: "items" },
+});
+schema.wire({
+  from: { node: calculateTotal.uuid, pin: "total" },
+  to: { node: applyDiscount.uuid, pin: "amount" },
+});
+schema.wire({
+  from: { node: orderRef.uuid, pin: "order" },
+  to: { node: validateOrder.uuid, pin: "order" },
+});
+schema.wire({
+  from: { node: applyDiscount.uuid, pin: "finalAmount" },
+  to: { node: processPayment.uuid, pin: "amount" },
+});
 
 // Exec-связи
-schema.wire(orderCreated.uuid, "process", validateOrder.uuid, "start");
-schema.wire(validateOrder.uuid, "valid", processPayment.uuid, "start");
+schema.wire({
+  from: { node: orderCreated.uuid, pin: "process" },
+  to: { node: validateOrder.uuid, pin: "start" },
+});
+schema.wire({
+  from: { node: validateOrder.uuid, pin: "valid" },
+  to: { node: processPayment.uuid, pin: "start" },
+});
 
 // Экспорт в снапшот
 const snapshot = schema.extract();

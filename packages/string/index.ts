@@ -374,7 +374,7 @@ export const stringExtension = Commutator.initialize()
         nameIndex++;
       }
 
-      actions.addPin(newName, PinInstanceType.Input, CommonDataType.Any);
+      actions.addPin(newName, PinInstanceType.Input, { type: CommonDataType.Any });
     },
     exec: async ({ pinsIn }) => {
       const template = String(pinsIn.Text ?? "");

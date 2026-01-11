@@ -1,5 +1,5 @@
 import type { NodeType } from "../../enums";
-import type { ExecPin, Field, FieldValue, Pin, PinRecordValue } from "../";
+import type { Field, FieldRecordValues, FieldValue } from "../";
 import type { AbstractNode } from "./abstract";
 
 export interface FunctionNode<
@@ -7,10 +7,10 @@ export interface FunctionNode<
   Meta extends Field<DataTypes> | undefined,
   Config extends Field<DataTypes> | undefined,
   Apis extends Record<string, any>,
-  PinsIn extends Record<string, Pin<DataTypes>>,
-  PinsOut extends Record<string, Pin<DataTypes>>,
-  ExecPinsIn extends Record<string, ExecPin>,
-  ExecPinsOut extends Record<string, ExecPin>,
+  PinsIn extends Record<string, Field<DataTypes>>,
+  PinsOut extends Record<string, Field<DataTypes>>,
+  ExecPinsIn extends Record<string, null>,
+  ExecPinsOut extends Record<string, null>,
 > extends AbstractNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut, Apis> {
   readonly type: NodeType.Function;
 
@@ -21,7 +21,7 @@ export interface FunctionNode<
    * Если функция ещё не вызывалась то пины на выход будут возвращать null
    */
   readonly exec: (args: {
-    pinsIn: PinRecordValue<PinsIn, DataTypes>;
+    pinsIn: FieldRecordValues<PinsIn, DataTypes>;
     execPinsIn: ExecPinsIn;
     execPinsOut: ExecPinsOut;
     meta: Meta extends Field<DataTypes> ? FieldValue<Meta, DataTypes> : never;
@@ -29,7 +29,7 @@ export interface FunctionNode<
     triggeredExecPinKey: keyof ExecPinsIn;
     exec: (args: {
       meta: Meta extends Field<DataTypes> ? FieldValue<Meta, DataTypes> : never;
-      pinsOut: PinRecordValue<PinsOut, DataTypes>;
+      pinsOut: FieldRecordValues<PinsOut, DataTypes>;
       execPinOut: string | null;
     }) => Promise<void>;
     // Переделать апи, надо чтобы была возможность экзекать по очереди 10 раз и тд

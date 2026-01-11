@@ -63,7 +63,10 @@ export class FluentNodeBuilder<
   ): FluentNodeBuilder<DataTypes, Events, Refs, PureFunctions, Functions, Apis, NodeInstance> {
     const resolvedToNodeUuid =
       typeof toNodeUuid === "string" ? toNodeUuid : toNodeUuid.instance.uuid;
-    this.schema.wire(this.instance.uuid, fromPinName, resolvedToNodeUuid, toPinName);
+    this.schema.wire({
+      from: { node: this.instance.uuid, pin: fromPinName },
+      to: { node: resolvedToNodeUuid, pin: toPinName },
+    });
     return this;
   }
 }

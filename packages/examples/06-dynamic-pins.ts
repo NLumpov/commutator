@@ -27,7 +27,7 @@ const commutator = Commutator.initialize()
       const currentPins = actions.getAllPins();
       const inputPins = currentPins.filter((pin) => pin.type === PinInstanceType.Input);
       const nextIndex = inputPins.length + 1;
-      actions.addPin(`value${nextIndex}`, PinInstanceType.Input, CommonDataType.Number);
+      actions.addPin(`value${nextIndex}`, PinInstanceType.Input, { type: CommonDataType.Number });
     },
     exec: async ({ pinsIn }) => {
       const values = Object.values(pinsIn).filter((v): v is number => typeof v === "number");
@@ -42,17 +42,17 @@ const commutator = Commutator.initialize()
     },
     pinsOut: {},
     execPinsIn: {
-      start: {},
+      start: null,
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
     // Разрешаем добавлять выходные exec-пины
     addExecPinOut: ({ actions }) => {
       const currentPins = actions.getAllPins();
       const execOutPins = currentPins.filter((pin) => pin.type === PinInstanceType.OutputExec);
       const nextIndex = execOutPins.length;
-      actions.addPin(`branch${nextIndex}`, PinInstanceType.OutputExec, CommonDataType.Any);
+      actions.addExecPin(`branch${nextIndex}`, PinInstanceType.OutputExec);
     },
     exec: async ({ execPinsOut, exec }) => {
       // Выполняем все выходные exec-пины
@@ -76,13 +76,13 @@ const commutator = Commutator.initialize()
       const currentPins = actions.getAllPins();
       const inputPins = currentPins.filter((pin) => pin.type === PinInstanceType.Input);
       const nextIndex = inputPins.length + 1;
-      actions.addPin(`input${nextIndex}`, PinInstanceType.Input, CommonDataType.String);
+      actions.addPin(`input${nextIndex}`, PinInstanceType.Input, { type: CommonDataType.String });
     },
     addPinOut: ({ actions }) => {
       const currentPins = actions.getAllPins();
       const outputPins = currentPins.filter((pin) => pin.type === PinInstanceType.Output);
       const nextIndex = outputPins.length + 1;
-      actions.addPin(`output${nextIndex}`, PinInstanceType.Output, CommonDataType.String);
+      actions.addPin(`output${nextIndex}`, PinInstanceType.Output, { type: CommonDataType.String });
     },
     exec: async ({ pinsIn, pinsOut }) => {
       const inputs = Object.values(pinsIn).filter((v): v is string => typeof v === "string");

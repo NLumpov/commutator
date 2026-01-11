@@ -1,14 +1,14 @@
 import type { NodeType } from "../../enums";
-import type { ExecPin, Field, NodeCallbackContext, Pin } from "../";
+import type { Field, NodeCallbackContext } from "../";
 
 export interface AbstractNode<
   DataTypes extends Record<string, Field<DataTypes>>,
   Meta extends Field<DataTypes> | undefined,
   Config extends Field<DataTypes> | undefined,
-  PinsIn extends Record<string, Pin<DataTypes>>,
-  PinsOut extends Record<string, Pin<DataTypes>>,
-  ExecPinsIn extends Record<string, ExecPin>,
-  ExecPinsOut extends Record<string, ExecPin>,
+  PinsIn extends Record<string, Field<DataTypes>>,
+  PinsOut extends Record<string, Field<DataTypes>>,
+  ExecPinsIn extends Record<string, null>,
+  ExecPinsOut extends Record<string, null>,
   Apis extends Record<string, any>,
 > {
   readonly type: NodeType;

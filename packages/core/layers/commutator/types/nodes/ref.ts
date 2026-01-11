@@ -1,5 +1,5 @@
 import type { NodeType } from "../../enums";
-import type { ExecPin, Field, FieldValue, Pin, PinRecordValue } from "../";
+import type { Field, FieldRecordValues, FieldValue } from "../";
 import type { AbstractNode } from "./abstract";
 
 export interface RefNode<
@@ -7,10 +7,10 @@ export interface RefNode<
   Meta extends Field<DataTypes> | undefined,
   Config extends Field<DataTypes> | undefined,
   Apis extends Record<string, any>,
-  PinsIn extends Record<string, Pin<DataTypes>>,
-  PinsOut extends Record<string, Pin<DataTypes>>,
-  ExecPinsIn extends Record<string, ExecPin>,
-  ExecPinsOut extends Record<string, ExecPin>,
+  PinsIn extends Record<string, Field<DataTypes>>,
+  PinsOut extends Record<string, Field<DataTypes>>,
+  ExecPinsIn extends Record<string, null>,
+  ExecPinsOut extends Record<string, null>,
 > extends AbstractNode<DataTypes, Meta, Config, PinsIn, PinsOut, ExecPinsIn, ExecPinsOut, Apis> {
   readonly type: NodeType.Ref;
   /**
@@ -21,5 +21,5 @@ export interface RefNode<
     pinsOut: PinsOut;
     config: Config extends Field<DataTypes> ? FieldValue<Config, DataTypes> : never;
     api: Apis;
-  }) => Promise<PinRecordValue<PinsOut, DataTypes> | null>;
+  }) => Promise<FieldRecordValues<PinsOut, DataTypes> | null>;
 }

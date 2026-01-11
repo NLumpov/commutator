@@ -24,7 +24,7 @@ const commutator = Commutator.initialize()
       value: { type: CommonDataType.Number },
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
   })
   .defineRef("userRef", {
@@ -66,11 +66,11 @@ const commutator = Commutator.initialize()
     },
     pinsOut: {},
     execPinsIn: {
-      start: {},
+      start: null,
     },
     execPinsOut: {
-      next: {},
-      skip: {},
+      next: null,
+      skip: null,
     },
     config: {
       type: CommonDataType.Object,

@@ -16,7 +16,7 @@ const commutator = Commutator.initialize()
       y: { type: CommonDataType.Number },
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
   })
   .definePureFunction("add", {
@@ -37,10 +37,10 @@ const commutator = Commutator.initialize()
     },
     pinsOut: {},
     execPinsIn: {
-      start: {},
+      start: null,
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
     exec: async ({ pinsIn, exec }) => {
       console.log("Value:", pinsIn.value);
@@ -80,10 +80,10 @@ schema1.moveNode(add.uuid, 300, 200);
 schema1.moveNode(log.uuid, 500, 200);
 
 // Создание связей
-schema1.wire(onClick.uuid, "x", add.uuid, "a");
-schema1.wire(onClick.uuid, "y", add.uuid, "b");
-schema1.wire(add.uuid, "result", log.uuid, "value");
-schema1.wire(onClick.uuid, "next", log.uuid, "start");
+schema1.wire({ from: { node: onClick.uuid, pin: "x" }, to: { node: add.uuid, pin: "a" } });
+schema1.wire({ from: { node: onClick.uuid, pin: "y" }, to: { node: add.uuid, pin: "b" } });
+schema1.wire({ from: { node: add.uuid, pin: "result" }, to: { node: log.uuid, pin: "value" } });
+schema1.wire({ from: { node: onClick.uuid, pin: "next" }, to: { node: log.uuid, pin: "start" } });
 
 // Экспорт схемы в снапшот
 const snapshot = schema1.extract();

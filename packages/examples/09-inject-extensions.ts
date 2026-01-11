@@ -23,7 +23,7 @@ const baseCommutator = Commutator.initialize()
       userId: { type: CommonDataType.String },
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
   });
 
@@ -118,10 +118,10 @@ const userExtension = baseCommutator
     },
     pinsOut: {},
     execPinsIn: {
-      start: {},
+      start: null,
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
     exec: async ({ pinsIn, exec }) => {
       console.log("User:", pinsIn.user);
@@ -151,7 +151,10 @@ const userRef = schema.createRef("userRef", { userId: "user-123" });
 const logUser = schema.createFunction("logUser");
 
 // Создание связей между нодами из разных расширений
-schema.wire(userAction.uuid, "userId", userRef.uuid, "userId");
-schema.wire(userRef.uuid, "user", logUser.uuid, "user");
+schema.wire({
+  from: { node: userAction.uuid, pin: "userId" },
+  to: { node: userRef.uuid, pin: "userId" },
+});
+schema.wire({ from: { node: userRef.uuid, pin: "user" }, to: { node: logUser.uuid, pin: "user" } });
 
 export { combinedCommutator, schema, userAction, add, multiply, concat, userRef, logUser };

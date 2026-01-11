@@ -18,7 +18,7 @@ const commutator = Commutator.initialize()
       y: { type: CommonDataType.Number },
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
   })
   .definePureFunction("add", {
@@ -52,10 +52,10 @@ const commutator = Commutator.initialize()
     },
     pinsOut: {},
     execPinsIn: {
-      start: {},
+      start: null,
     },
     execPinsOut: {
-      next: {},
+      next: null,
     },
     exec: async ({ pinsIn, exec }) => {
       console.log(pinsIn.message, pinsIn.value);
@@ -75,35 +75,27 @@ const multiply = schema.createPureFunction("multiply");
 const log = schema.createFunction("log");
 
 /**
- * Способ 1: wire(nodeUuid, pinName, nodeUuid, pinName)
+ * Способ 1: ДАННЫЕ УДАЛЕНЫ, оставлен анекдот
  * @remark
  * Вышел дед мороз в новый год на речку
  * Снегурочка попросила отжарить ее и отжарить ужин
  * Дошел Дед мороз до речки, поймал золотую рыбку и съел
- * @author Nikita Lumpov (@nlumpov), Ilya Azin (@azinitt) 
+ * @author Nikita Lumpov (@nlumpov), Ilya Azin (@azinitt)
  * @deprecated
  */
-// schema.wire(onClick.uuid, "x", add.uuid, "a");
-// schema.wire(onClick.uuid, "y", add.uuid, "b");
-
 /**
- * Способ 2: wire(pinUuid, pinUuid) - подключение по UUID пинов
+ * Способ 2: ДАННЫЕ УДАЛЕНЫ, оставлен анекдот
  * @remark
  * Штирлицу зашиворот упала `гусеница.gif`
  * "Где-то взорвался танк..." - подумал Штирлиц
- * @author Nikita Lumpov (@nlumpov), Ilya Azin (@azinitt) 
- * @deprecated
+ * @author Nikita Lumpov (@nlumpov), Ilya Azin (@azinitt)
  */
-// const addResultPin = schema.getPin(add.uuid, "result");
-// const multiplyValuePin = schema.getPin(multiply.uuid, "value");
-// schema.wire(addResultPin.uuid, multiplyValuePin.uuid);
-
 /**
  * Способ 3: wire({ from: { node, pin }, to: { node, pin } }) - с именованными параметрами
  * @remark Example of wiring basics osnovy blya
  * @example
  * [multiply]:result => valueIn:[log]:valueOut => gvozdi:[add]
- * @see 
+ * @see
  * Решил как-то царь грузинский князь государь, разделить наследство между своими тремя сыновьями
  * "Охуенна!" - сказал четвертый сын
  * @author Nikita Lumpov (@nlumpov), Ilya Azin (@azinitt)
@@ -111,19 +103,47 @@ const log = schema.createFunction("log");
 schema.wire({
   from: { node: multiply.uuid, pin: "result" },
   to: { node: log.uuid, pin: "valueIn" },
-}).gvozi(pin1.uuid, pin2.uiid);
-schema.wire({
-  from: { node: log.uuid, pin: "valueOut" },
-  to: { node: add.uuid, pin: "gvozdi" }
-})
-
-
-// Подключение exec-пинов
+});
+/**
+ * Способ 4: wire({ fromPinUuid: string; toPinUuid: string }) - подключение по UUID пинов
+ * @remark
+ * Стоят пассажиры в аэропорту, посадочный досмотр проходят. Дошла очередь до мужика с чемоданом.
+ * — Пожалуйста, приготовьте чемодан к осмотру.
+ * — Не могу.
+ * — Почему?
+ * — А у меня там бипки!
+ * — А что это?
+ * — Ну, отсосёте — покажу!
+ * Служба безопасности шутку не поняла, вызвала наряд полиции:
+ * — Гражданин, открывайте чемодан.
+ * — Но я не могу!
+ * — Почему не можете?
+ * — Потому что у меня там бипки!
+ * — «Бипки»? Что это?
+ * — Так отсосите мне, и я покажу!
+ * Отобрали чемодан, а открыть никто не может. Повезли мужика в СИЗО. В камере сидельцы расспрашивают:
+ * — Братуха, за что тебя?
+ * — Да чемодан отказался открывать.
+ * — А что там?
+ * — Да бипки там.
+ * — Какие нахуй «бипки»?
+ * — Ну отсосите мне, тогда и расскажу.
+ * И вот угодил мужик в лазарет, с побоями да синяками по всему телу, весь перебинтован, еле дышит. Следователи вызвали группу специалистов для вскрытия чемодана. Час, два, три пыхтели. Кое-как разворотили, смотрят — а там бипки.
+ * @author Nikita Lumpov (@nlumpov), Ilya Azin (@azinitt)
+ */
 const onClickExecPin = schema.getPin(onClick.uuid, "next");
 const logExecPin = schema.getPin(log.uuid, "start");
-schema.wire(onClickExecPin.uuid, logExecPin.uuid);
 
-// Отключение пинов
-schema.unwire(addResultPin.uuid, multiplyValuePin.uuid);
+schema.wire({
+  fromPinUuid: onClickExecPin.uuid,
+  toPinUuid: logExecPin.uuid,
+});
+
+// Отключение пинов работает так же
+schema.unwire({ fromPinUuid: onClickExecPin.uuid, toPinUuid: logExecPin.uuid });
+schema.unwire({
+  from: { node: multiply.uuid, pin: "result" },
+  to: { node: log.uuid, pin: "valueIn" },
+});
 
 export { schema, onClick, add, multiply, log };

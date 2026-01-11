@@ -1,13 +1,18 @@
 import type { PinInstanceType } from "../../schema";
 import type { PinInstance } from "../../schema/types/pin-instance";
 import type { Field, FieldValue } from "./field";
-import type { Pin } from "./pin";
 
 export interface NodeCallbackActions<DataTypes extends Record<string, Field<DataTypes>>> {
   // Обновить настройки пина
-  updatePin(pinUuid: string, args: { name?: string; pinType?: Pin<DataTypes>["type"] }): void;
+  updatePin(pinUuid: string, args: { name?: string; dataType?: Field<DataTypes> }): void;
   // Добавить пин
-  addPin(name: string, type: PinInstanceType, pinType: Pin<DataTypes>["type"]): void;
+  addPin(
+    name: string,
+    type: PinInstanceType.Input | PinInstanceType.Output,
+    dataType: Field<DataTypes>,
+  ): void;
+  // Добавить exec pin
+  addExecPin(name: string, type: PinInstanceType.InputExec | PinInstanceType.OutputExec): void;
   // Удалить пин
   removePin(pinUuid: string): void;
   // Сбросить пины до начального состояния
@@ -21,7 +26,7 @@ export interface NodeCallbackActions<DataTypes extends Record<string, Field<Data
   // Получить связанную ноду
   getWiredNode(name: string): PinInstance<DataTypes> | undefined;
   // Получить конфиг пина
-  getPinConfig(name: string): Pin<DataTypes> | undefined;
+  getPinConfig(name: string): Field<DataTypes> | undefined;
 }
 
 export interface NodeCallbackContext<

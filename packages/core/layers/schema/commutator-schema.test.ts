@@ -12,7 +12,7 @@ describe("CommutatorSchema", () => {
           y: { type: CommonDataType.Number },
         },
         execPinsOut: {
-          next: {},
+          next: null,
         },
       });
 
@@ -108,10 +108,10 @@ describe("CommutatorSchema", () => {
         },
         pinsOut: {},
         execPinsIn: {
-          start: {},
+          start: null,
         },
         execPinsOut: {
-          next: {},
+          next: null,
         },
         exec: async () => {},
       });
@@ -159,7 +159,7 @@ describe("CommutatorSchema", () => {
         expect(inputPinUuid).toBeDefined();
 
         expect(() => {
-          instance.wire(outputPinUuid!, inputPinUuid!);
+          instance.wire({ fromPinUuid: outputPinUuid!, toPinUuid: inputPinUuid! });
         }).not.toThrow();
       });
 
@@ -191,7 +191,7 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
-          instance.wire(outputPinUuid!, inputPinUuid!);
+          instance.wire({ fromPinUuid: outputPinUuid!, toPinUuid: inputPinUuid! });
         }).not.toThrow();
       });
 
@@ -223,7 +223,7 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
-          instance.wire(outputPinUuid!, inputPinUuid!);
+          instance.wire({ fromPinUuid: outputPinUuid!, toPinUuid: inputPinUuid! });
         }).not.toThrow();
       });
 
@@ -255,7 +255,7 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
-          instance.wire(outputPinUuid!, inputPinUuid!);
+          instance.wire({ fromPinUuid: outputPinUuid!, toPinUuid: inputPinUuid! });
         }).toThrow(CommutatorError);
       });
 
@@ -298,12 +298,12 @@ describe("CommutatorSchema", () => {
 
         // First wire should succeed
         expect(() => {
-          instance.wire(outputPin1Uuid!, inputPinUuid!);
+          instance.wire({ fromPinUuid: outputPin1Uuid!, toPinUuid: inputPinUuid! });
         }).not.toThrow();
 
         // Second wire to the same input should fail
         expect(() => {
-          instance.wire(outputPin2Uuid!, inputPinUuid!);
+          instance.wire({ fromPinUuid: outputPin2Uuid!, toPinUuid: inputPinUuid! });
         }).toThrow(CommutatorError);
       });
 
@@ -347,11 +347,11 @@ describe("CommutatorSchema", () => {
 
         // Both wires should succeed
         expect(() => {
-          instance.wire(outputPinUuid!, inputPin1Uuid!);
+          instance.wire({ fromPinUuid: outputPinUuid!, toPinUuid: inputPin1Uuid! });
         }).not.toThrow();
 
         expect(() => {
-          instance.wire(outputPinUuid!, inputPin2Uuid!);
+          instance.wire({ fromPinUuid: outputPinUuid!, toPinUuid: inputPin2Uuid! });
         }).not.toThrow();
       });
     });
@@ -362,14 +362,14 @@ describe("CommutatorSchema", () => {
           .defineEvent("source", {
             pinsOut: {},
             execPinsOut: {
-              next: {},
+              next: null,
             },
           })
           .defineFunction("target", {
             pinsIn: {},
             pinsOut: {},
             execPinsIn: {
-              start: {},
+                start: null,
             },
             execPinsOut: {},
             exec: async () => {},
@@ -387,7 +387,7 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
         expect(() => {
-          instance.wire(execOutputPinUuid!, execInputPinUuid!);
+          instance.wire({ fromPinUuid: execOutputPinUuid!, toPinUuid: execInputPinUuid! });
         }).not.toThrow();
       });
 
@@ -395,22 +395,16 @@ describe("CommutatorSchema", () => {
         const commutator = Commutator.initialize()
           .defineEvent("source1", {
             pinsOut: {},
-            execPinsOut: {
-              next: {},
-            },
+            execPinsOut: { next: null },
           })
           .defineEvent("source2", {
             pinsOut: {},
-            execPinsOut: {
-              next: {},
-            },
+            execPinsOut: { next: null },
           })
           .defineFunction("target", {
             pinsIn: {},
             pinsOut: {},
-            execPinsIn: {
-              start: {},
-            },
+            execPinsIn: { start: null },
             execPinsOut: {},
             exec: async () => {},
           });
@@ -432,12 +426,12 @@ describe("CommutatorSchema", () => {
 
         // First wire should succeed
         expect(() => {
-          instance.wire(execOutputPin1Uuid!, execInputPinUuid!);
+          instance.wire({ fromPinUuid: execOutputPin1Uuid!, toPinUuid: execInputPinUuid! });
         }).not.toThrow();
 
         // Second wire to the same exec input should also succeed (multiple exec pins allowed)
         expect(() => {
-          instance.wire(execOutputPin2Uuid!, execInputPinUuid!);
+          instance.wire({ fromPinUuid: execOutputPin2Uuid!, toPinUuid: execInputPinUuid! });
         }).not.toThrow();
       });
 
@@ -445,25 +439,19 @@ describe("CommutatorSchema", () => {
         const commutator = Commutator.initialize()
           .defineEvent("source", {
             pinsOut: {},
-            execPinsOut: {
-              next: {},
-            },
+            execPinsOut: { next: null },
           })
           .defineFunction("target1", {
             pinsIn: {},
             pinsOut: {},
-            execPinsIn: {
-              start: {},
-            },
+            execPinsIn: { start: null },
             execPinsOut: {},
             exec: async () => {},
           })
           .defineFunction("target2", {
             pinsIn: {},
             pinsOut: {},
-            execPinsIn: {
-              start: {},
-            },
+            execPinsIn: { start: null },
             execPinsOut: {},
             exec: async () => {},
           });
@@ -485,12 +473,12 @@ describe("CommutatorSchema", () => {
 
         // First wire should succeed
         expect(() => {
-          instance.wire(execOutputPinUuid!, execInputPin1Uuid!);
+          instance.wire({ fromPinUuid: execOutputPinUuid!, toPinUuid: execInputPin1Uuid! }  );
         }).not.toThrow();
 
         // Second wire from the same exec output should fail
         expect(() => {
-          instance.wire(execOutputPinUuid!, execInputPin2Uuid!);
+          instance.wire({ fromPinUuid: execOutputPinUuid!, toPinUuid: execInputPin2Uuid! });
         }).toThrow("ExecPinOut wire already exists");
       });
     });
@@ -501,7 +489,7 @@ describe("CommutatorSchema", () => {
         const instance = commutator.createSchema();
 
         expect(() => {
-          instance.wire("non-existent-pin-1", "non-existent-pin-2");
+          instance.wire({ fromPinUuid: "non-existent-pin-1", toPinUuid: "non-existent-pin-2" });
         }).toThrow(CommutatorError);
       });
 
@@ -521,7 +509,7 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
 
         expect(() => {
-          instance.wire(outputPinUuid!, outputPinUuid!);
+          instance.wire({ fromPinUuid: outputPinUuid!, toPinUuid: outputPinUuid! });
         }).toThrow(CommutatorError);
       });
 
@@ -554,7 +542,7 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "b" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
-          instance.wire(inputPin1Uuid!, inputPin2Uuid!);
+          instance.wire({ fromPinUuid: inputPin1Uuid!, toPinUuid: inputPin2Uuid! });
         }).toThrow(CommutatorError);
       });
 
@@ -585,7 +573,7 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "b" && pin.type === PinInstanceType.Output)?.uuid;
 
         expect(() => {
-          instance.wire(outputPin1Uuid!, outputPin2Uuid!);
+          instance.wire({ fromPinUuid: outputPin1Uuid!, toPinUuid: outputPin2Uuid! });
         }).toThrow(CommutatorError);
       });
 
@@ -600,9 +588,7 @@ describe("CommutatorSchema", () => {
           .defineFunction("target", {
             pinsIn: {},
             pinsOut: {},
-            execPinsIn: {
-              start: {},
-            },
+            execPinsIn: { start: null },
             execPinsOut: {},
             exec: async () => {},
           });
@@ -619,7 +605,7 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
         expect(() => {
-          instance.wire(dataOutputPinUuid!, execInputPinUuid!);
+          instance.wire({ fromPinUuid: dataOutputPinUuid!, toPinUuid: execInputPinUuid! });
         }).toThrow(CommutatorError);
       });
 
@@ -627,9 +613,7 @@ describe("CommutatorSchema", () => {
         const commutator = Commutator.initialize()
           .defineEvent("source", {
             pinsOut: {},
-            execPinsOut: {
-              next: {},
-            },
+            execPinsOut: { next: null },
           })
           .definePureFunction("target", {
             pinsIn: {
@@ -651,7 +635,7 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
-          instance.wire(execOutputPinUuid!, dataInputPinUuid!);
+          instance.wire({ fromPinUuid: execOutputPinUuid!, toPinUuid: dataInputPinUuid! });
         }).toThrow(CommutatorError);
       });
 
@@ -659,9 +643,7 @@ describe("CommutatorSchema", () => {
         const commutator = Commutator.initialize()
           .defineEvent("source", {
             pinsOut: {},
-            execPinsOut: {
-              next: {},
-            },
+            execPinsOut: { next: null },
           })
           .definePureFunction("target", {
             pinsIn: {
@@ -684,7 +666,7 @@ describe("CommutatorSchema", () => {
 
         // Try reversed order
         expect(() => {
-          instance.wire(dataInputPinUuid!, execOutputPinUuid!);
+          instance.wire({ fromPinUuid: dataInputPinUuid!, toPinUuid: execOutputPinUuid! });
         }).toThrow(CommutatorError);
       });
     });
@@ -719,7 +701,7 @@ describe("CommutatorSchema", () => {
 
         // Wire in correct order
         expect(() => {
-          instance.wire(outputPinUuid!, inputPinUuid!);
+          instance.wire({ fromPinUuid: outputPinUuid!, toPinUuid: inputPinUuid! });
         }).not.toThrow();
 
         // Wire in reverse order should also work
@@ -733,7 +715,7 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
-          instance.wire(inputPin2Uuid!, outputPin2Uuid!);
+          instance.wire({ fromPinUuid: inputPin2Uuid!, toPinUuid: outputPin2Uuid! });
         }).not.toThrow();
       });
 
@@ -741,16 +723,12 @@ describe("CommutatorSchema", () => {
         const commutator = Commutator.initialize()
           .defineEvent("source", {
             pinsOut: {},
-            execPinsOut: {
-              next: {},
-            },
+            execPinsOut: { next: null },
           })
           .defineFunction("target", {
             pinsIn: {},
             pinsOut: {},
-            execPinsIn: {
-              start: {},
-            },
+            execPinsIn: { start: null },
             execPinsOut: {},
             exec: async () => {},
           });
@@ -768,7 +746,7 @@ describe("CommutatorSchema", () => {
 
         // Wire in reverse order should work
         expect(() => {
-          instance.wire(execInputPinUuid!, execOutputPinUuid!);
+          instance.wire({ fromPinUuid: execInputPinUuid!, toPinUuid: execOutputPinUuid! });
         }).not.toThrow();
       });
     });
@@ -818,9 +796,9 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "booleanValue" && pin.type === PinInstanceType.Input)?.uuid;
 
         expect(() => {
-          instance.wire(stringOutput!, stringInput!);
-          instance.wire(numberOutput!, numberInput!);
-          instance.wire(booleanOutput!, booleanInput!);
+          instance.wire({ fromPinUuid: stringOutput!, toPinUuid: stringInput! });
+          instance.wire({ fromPinUuid: numberOutput!, toPinUuid: numberInput! });
+          instance.wire({ fromPinUuid: booleanOutput!, toPinUuid: booleanInput! });
         }).not.toThrow();
       });
 
@@ -830,18 +808,14 @@ describe("CommutatorSchema", () => {
             pinsOut: {
               value: { type: CommonDataType.String },
             },
-            execPinsOut: {
-              next: {},
-            },
+            execPinsOut: { next: null },
           })
           .defineFunction("target", {
             pinsIn: {
               value: { type: CommonDataType.String },
             },
             pinsOut: {},
-            execPinsIn: {
-              start: {},
-            },
+            execPinsIn: { start: null },
             execPinsOut: {},
             exec: async () => {},
           });
@@ -864,8 +838,8 @@ describe("CommutatorSchema", () => {
           .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
 
         expect(() => {
-          instance.wire(dataOutput!, dataInput!);
-          instance.wire(execOutput!, execInput!);
+          instance.wire({ fromPinUuid: dataOutput!, toPinUuid: dataInput! });
+          instance.wire({ fromPinUuid: execOutput!, toPinUuid: execInput! });
         }).not.toThrow();
       });
     });
@@ -877,23 +851,15 @@ describe("CommutatorSchema", () => {
             .defineFunction("func1", {
               pinsIn: {},
               pinsOut: {},
-              execPinsIn: {
-                start: {},
-              },
-              execPinsOut: {
-                next: {},
-              },
+              execPinsIn: { start: null },
+              execPinsOut: { next: null },
               exec: async () => {},
             })
             .defineFunction("func2", {
               pinsIn: {},
               pinsOut: {},
-              execPinsIn: {
-                start: {},
-              },
-              execPinsOut: {
-                next: {},
-              },
+              execPinsIn: { start: null },
+              execPinsOut: { next: null },
               exec: async () => {},
             });
 
@@ -916,12 +882,12 @@ describe("CommutatorSchema", () => {
 
           // Создаем первое соединение (func1 -> func2)
           expect(() => {
-            instance.wire(func1ExecOut!, func2ExecIn!);
+            instance.wire({ fromPinUuid: func1ExecOut!, toPinUuid: func2ExecIn! });
           }).not.toThrow();
 
           // Создаем второе соединение (func2 -> func1), это должно создать цикл
           expect(() => {
-            instance.wire(func2ExecOut!, func1ExecIn!);
+            instance.wire({ fromPinUuid: func2ExecOut!, toPinUuid: func1ExecIn! });
           }).toThrow(CommutatorError);
         });
 
@@ -930,34 +896,22 @@ describe("CommutatorSchema", () => {
             .defineFunction("func1", {
               pinsIn: {},
               pinsOut: {},
-              execPinsIn: {
-                start: {},
-              },
-              execPinsOut: {
-                next: {},
-              },
+              execPinsIn: { start: null },
+              execPinsOut: { next: null },
               exec: async () => {},
             })
             .defineFunction("func2", {
               pinsIn: {},
               pinsOut: {},
-              execPinsIn: {
-                start: {},
-              },
-              execPinsOut: {
-                next: {},
-              },
+              execPinsIn: { start: null },
+              execPinsOut: { next: null },
               exec: async () => {},
             })
             .defineFunction("func3", {
               pinsIn: {},
               pinsOut: {},
-              execPinsIn: {
-                start: {},
-              },
-              execPinsOut: {
-                next: {},
-              },
+              execPinsIn: { start: null },
+              execPinsOut: { next: null },
               exec: async () => {},
             });
 
@@ -987,13 +941,13 @@ describe("CommutatorSchema", () => {
 
           // Создаем цепочку: func1 -> func2 -> func3
           expect(() => {
-            instance.wire(func1ExecOut!, func2ExecIn!);
-            instance.wire(func2ExecOut!, func3ExecIn!);
+            instance.wire({ fromPinUuid: func1ExecOut!, toPinUuid: func2ExecIn! });
+            instance.wire({ fromPinUuid: func2ExecOut!, toPinUuid: func3ExecIn! });
           }).not.toThrow();
 
           // Попытка создать соединение func3 -> func1 должна создать цикл
           expect(() => {
-            instance.wire(func3ExecOut!, func1ExecIn!);
+            instance.wire({ fromPinUuid: func3ExecOut!, toPinUuid: func1ExecIn! });
           }).toThrow(CommutatorError);
         });
 
@@ -1001,28 +955,20 @@ describe("CommutatorSchema", () => {
           const commutator = Commutator.initialize()
             .defineEvent("event", {
               pinsOut: {},
-              execPinsOut: {
-                next: {},
-              },
+              execPinsOut: { next: null },
             })
             .defineFunction("func1", {
               pinsIn: {},
               pinsOut: {},
-              execPinsIn: {
-                start: {},
-              },
-              execPinsOut: {
-                next: {},
-              },
+              execPinsIn: { start: null },
+              execPinsOut: { next: null },
               exec: async () => {},
             })
             .defineFunction("func2", {
               pinsIn: {},
               pinsOut: {},
-              execPinsIn: {
-                start: {},
-              },
-              execPinsOut: {},
+              execPinsIn: { start: null },
+              execPinsOut: { next: null },
               exec: async () => {},
             });
 
@@ -1046,8 +992,8 @@ describe("CommutatorSchema", () => {
 
           // Создаем линейную цепочку: event -> func1 -> func2 (без циклов)
           expect(() => {
-            instance.wire(eventExecOut!, func1ExecIn!);
-            instance.wire(func1ExecOut!, func2ExecIn!);
+            instance.wire({ fromPinUuid: eventExecOut!, toPinUuid: func1ExecIn! });
+            instance.wire({ fromPinUuid: func1ExecOut!, toPinUuid: func2ExecIn! });
           }).not.toThrow();
         });
       });
@@ -1093,12 +1039,12 @@ describe("CommutatorSchema", () => {
 
           // Создаем первое соединение (func1 -> func2)
           expect(() => {
-            instance.wire(func1Out!, func2In!);
+            instance.wire({ fromPinUuid: func1Out!, toPinUuid: func2In! });
           }).not.toThrow();
 
           // Создаем второе соединение (func2 -> func1), это должно создать цикл
           expect(() => {
-            instance.wire(func2Out!, func1In!);
+            instance.wire({ fromPinUuid: func2Out!, toPinUuid: func1In! });
           }).toThrow(CommutatorError);
         });
 
@@ -1158,13 +1104,13 @@ describe("CommutatorSchema", () => {
 
           // Создаем цепочку: func1 -> func2 -> func3
           expect(() => {
-            instance.wire(func1Out!, func2In!);
-            instance.wire(func2Out!, func3In!);
+            instance.wire({ fromPinUuid: func1Out!, toPinUuid: func2In! });
+            instance.wire({ fromPinUuid: func2Out!, toPinUuid: func3In! });
           }).not.toThrow();
 
           // Попытка создать соединение func3 -> func1 должна создать цикл
           expect(() => {
-            instance.wire(func3Out!, func1In!);
+            instance.wire({ fromPinUuid: func3Out!, toPinUuid: func1In! });
           }).toThrow(CommutatorError);
         });
 
@@ -1213,8 +1159,8 @@ describe("CommutatorSchema", () => {
 
           // Создаем линейную цепочку: event -> func1 -> func2 (без циклов)
           expect(() => {
-            instance.wire(eventOut!, func1In!);
-            instance.wire(func1Out!, func2In!);
+            instance.wire({ fromPinUuid: eventOut!, toPinUuid: func1In! });
+            instance.wire({ fromPinUuid: func1Out!, toPinUuid: func2In! });
           }).not.toThrow();
         });
       });
@@ -1228,12 +1174,8 @@ describe("CommutatorSchema", () => {
             pinsOut: {
               data: { type: CommonDataType.String },
             },
-            execPinsIn: {
-              start: {},
-            },
-            execPinsOut: {
-              next: {},
-            },
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
             exec: async () => {},
           })
           .defineFunction("func2", {
@@ -1243,12 +1185,8 @@ describe("CommutatorSchema", () => {
             pinsOut: {
               data: { type: CommonDataType.String },
             },
-            execPinsIn: {
-              start: {},
-            },
-            execPinsOut: {
-              next: {},
-            },
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
             exec: async () => {},
           });
 
@@ -1271,12 +1209,12 @@ describe("CommutatorSchema", () => {
 
         // Создаем соединение data: func1 -> func2
         expect(() => {
-          instance.wire(func1DataOut!, func2DataIn!);
+          instance.wire({ fromPinUuid: func1DataOut!, toPinUuid: func2DataIn! });
         }).not.toThrow();
 
         // Создаем соединение exec: func2 -> func1 (это не должно создавать цикл для data pins)
         expect(() => {
-          instance.wire(func2ExecOut!, func1ExecIn!);
+          instance.wire({ fromPinUuid: func2ExecOut!, toPinUuid: func1ExecIn! });
         }).not.toThrow();
       });
     });
@@ -1290,9 +1228,7 @@ describe("CommutatorSchema", () => {
             x: { type: CommonDataType.Number },
             y: { type: CommonDataType.Number },
           },
-          execPinsOut: {
-            next: {},
-          },
+          execPinsOut: { next: null },
         });
 
         const schema1 = commutator.createSchema();
@@ -1341,12 +1277,8 @@ describe("CommutatorSchema", () => {
               message: { type: CommonDataType.String },
             },
             pinsOut: {},
-            execPinsIn: {
-              start: {},
-            },
-            execPinsOut: {
-              next: {},
-            },
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
             exec: async () => {},
           });
 
@@ -1377,9 +1309,7 @@ describe("CommutatorSchema", () => {
             pinsOut: {
               value: { type: CommonDataType.String },
             },
-            execPinsOut: {
-              next: {},
-            },
+            execPinsOut: { next: null },
           })
           .definePureFunction("target", {
             pinsIn: {
@@ -1400,7 +1330,7 @@ describe("CommutatorSchema", () => {
           .getNodePins(target.uuid)
           .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
 
-        schema1.wire(outputPinUuid!, inputPinUuid!);
+        schema1.wire({ fromPinUuid: outputPinUuid!, toPinUuid: inputPinUuid! });
 
         const snapshot = schema1.extract();
         const schema2 = commutator.createSchema(snapshot);
@@ -1504,12 +1434,8 @@ describe("CommutatorSchema", () => {
             message: { type: CommonDataType.String },
           },
           pinsOut: {},
-          execPinsIn: {
-            start: {},
-          },
-          execPinsOut: {
-            next: {},
-          },
+          execPinsIn: { start: null },
+          execPinsOut: { next: null },
           exec: async () => {},
         });
 
@@ -1522,12 +1448,8 @@ describe("CommutatorSchema", () => {
             message: { type: CommonDataType.String },
           },
           pinsOut: {},
-          execPinsIn: {
-            start: {},
-          },
-          execPinsOut: {
-            next: {},
-          },
+          execPinsIn: { start: null },
+          execPinsOut: { next: null },
           exec: async () => {},
         });
 
@@ -1562,12 +1484,8 @@ describe("CommutatorSchema", () => {
           .defineFunction("log", {
             pinsIn: {},
             pinsOut: {},
-            execPinsIn: {
-              start: {},
-            },
-            execPinsOut: {
-              next: {},
-            },
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
             exec: async () => {},
           });
 
@@ -1667,7 +1585,7 @@ describe("CommutatorSchema", () => {
             x: { type: CommonDataType.Number },
             y: { type: CommonDataType.Number },
           },
-          execPinsOut: { next: {} },
+          execPinsOut: { next: null },
         });
 
         const schema = commutator.createSchema();
@@ -1697,72 +1615,6 @@ describe("CommutatorSchema", () => {
       });
     });
 
-    describe("wire with simplified syntax", () => {
-      test("should wire pins using node instances and pin names", () => {
-        const commutator = Commutator.initialize()
-          .defineEvent("onClick", {
-            pinsOut: {
-              x: { type: CommonDataType.Number },
-            },
-            execPinsOut: { next: {} },
-          })
-          .definePureFunction("add", {
-            pinsIn: {
-              a: { type: CommonDataType.Number },
-              b: { type: CommonDataType.Number },
-            },
-            pinsOut: {
-              result: { type: CommonDataType.Number },
-            },
-            exec: async ({ pinsIn }) => ({
-              result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
-            }),
-          });
-
-        const schema = commutator.createSchema();
-        const event = schema.createEvent("onClick");
-        const add = schema.createPureFunction("add");
-
-        schema.wire(event.uuid, "x", add.uuid, "a");
-
-        const pins = schema.getNodePins(add.uuid);
-        const inputPin = pins.find((p) => p.name === "a");
-        expect(inputPin).toBeDefined();
-        const wires = schema.extract().wires;
-        expect(wires.length).toBe(1);
-      });
-
-      test("should wire pins using node uuids and pin names", () => {
-        const commutator = Commutator.initialize()
-          .defineEvent("onClick", {
-            pinsOut: {
-              x: { type: CommonDataType.Number },
-            },
-            execPinsOut: { next: {} },
-          })
-          .definePureFunction("add", {
-            pinsIn: {
-              a: { type: CommonDataType.Number },
-            },
-            pinsOut: {
-              result: { type: CommonDataType.Number },
-            },
-            exec: async ({ pinsIn }) => ({
-              result: pinsIn.a ?? 0,
-            }),
-          });
-
-        const schema = commutator.createSchema();
-        const event = schema.createEvent("onClick");
-        const add = schema.createPureFunction("add");
-
-        schema.wire(event.uuid, "x", add.uuid, "a");
-
-        const wires = schema.extract().wires;
-        expect(wires.length).toBe(1);
-      });
-    });
-
     describe("wire with options object", () => {
       test("should wire pins using named parameters", () => {
         const commutator = Commutator.initialize()
@@ -1770,7 +1622,7 @@ describe("CommutatorSchema", () => {
             pinsOut: {
               x: { type: CommonDataType.Number },
             },
-            execPinsOut: { next: {} },
+            execPinsOut: { next: null },
           })
           .definePureFunction("add", {
             pinsIn: {
@@ -1797,56 +1649,6 @@ describe("CommutatorSchema", () => {
         expect(wires.length).toBe(1);
       });
     });
-
-    describe("Fluent API - node()", () => {
-      test("should create NodeBuilder and get pin", () => {
-        const commutator = Commutator.initialize().defineEvent("onClick", {
-          pinsOut: {
-            x: { type: CommonDataType.Number },
-          },
-          execPinsOut: { next: {} },
-        });
-
-        const schema = commutator.createSchema();
-        const event = schema.createEvent("onClick");
-        const pinBuilder = schema.node(event.uuid).pin("x");
-
-        expect(pinBuilder).toBeDefined();
-        expect(pinBuilder.uuid).toBeDefined();
-        expect(pinBuilder.instance.name).toBe("x");
-      });
-
-      test("should wire using fluent API", () => {
-        const commutator = Commutator.initialize()
-          .defineEvent("onClick", {
-            pinsOut: {
-              x: { type: CommonDataType.Number },
-            },
-            execPinsOut: { next: {} },
-          })
-          .definePureFunction("add", {
-            pinsIn: {
-              a: { type: CommonDataType.Number },
-            },
-            pinsOut: {
-              result: { type: CommonDataType.Number },
-            },
-            exec: async ({ pinsIn }) => ({
-              result: pinsIn.a ?? 0,
-            }),
-          });
-
-        const schema = commutator.createSchema();
-        const event = schema.createEvent("onClick");
-        const add = schema.createPureFunction("add");
-
-        schema.node(event.uuid).pin("x").wireTo(add, "a");
-
-        const wires = schema.extract().wires;
-        expect(wires.length).toBe(1);
-      });
-    });
-
     describe("Fluent API - create* methods", () => {
       test("should support fluent API after createEvent", () => {
         const commutator = Commutator.initialize()
@@ -1854,7 +1656,7 @@ describe("CommutatorSchema", () => {
             pinsOut: {
               x: { type: CommonDataType.Number },
             },
-            execPinsOut: { next: {} },
+            execPinsOut: { next: null },
           })
           .definePureFunction("add", {
             pinsIn: {
@@ -1884,7 +1686,7 @@ describe("CommutatorSchema", () => {
               x: { type: CommonDataType.Number },
               y: { type: CommonDataType.Number },
             },
-            execPinsOut: { next: {} },
+            execPinsOut: { next: null },
           })
           .definePureFunction("add", {
             pinsIn: {
@@ -1914,7 +1716,7 @@ describe("CommutatorSchema", () => {
           pinsOut: {
             x: { type: CommonDataType.Number },
           },
-          execPinsOut: { next: {} },
+          execPinsOut: { next: null },
         });
 
         const schema = commutator.createSchema();

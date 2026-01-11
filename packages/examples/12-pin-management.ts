@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/style/noNonNullAssertion: Для примеров выключено */
 /**
  * Пример 12: Управление пинами
  *
@@ -18,8 +19,8 @@ const commutator = Commutator.initialize()
       button: { type: CommonDataType.Number },
     },
     execPinsOut: {
-      next: {},
-      cancel: {},
+      next: null,
+      cancel: null,
     },
   })
   .definePureFunction("add", {
@@ -46,12 +47,12 @@ const commutator = Commutator.initialize()
     },
     pinsOut: {},
     execPinsIn: {
-      start: {},
+      start: null,
     },
     execPinsOut: {
-      route1: {},
-      route2: {},
-      route3: {},
+      route1: null,
+      route2: null,
+      route3: null,
     },
     exec: async ({ exec }) => {
       await exec({
@@ -83,9 +84,9 @@ const xPin = schema.getPin(onClick.uuid, "x");
 const yPin = schema.getPin(onClick.uuid, "y");
 const resultPin = schema.getPin(add.uuid, "result");
 
-console.log("X pin:", xPin.name, xPin.type, xPin.pinType);
-console.log("Y pin:", yPin.name, yPin.type, yPin.pinType);
-console.log("Result pin:", resultPin.name, resultPin.type, resultPin.pinType);
+console.log("X pin:", xPin.name, xPin.type, xPin.dataType);
+console.log("Y pin:", yPin.name, yPin.type, yPin.dataType);
+console.log("Result pin:", resultPin.name, resultPin.type, resultPin.dataType);
 
 // Получение всех пинов ноды
 const onClickPins = schema.getNodePins(onClick.uuid);
@@ -136,15 +137,24 @@ console.log(
 );
 
 // Использование пинов для создания связей
-schema.wire(onClickOutputPins[0]!.uuid, addInputPins[0]!.uuid);
-schema.wire(onClickOutputPins[1]!.uuid, addInputPins[1]!.uuid);
+schema.wire({
+  from: { node: onClickOutputPins[0]!.uuid, pin: "x" },
+  to: { node: addInputPins[0]!.uuid, pin: "a" },
+});
+schema.wire({
+  from: { node: onClickOutputPins[1]!.uuid, pin: "y" },
+  to: { node: addInputPins[1]!.uuid, pin: "b" },
+});
 
 // Работа с exec-пинами
 const onClickNextExecPin = onClickExecPins.find((p) => p.name === "next");
 const routerStartExecPin = schema.getPin(router.uuid, "start");
 
 if (onClickNextExecPin && routerStartExecPin) {
-  schema.wire(onClickNextExecPin.uuid, routerStartExecPin.uuid);
+  schema.wire({
+    from: { node: onClickNextExecPin.uuid, pin: "next" },
+    to: { node: routerStartExecPin.uuid, pin: "start" },
+  });
 }
 
 export { schema, onClick, add, router };

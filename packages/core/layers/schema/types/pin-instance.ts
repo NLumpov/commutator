@@ -1,4 +1,4 @@
-import type { CommonDataType, Field } from "../../commutator";
+import type { Field } from "../../commutator";
 import type { PinInstanceType } from "../enums";
 
 export interface PinInstance<DataTypes extends Record<string, Field<DataTypes>> = any> {
@@ -6,5 +6,5 @@ export interface PinInstance<DataTypes extends Record<string, Field<DataTypes>> 
   readonly uuid: string;
   readonly type: PinInstanceType;
   name: string;
-  pinType: null | keyof DataTypes | CommonDataType;
+  dataType: null | Field<DataTypes>;
 }

@@ -14,7 +14,7 @@ describe("CommutatorValidator", () => {
             x: { type: CommonDataType.Number },
             y: { type: CommonDataType.Number },
           },
-          execPinsOut: { next: {} },
+          execPinsOut: { next: null },
         })
         .definePureFunction("add", {
           pinsIn: {
@@ -40,7 +40,7 @@ describe("CommutatorValidator", () => {
         .getNodePins(add.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
-      schema.wire(eventXPin!.uuid, addAPin!.uuid);
+      schema.wire({ fromPinUuid: eventXPin!.uuid, toPinUuid: addAPin!.uuid });
 
       const snapshot = schema.extract();
 
@@ -183,7 +183,7 @@ describe("CommutatorValidator", () => {
         .getNodePins(add.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
-      schema.wire(eventXPin!.uuid, addAPin!.uuid);
+      schema.wire({ fromPinUuid: eventXPin!.uuid, toPinUuid: addAPin!.uuid });
       const snapshot = schema.extract();
 
       // Изменяем UUID пина в проводе на несуществующий
@@ -254,7 +254,7 @@ describe("CommutatorValidator", () => {
         .getNodePins(add.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
-      schema.wire(eventXPin!.uuid, addAPin!.uuid);
+      schema.wire({ fromPinUuid: eventXPin!.uuid, toPinUuid: addAPin!.uuid });
       const snapshot = schema.extract();
 
       // Меняем местами from и to (делаем Input -> Output)
@@ -274,12 +274,12 @@ describe("CommutatorValidator", () => {
           pinsOut: {
             x: { type: CommonDataType.Number },
           },
-          execPinsOut: { next: {} },
+          execPinsOut: { next: null },
         })
         .defineFunction("log", {
           pinsIn: {},
           pinsOut: {},
-          execPinsIn: { start: {} },
+          execPinsIn: { start: null },
           execPinsOut: {},
           exec: async () => {},
         });
@@ -316,7 +316,7 @@ describe("CommutatorValidator", () => {
         pinsOut: {
           b: { type: CommonDataType.Number },
         },
-        execPinsIn: { start: {} },
+        execPinsIn: { start: null },
         execPinsOut: {},
         exec: async () => {},
       });
@@ -508,19 +508,19 @@ describe("CommutatorValidator", () => {
       const commutator = Commutator.initialize()
         .defineEvent("onClick", {
           pinsOut: {},
-          execPinsOut: { next: {} },
+          execPinsOut: { next: null },
         })
         .defineFunction("log1", {
           pinsIn: {},
           pinsOut: {},
-          execPinsIn: { start: {} },
+          execPinsIn: { start: null },
           execPinsOut: {},
           exec: async () => {},
         })
         .defineFunction("log2", {
           pinsIn: {},
           pinsOut: {},
-          execPinsIn: { start: {} },
+          execPinsIn: { start: null },
           execPinsOut: {},
           exec: async () => {},
         });
@@ -540,7 +540,7 @@ describe("CommutatorValidator", () => {
         .getNodePins(log2.uuid)
         .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec);
 
-      schema.wire(eventNextPin!.uuid, log1StartPin!.uuid);
+      schema.wire({ fromPinUuid: eventNextPin!.uuid, toPinUuid: log1StartPin!.uuid });
       const snapshot = schema.extract();
 
       // Пытаемся добавить второй провод от OutputExec
@@ -591,7 +591,7 @@ describe("CommutatorValidator", () => {
         .getNodePins(add.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
-      schema.wire(event1XPin!.uuid, addAPin!.uuid);
+      schema.wire({ fromPinUuid: event1XPin!.uuid, toPinUuid: addAPin!.uuid });
       const snapshot = schema.extract();
 
       // Пытаемся добавить второй провод к Input
@@ -610,15 +610,15 @@ describe("CommutatorValidator", () => {
         .defineFunction("A", {
           pinsIn: {},
           pinsOut: {},
-          execPinsIn: { start: {} },
-          execPinsOut: { next: {} },
+          execPinsIn: { start: null },
+          execPinsOut: { next: null },
           exec: async () => {},
         })
         .defineFunction("B", {
           pinsIn: {},
           pinsOut: {},
-          execPinsIn: { start: {} },
-          execPinsOut: { next: {} },
+          execPinsIn: { start: null },
+          execPinsOut: { next: null },
           exec: async () => {},
         });
 
@@ -639,7 +639,7 @@ describe("CommutatorValidator", () => {
         .getNodePins(a.uuid)
         .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec);
 
-      schema.wire(aNextPin!.uuid, bStartPin!.uuid);
+      schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
       const snapshot = schema.extract();
 
       // Создаем цикл: A -> B -> A
@@ -653,7 +653,7 @@ describe("CommutatorValidator", () => {
       }).toThrow(CommutatorError);
     });
 
-    test("should throw error when pinType does not exist in DataTypes", () => {
+    test("should throw error when dataType does not exist in DataTypes", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: {
           x: { type: CommonDataType.Number },
@@ -665,12 +665,12 @@ describe("CommutatorValidator", () => {
       schema.createEvent("onClick");
       const snapshot = schema.extract();
 
-      // Изменяем pinType на несуществующий тип
+      // Изменяем dataType на несуществующий тип
       const pin = snapshot.pinInstances.find(
         (pin) => pin.name === "x" && pin.type === PinInstanceType.Output,
       );
       if (pin) {
-        pin.pinType = "NonExistentType" as any;
+        pin.dataType = { type: "NonExistentType" }
       }
 
       expect(() => {
@@ -678,7 +678,7 @@ describe("CommutatorValidator", () => {
       }).toThrow(CommutatorError);
     });
 
-    test("should throw error when data pin has null pinType", () => {
+    test("should throw error when data pin has null dataType", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: {
           x: { type: CommonDataType.Number },
@@ -690,12 +690,12 @@ describe("CommutatorValidator", () => {
       schema.createEvent("onClick");
       const snapshot = schema.extract();
 
-      // Устанавливаем pinType в null для data пина
+      // Устанавливаем dataType в null для data пина
       const pin = snapshot.pinInstances.find(
         (pin) => pin.name === "x" && pin.type === PinInstanceType.Output,
       );
       if (pin) {
-        pin.pinType = null;
+        pin.dataType = null;
       }
 
       expect(() => {
@@ -703,22 +703,22 @@ describe("CommutatorValidator", () => {
       }).toThrow(CommutatorError);
     });
 
-    test("should throw error when exec pin has invalid pinType", () => {
+    test("should throw error when exec pin has invalid dataType", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: {},
-        execPinsOut: { next: {} },
+        execPinsOut: { next: null },
       });
 
       const schema = commutator.createSchema();
       schema.createEvent("onClick");
       const snapshot = schema.extract();
 
-      // Устанавливаем невалидный pinType для exec пина
+      // Устанавливаем невалидный dataType для exec пина
       const pin = snapshot.pinInstances.find(
         (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
       );
       if (pin) {
-        pin.pinType = CommonDataType.Number;
+        pin.dataType = { type: CommonDataType.Number };
       }
 
       expect(() => {
@@ -753,7 +753,7 @@ describe("CommutatorValidator", () => {
         .getNodePins(add.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
-      schema.wire(eventXPin!.uuid, addAPin!.uuid);
+      schema.wire({ fromPinUuid: eventXPin!.uuid, toPinUuid: addAPin!.uuid });
       const snapshot = schema.extract();
 
       // Добавляем дубликат провода
@@ -900,7 +900,7 @@ describe("CommutatorValidator", () => {
             nodeUuid: snapshot.events[0].uuid,
             type: PinInstanceType.Output,
             name: "test",
-            pinType: CommonDataType.Number,
+            dataType: { type: CommonDataType.Number },
           });
         }
 
@@ -1052,7 +1052,7 @@ describe("CommutatorValidator", () => {
     test("should reject node with invalid UUID format", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: {},
-        execPinsOut: { next: {} },
+        execPinsOut: { next: null },
       });
 
       const snapshot: SchemaSnapshot = {
@@ -1081,7 +1081,7 @@ describe("CommutatorValidator", () => {
     test("should reject pin with invalid UUID format", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: { x: { type: CommonDataType.Number } },
-        execPinsOut: { next: {} },
+        execPinsOut: { next: null },
       });
 
       const eventUuid = ulid();
@@ -1104,7 +1104,7 @@ describe("CommutatorValidator", () => {
             nodeUuid: eventUuid,
             type: PinInstanceType.Output,
             name: "x",
-            pinType: CommonDataType.Number,
+            dataType: { type: CommonDataType.Number },
           },
         ],
         wires: [],
@@ -1119,7 +1119,7 @@ describe("CommutatorValidator", () => {
     test("should reject pin with invalid nodeUuid format", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: { x: { type: CommonDataType.Number } },
-        execPinsOut: { next: {} },
+        execPinsOut: { next: null },
       });
 
       const pinUuid = ulid();
@@ -1142,7 +1142,7 @@ describe("CommutatorValidator", () => {
             nodeUuid: "invalid-node-uuid",
             type: PinInstanceType.Output,
             name: "x",
-            pinType: CommonDataType.Number,
+            dataType: { type: CommonDataType.Number },
           },
         ],
         wires: [],
@@ -1157,7 +1157,7 @@ describe("CommutatorValidator", () => {
     test("should reject wire with invalid from UUID format", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: { x: { type: CommonDataType.Number } },
-        execPinsOut: { next: {} },
+        execPinsOut: { next: null },
       });
 
       const eventUuid = ulid();
@@ -1181,7 +1181,7 @@ describe("CommutatorValidator", () => {
             nodeUuid: eventUuid,
             type: PinInstanceType.Output,
             name: "x",
-            pinType: CommonDataType.Number,
+            dataType: { type: CommonDataType.Number },
           },
         ],
         wires: [
@@ -1201,7 +1201,7 @@ describe("CommutatorValidator", () => {
     test("should reject wire with invalid to UUID format", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: { x: { type: CommonDataType.Number } },
-        execPinsOut: { next: {} },
+        execPinsOut: { next: null },
       });
 
       const eventUuid = ulid();
@@ -1225,7 +1225,7 @@ describe("CommutatorValidator", () => {
             nodeUuid: eventUuid,
             type: PinInstanceType.Output,
             name: "x",
-            pinType: CommonDataType.Number,
+            dataType: { type: CommonDataType.Number },
           },
         ],
         wires: [
@@ -1245,7 +1245,7 @@ describe("CommutatorValidator", () => {
     test("should accept valid ULID format", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: {},
-        execPinsOut: { next: {} },
+        execPinsOut: { next: null },
       });
 
       const validUlid = ulid();
@@ -1275,7 +1275,7 @@ describe("CommutatorValidator", () => {
     test("should accept valid UUID format with hyphens", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: {},
-        execPinsOut: { next: {} },
+        execPinsOut: { next: null },
       });
 
       const validUuid = "550e8400-e29b-41d4-a716-446655440000";
@@ -1305,7 +1305,7 @@ describe("CommutatorValidator", () => {
     test("should accept valid UUID format without hyphens", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: {},
-        execPinsOut: { next: {} },
+        execPinsOut: { next: null },
       });
 
       const validUuid = "550e8400e29b41d4a716446655440000";

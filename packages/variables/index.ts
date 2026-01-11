@@ -23,11 +23,11 @@ export const createVariablesExtension = (
 
         // Если в коммутаторе есть такой DataType, то устанавливаем тип пина
         if (config.type && commutator.validator.hasDataType(config.type) && valuePin) {
-          valuePin.pinType = config.type;
+          valuePin.dataType = { type: config.type };
         }
         // Если типа не нашлось то ставим Any по умолчанию
         else if (valuePin) {
-          valuePin.pinType = CommonDataType.Any;
+          valuePin.dataType = { type: CommonDataType.Any };
         }
       },
       resolveRef: async ({ config }) => {
@@ -67,14 +67,14 @@ export const createVariablesExtension = (
         Value: { type: CommonDataType.Any },
       },
       pinsOut: {},
-      execPinsIn: { "": {} },
-      execPinsOut: { "": {} },
+      execPinsIn: { "": null },
+      execPinsOut: { "": null },
       onConfigChange: ({ config, actions }) => {
         const valuePin = actions.getPin("Value");
 
         // Если в коммутаторе есть DataType соответствующий
         if (config.type && commutator.validator.hasDataType(config.type) && valuePin) {
-          valuePin.pinType = config.type;
+          valuePin.dataType = { type: config.type };
         }
       },
       exec: async ({ pinsIn, config, exec }) => {
