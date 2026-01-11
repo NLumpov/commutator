@@ -624,6 +624,7 @@ export class CommutatorSchema<
     // Используем валидатор для проверки провода
     // Передаем Map из NodesRegistry (O(n) создание копии, но только один раз)
     // и используем индексы из реестров для O(1) проверок
+    // Передаем pre-built pinsByNodeAndType индекс для оптимизации cycle detection
     this.validator.validateWire(
       updatedOutputPin,
       updatedInputPin,
@@ -631,6 +632,7 @@ export class CommutatorSchema<
       this.pinRegistry.getAllPinsMap(),
       this.nodesRegistry.getAllNodesMap(),
       this.config,
+      this.pinRegistry.getPinsByNodeUuidAndTypeIndex(),
     );
 
     // Создаем провод и добавляем его в реестр

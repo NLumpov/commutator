@@ -854,6 +854,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
   /**
    * Валидация операции wire.
    * Оптимизировано: принимает WiresRegistry для O(1) проверок вместо O(w) массивов
+   * и pre-built pinsByNodeAndType индекс для O(1) доступа вместо O(p) перестроения
    */
   public validateWire(
     fromPin: PinInstance<any>,
@@ -862,6 +863,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     allPins: Map<string, PinInstance<any>>,
     allNodes: Map<string, AbstractNodeInstance<string>>,
     config: CommutatorConfig<any, any, any, any, any, any>,
+    pinsByNodeAndType?: Map<string, Map<PinInstanceType, PinInstance<any>[]>>,
   ): void {
     if (!fromPin || !toPin) {
       throw new CommutatorError("Pin not found");
@@ -921,21 +923,24 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     this.validateWireDataTypes(outputPin, inputPin, allNodes, config);
 
     // Проверка циклических связей
-    // Используем индексы из WiresRegistry для оптимизации
-    if (this.checkCyclicConnection(outputPin, inputPin, wiresRegistry, allPins)) {
+    // Используем индексы из WiresRegistry и pre-built pinsByNodeAndType для оптимизации
+    if (
+      this.checkCyclicConnection(outputPin, inputPin, wiresRegistry, allPins, pinsByNodeAndType)
+    ) {
       throw new CommutatorError("Cyclic connection detected in pins");
     }
   }
 
   /**
    * Проверяет, создаст ли соединение циклическую связь.
-   * Оптимизировано: использует индексы из WiresRegistry для O(1) доступа
+   * Оптимизировано: использует индексы из WiresRegistry и pre-built pinsByNodeAndType для O(1) доступа
    */
   public checkCyclicConnection(
     outputPin: PinInstance<any>,
     inputPin: PinInstance<any>,
     wiresRegistry: WiresRegistry,
     allPins: Map<string, PinInstance<any>>,
+    pinsByNodeAndType?: Map<string, Map<PinInstanceType, PinInstance<any>[]>>,
   ): boolean {
     const outputNodeUuid = outputPin.nodeUuid;
     const inputNodeUuid = inputPin.nodeUuid;
@@ -961,16 +966,32 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       return false;
     }
 
+    // Если pre-built индекс передан, используем оптимизированный путь
+    if (pinsByNodeAndType) {
+      return this.wouldCreateCycle(
+        inputNodeUuid,
+        outputNodeUuid,
+        outputPinType,
+        inputPinType,
+        pinsByNodeAndType, // pre-built индекс
+        undefined, // wiresByPin
+        allPins, // pinInstancesMap
+        wiresRegistry,
+        undefined, // allPins - не нужен, т.к. pinsByNode передан
+      );
+    }
+
+    // Legacy путь: используем wiresRegistry + allPins
     return this.wouldCreateCycle(
       inputNodeUuid,
       outputNodeUuid,
       outputPinType,
       inputPinType,
-      undefined, // pinsByNode
+      undefined, // pinsByNode - будет построен из allPins
       undefined, // wiresByPin
       undefined, // pinInstancesMap
       wiresRegistry,
-      allPins,
+      allPins, // allPins - используется для построения pinsByNode
     );
   }
 
@@ -1058,14 +1079,14 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
    * Если индексы переданы (pinsByNode, wiresByPin, pinInstancesMap), использует их.
    * Если нет, использует WiresRegistry для получения индексов проводов.
    *
-   * Сложность: O(n + w) при использовании готовых индексов, O(n + p) при построении индекса пинов.
+   * Сложность: O(n + w) при использовании готовых индексов.
    */
   private wouldCreateCycle(
     startNodeUuid: string,
     targetNodeUuid: string,
     outputPinType: PinInstanceType,
     inputPinType: PinInstanceType,
-    // Вариант 1: готовые индексы (для validateSnapshot)
+    // Вариант 1: готовые индексы (для validateSnapshot и оптимизированного validateWire)
     pinsByNode?: Map<string, Map<PinInstanceType, PinInstance[]>>,
     wiresByPin?: Map<string, Wire[]>,
     pinInstancesMap?: Map<string, PinInstance>,
@@ -1085,12 +1106,19 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     let useWiresRegistry = false;
 
     if (pinsByNode && wiresByPin && pinInstancesMap) {
-      // Используем готовые индексы
+      // Используем готовые индексы (для validateSnapshot)
       finalPinsByNode = pinsByNode;
       finalWiresByPin = wiresByPin;
       finalPinInstancesMap = pinInstancesMap;
+    } else if (pinsByNode && pinInstancesMap && wiresRegistry) {
+      // Используем pre-built pinsByNode индекс и WiresRegistry (оптимизированный путь для validateWire)
+      useWiresRegistry = true;
+      finalPinsByNode = pinsByNode;
+      finalPinInstancesMap = pinInstancesMap;
     } else if (wiresRegistry && allPins) {
       // Используем WiresRegistry для получения проводов - O(1) доступ через индексы
+      // ВНИМАНИЕ: Этот путь требует O(p) построения индекса, что неоптимально
+      // Предпочитайте передавать pre-built pinsByNode индекс
       useWiresRegistry = true;
       finalPinsByNode = new Map<string, Map<PinInstanceType, PinInstance[]>>();
       finalPinInstancesMap = allPins;

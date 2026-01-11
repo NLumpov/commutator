@@ -1,9 +1,13 @@
+import type { PinInstanceType } from "./enums";
 import type { PinInstance } from "./types";
 
 export class PinsRegistry<DataTypes extends Record<string, any> = any> {
   private pinsByUuid: Map<string, PinInstance<DataTypes>> = new Map();
   private pinsByNodeUuid: Map<string, Map<string, PinInstance<DataTypes>>> = new Map();
   private pinsByName: Map<string, Map<string, PinInstance<DataTypes>>> = new Map();
+  // Индекс для быстрого поиска пинов по nodeUuid и типу пина (для cycle detection)
+  private pinsByNodeUuidAndType: Map<string, Map<PinInstanceType, PinInstance<DataTypes>[]>> =
+    new Map();
 
   /**
    * Создает уникальный ключ для пина (name:type)
@@ -51,6 +55,19 @@ export class PinsRegistry<DataTypes extends Record<string, any> = any> {
       this.pinsByName.set(pin.name, namePins);
     }
     namePins.set(pin.nodeUuid, pin);
+
+    // Индекс по nodeUuid и типу пина (для cycle detection)
+    let nodeTypePins = this.pinsByNodeUuidAndType.get(pin.nodeUuid);
+    if (!nodeTypePins) {
+      nodeTypePins = new Map();
+      this.pinsByNodeUuidAndType.set(pin.nodeUuid, nodeTypePins);
+    }
+    let typePins = nodeTypePins.get(pin.type);
+    if (!typePins) {
+      typePins = [];
+      nodeTypePins.set(pin.type, typePins);
+    }
+    typePins.push(pin);
   }
 
   /**
@@ -81,6 +98,24 @@ export class PinsRegistry<DataTypes extends Record<string, any> = any> {
       namePins.delete(pin.nodeUuid);
       if (namePins.size === 0) {
         this.pinsByName.delete(pin.name);
+      }
+    }
+
+    // Удаляем из индекса по nodeUuid и типу пина
+    const nodeTypePins = this.pinsByNodeUuidAndType.get(pin.nodeUuid);
+    if (nodeTypePins) {
+      const typePins = nodeTypePins.get(pin.type);
+      if (typePins) {
+        const index = typePins.findIndex((p) => p.uuid === uuid);
+        if (index !== -1) {
+          typePins.splice(index, 1);
+        }
+        if (typePins.length === 0) {
+          nodeTypePins.delete(pin.type);
+        }
+      }
+      if (nodeTypePins.size === 0) {
+        this.pinsByNodeUuidAndType.delete(pin.nodeUuid);
       }
     }
   }
@@ -214,11 +249,22 @@ export class PinsRegistry<DataTypes extends Record<string, any> = any> {
   }
 
   /**
+   * Возвращает индекс пинов по nodeUuid и типу пина.
+   * Используется для оптимизации cycle detection.
+   * ВНИМАНИЕ: Возвращает прямую ссылку на внутренний индекс для производительности.
+   * Не модифицируйте возвращаемое значение!
+   */
+  getPinsByNodeUuidAndTypeIndex(): Map<string, Map<PinInstanceType, PinInstance<DataTypes>[]>> {
+    return this.pinsByNodeUuidAndType;
+  }
+
+  /**
    * Очищает реестр
    */
   clear(): void {
     this.pinsByUuid.clear();
     this.pinsByNodeUuid.clear();
     this.pinsByName.clear();
+    this.pinsByNodeUuidAndType.clear();
   }
 }
