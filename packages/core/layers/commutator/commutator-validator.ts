@@ -498,8 +498,10 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     }
 
     // 3. Уникальность UUID пинов и проверка принадлежности нодам
+    // Одновременно строим индексы для последующего использования
     const pinUuids = new Set<string>();
     const pinInstancesMap = new Map<string, PinInstance>();
+    const pinsByNode = new Map<string, Map<PinInstanceType, PinInstance[]>>();
 
     for (const pinInstance of snapshot.pinInstances) {
       if (!pinInstance || typeof pinInstance !== "object") {
@@ -522,6 +524,19 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
 
       pinUuids.add(pinInstance.uuid);
       pinInstancesMap.set(pinInstance.uuid, pinInstance);
+
+      // Строим индекс пинов по нодам одновременно с валидацией
+      let nodePins = pinsByNode.get(pinInstance.nodeUuid);
+      if (!nodePins) {
+        nodePins = new Map();
+        pinsByNode.set(pinInstance.nodeUuid, nodePins);
+      }
+      let pinsOfType = nodePins.get(pinInstance.type);
+      if (!pinsOfType) {
+        pinsOfType = [];
+        nodePins.set(pinInstance.type, pinsOfType);
+      }
+      pinsOfType.push(pinInstance);
 
       // Проверка принадлежности пина ноде
       if (!pinInstance.nodeUuid || typeof pinInstance.nodeUuid !== "string") {
@@ -568,8 +583,14 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       }
     }
 
-    // 4. Валидация проводов
+    // 4. Валидация проводов и построение индексов
+    // Объединены разделы 4 и 5: валидация проводов и сбор данных для проверки ограничений
     const wireSet = new Set<string>();
+    const wiresByPin = new Map<string, Wire[]>();
+    const outgoingWireCount = new Map<string, number>();
+    const incomingWireCount = new Map<string, number>();
+    // Кеш для результатов проверки совместимости типов
+    const typeCompatibilityCache = new Map<string, boolean>();
 
     for (const wire of snapshot.wires) {
       if (!wire || typeof wire !== "object") {
@@ -600,6 +621,18 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
 
       wireSet.add(wireKey);
 
+      // Строим индекс проводов по пинам одновременно с валидацией
+      let wires = wiresByPin.get(wire.from);
+      if (!wires) {
+        wires = [];
+        wiresByPin.set(wire.from, wires);
+      }
+      wires.push(wire);
+
+      // Собираем счетчики для проверки ограничений
+      outgoingWireCount.set(wire.from, (outgoingWireCount.get(wire.from) || 0) + 1);
+      incomingWireCount.set(wire.to, (incomingWireCount.get(wire.to) || 0) + 1);
+
       // Проверка существования пинов
       const fromPin = pinInstancesMap.get(wire.from);
       const toPin = pinInstancesMap.get(wire.to);
@@ -616,7 +649,6 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       this.validateWirePinTypes(fromPin, toPin);
 
       // Проверка ограничений на провода (self-loop и одна нода)
-      // Ограничения на количество проводов проверяются отдельно в разделе 5
       if (wire.from === wire.to) {
         throw new CommutatorError(`Self-loop detected: pin ${wire.from} connected to itself`);
       }
@@ -627,23 +659,30 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
         );
       }
 
-      // Проверка совместимости типов данных для data pins
-      // Используем уже созданный Map для O(1) доступа к нодам
-      this.validateWireDataTypes(fromPin, toPin, allNodesMap, config);
+      // Проверка совместимости типов данных для data pins с кешированием
+      if (fromPin.type === PinInstanceType.Output && toPin.type === PinInstanceType.Input) {
+        // Используем кеш для быстрой проверки совместимости типов
+        const cacheKey = `${String(fromPin.dataType?.type ?? "null")}:${String(toPin.dataType?.type ?? "null")}`;
+        let isCompatible: boolean;
+
+        const cache = typeCompatibilityCache.get(cacheKey);
+
+        if (cache) {
+          isCompatible = cache;
+        } else {
+          isCompatible = this.arePinDataTypesCompatible(fromPin, toPin);
+          typeCompatibilityCache.set(cacheKey, isCompatible);
+        }
+
+        // Если типы несовместимы, вызываем полную валидацию для получения детального сообщения об ошибке
+        // validateWireDataTypes также проверяет существование нод и конфигов
+        if (!isCompatible) {
+          this.validateWireDataTypes(fromPin, toPin, allNodesMap, config);
+        }
+      }
     }
 
-    // 5. Проверка ограничений на провода
-    // Оптимизировано: O(m + w) вместо O(m * w)
-    // Строим индексы за один проход по проводам
-    const outgoingWireCount = new Map<string, number>();
-    const incomingWireCount = new Map<string, number>();
-
-    for (const wire of snapshot.wires) {
-      outgoingWireCount.set(wire.from, (outgoingWireCount.get(wire.from) || 0) + 1);
-      incomingWireCount.set(wire.to, (incomingWireCount.get(wire.to) || 0) + 1);
-    }
-
-    // Проверяем ограничения для каждого пина
+    // 5. Проверка ограничений на провода (количество проводов)
     for (const pinInstance of snapshot.pinInstances) {
       // execPinOut может иметь только один wire
       if (pinInstance.type === PinInstanceType.OutputExec) {
@@ -667,80 +706,33 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     }
 
     // 6. Проверка циклических связей для всех проводов
-    // Оптимизировано: O(n + w) вместо O(w^2 * n * p)
-    // Строим индексы один раз и используем их для всех проверок
-    const pinsByNode = new Map<string, Map<PinInstanceType, PinInstance[]>>();
-    const wiresByPin = new Map<string, Wire[]>();
+    // Оптимизировано: O(n + w) вместо O(w * (n + w))
+    // Используем detectAllCycles для поиска всех циклов за один проход
+    // Разделяем проверку для exec pins и data pins на два отдельных графа
+    const execCycles = this.detectAllCycles(
+      pinsByNode,
+      wiresByPin,
+      pinInstancesMap,
+      PinInstanceType.OutputExec,
+      PinInstanceType.InputExec,
+    );
 
-    // Строим индекс пинов по нодам: O(p)
-    for (const pin of snapshot.pinInstances) {
-      let nodePins = pinsByNode.get(pin.nodeUuid);
-      if (!nodePins) {
-        nodePins = new Map();
-        pinsByNode.set(pin.nodeUuid, nodePins);
-      }
-      let pinsOfType = nodePins.get(pin.type);
-      if (!pinsOfType) {
-        pinsOfType = [];
-        nodePins.set(pin.type, pinsOfType);
-      }
-      pinsOfType.push(pin);
+    if (execCycles.length > 0) {
+      const cycleNodes = execCycles[0]?.join(" -> ") || "unknown";
+      throw new CommutatorError(`Cyclic connection detected in exec pins: ${cycleNodes}`);
     }
 
-    // Строим индекс проводов по пинам: O(w)
-    for (const wire of snapshot.wires) {
-      let wires = wiresByPin.get(wire.from);
-      if (!wires) {
-        wires = [];
-        wiresByPin.set(wire.from, wires);
-      }
-      wires.push(wire);
-    }
+    const dataCycles = this.detectAllCycles(
+      pinsByNode,
+      wiresByPin,
+      pinInstancesMap,
+      PinInstanceType.Output,
+      PinInstanceType.Input,
+    );
 
-    // Проверяем циклы для exec pins и data pins
-    for (const wire of snapshot.wires) {
-      const fromPin = pinInstancesMap.get(wire.from);
-      const toPin = pinInstancesMap.get(wire.to);
-
-      if (!fromPin || !toPin) {
-        continue;
-      }
-
-      if (fromPin.type === PinInstanceType.OutputExec && toPin.type === PinInstanceType.InputExec) {
-        if (
-          this.wouldCreateCycle(
-            toPin.nodeUuid,
-            fromPin.nodeUuid,
-            PinInstanceType.OutputExec,
-            PinInstanceType.InputExec,
-            pinsByNode,
-            wiresByPin,
-            pinInstancesMap,
-          )
-        ) {
-          throw new CommutatorError(
-            `Cyclic connection detected: exec pin "${wire.from}" -> "${wire.to}" creates a cycle`,
-          );
-        }
-      }
-
-      if (fromPin.type === PinInstanceType.Output && toPin.type === PinInstanceType.Input) {
-        if (
-          this.wouldCreateCycle(
-            toPin.nodeUuid,
-            fromPin.nodeUuid,
-            PinInstanceType.Output,
-            PinInstanceType.Input,
-            pinsByNode,
-            wiresByPin,
-            pinInstancesMap,
-          )
-        ) {
-          throw new CommutatorError(
-            `Cyclic connection detected: data pin "${wire.from}" -> "${wire.to}" creates a cycle`,
-          );
-        }
-      }
+    if (dataCycles.length > 0) {
+      const cycleNodes = dataCycles[0]?.join(" -> ") || "unknown";
+      throw new CommutatorError(`Cyclic connection detected in data pins: ${cycleNodes}`);
     }
   }
 
@@ -980,6 +972,83 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       wiresRegistry,
       allPins,
     );
+  }
+
+  /**
+   * Обнаруживает все циклы в графе за один проход используя DFS.
+   * Разделяет проверку для exec pins и data pins на два отдельных графа.
+   * Сложность: O(n + w) где n - количество нод, w - количество проводов.
+   *
+   * @returns Массив циклов, где каждый цикл представлен как массив UUID нод
+   */
+  private detectAllCycles(
+    pinsByNode: Map<string, Map<PinInstanceType, PinInstance[]>>,
+    wiresByPin: Map<string, Wire[]>,
+    pinInstancesMap: Map<string, PinInstance>,
+    outputPinType: PinInstanceType,
+    inputPinType: PinInstanceType,
+  ): Array<Array<string>> {
+    const cycles: Array<Array<string>> = [];
+    const visited = new Set<string>();
+    const recursionStack = new Set<string>();
+    const path: string[] = [];
+
+    // DFS для поиска циклов
+    const dfs = (nodeUuid: string): void => {
+      if (recursionStack.has(nodeUuid)) {
+        // Найден цикл - находим начало цикла в пути
+        const cycleStart = path.indexOf(nodeUuid);
+        if (cycleStart !== -1) {
+          const cycle = path.slice(cycleStart);
+          cycle.push(nodeUuid); // Замыкаем цикл
+          cycles.push(cycle);
+        }
+        return;
+      }
+
+      if (visited.has(nodeUuid)) {
+        return;
+      }
+
+      visited.add(nodeUuid);
+      recursionStack.add(nodeUuid);
+      path.push(nodeUuid);
+
+      // Получаем выходные пины текущей ноды
+      const nodePins = pinsByNode.get(nodeUuid);
+      if (nodePins) {
+        const currentNodeOutputPins = nodePins.get(outputPinType) || [];
+
+        // Для каждого выходного пина проверяем, куда он ведет
+        for (const outputPin of currentNodeOutputPins) {
+          const outgoingWires = wiresByPin.get(outputPin.uuid) || [];
+
+          for (const wire of outgoingWires) {
+            const inputPin = pinInstancesMap.get(wire.to);
+            if (!inputPin || inputPin.type !== inputPinType) {
+              continue;
+            }
+
+            const nextNodeUuid = inputPin.nodeUuid;
+            // Проверяем, не находится ли следующий узел уже в recursionStack
+            // Если да, это цикл, и мы его уже обработаем в начале следующего вызова dfs
+            dfs(nextNodeUuid);
+          }
+        }
+      }
+
+      recursionStack.delete(nodeUuid);
+      path.pop();
+    };
+
+    // Запускаем DFS для всех нод
+    for (const nodeUuid of pinsByNode.keys()) {
+      if (!visited.has(nodeUuid)) {
+        dfs(nodeUuid);
+      }
+    }
+
+    return cycles;
   }
 
   /**

@@ -75,7 +75,7 @@ class BenchmarkRunner {
    * Выводит результаты в консоль
    */
   printResults(): void {
-    console.log("\n" + "=".repeat(80));
+    console.log(`\n${"=".repeat(80)}`);
     console.log("BENCHMARK RESULTS");
     console.log("=".repeat(80));
     console.log(
@@ -91,7 +91,7 @@ class BenchmarkRunner {
 
     console.log("=".repeat(80));
     console.log(`Total benchmarks: ${this.results.length}`);
-    console.log("=".repeat(80) + "\n");
+    console.log(`${"=".repeat(80)}\n`);
   }
 
   /**
