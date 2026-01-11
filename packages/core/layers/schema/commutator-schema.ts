@@ -15,6 +15,8 @@ import {
 } from "../commutator";
 import { PinInstanceType } from "./enums";
 import { FluentNodeBuilder } from "./fluent-node-builder";
+import { NodesRegistry } from "./nodes-registry";
+import { PinsRegistry } from "./pins-registry";
 import type {
   AbstractNodeInstance,
   EventNodeInstance,
@@ -25,6 +27,7 @@ import type {
   SchemaSnapshot,
   Wire,
 } from "./types";
+import { WiresRegistry } from "./wires-registry";
 
 export class CommutatorSchema<
   const DataTypes extends Record<string, Field<DataTypes>> = {},
@@ -40,10 +43,9 @@ export class CommutatorSchema<
   > = {},
   const Apis extends Record<string, any> = {},
 > {
-  // Единый индекс для быстрого доступа ко всем нодам
-  private nodeInstances: Map<string, AbstractNodeInstance<string>> = new Map();
-  private pinInstances: Map<string, PinInstance> = new Map();
-  private wires: Wire[] = [];
+  private nodesRegistry: NodesRegistry;
+  private pinRegistry: PinsRegistry<DataTypes>;
+  private wiresRegistry: WiresRegistry;
   private validator: CommutatorValidator<DataTypes>;
 
   private constructor(
@@ -53,65 +55,64 @@ export class CommutatorSchema<
     this.validator = new CommutatorValidator(config.dataTypes);
 
     if (!snapshot) {
+      this.nodesRegistry = new NodesRegistry();
+      this.pinRegistry = new PinsRegistry<DataTypes>();
+      this.wiresRegistry = new WiresRegistry();
       return;
     }
 
-    // Восстанавливаем все ноды в единый индекс
-    for (const eventInstance of snapshot.events) {
-      this.nodeInstances.set(eventInstance.uuid, { ...eventInstance });
-    }
-    for (const refInstance of snapshot.refs) {
-      this.nodeInstances.set(refInstance.uuid, { ...refInstance });
-    }
-    for (const pureFunctionInstance of snapshot.pureFunctions) {
-      this.nodeInstances.set(pureFunctionInstance.uuid, { ...pureFunctionInstance });
-    }
-    for (const functionInstance of snapshot.functions) {
-      this.nodeInstances.set(functionInstance.uuid, { ...functionInstance });
-    }
-    this.pinInstances = new Map(
-      snapshot.pinInstances.map((pinInstance) => {
-        // Если в снапшоте нет dataType, инициализируем из статической конфигурации
-        if (!pinInstance.dataType) {
-          const nodeInstance = this.getNodeInstance(pinInstance.nodeUuid);
+    // Восстанавливаем все ноды в реестр
+    const allNodes: AbstractNodeInstance<string>[] = [
+      ...snapshot.events.map((e) => ({ ...e })),
+      ...snapshot.refs.map((r) => ({ ...r })),
+      ...snapshot.pureFunctions.map((p) => ({ ...p })),
+      ...snapshot.functions.map((f) => ({ ...f })),
+    ];
+    this.nodesRegistry = new NodesRegistry(allNodes);
 
-          if (!nodeInstance) {
-            throw new CommutatorError(`Node instance for pin "${pinInstance.name}" not found`);
-          }
+    // Восстанавливаем пины с инициализацией dataType если нужно
+    const processedPins = snapshot.pinInstances.map((pinInstance): PinInstance<DataTypes> => {
+      // Если в снапшоте нет dataType, инициализируем из статической конфигурации
+      if (!pinInstance.dataType) {
+        const nodeInstance = this.getNodeInstance(pinInstance.nodeUuid);
 
-          const nodeConfig = this.getNodeConfig(pinInstance.nodeUuid);
-
-          if (!nodeConfig) {
-            throw new CommutatorError(
-              `Node config for pin "${pinInstance.name}" of node "${nodeInstance.name}" not found`,
-            );
-          }
-
-          const pinConfig: Field<DataTypes> = (
-            pinInstance.type === PinInstanceType.Input ||
-            pinInstance.type === PinInstanceType.InputExec
-              ? nodeConfig.pinsIn
-              : nodeConfig.pinsOut
-          )?.[pinInstance.name];
-
-          const dataType: Field<DataTypes> =
-            pinInstance.type === PinInstanceType.InputExec ||
-            pinInstance.type === PinInstanceType.OutputExec
-              ? { type: CommonDataType.Any }
-              : (pinConfig ?? { type: CommonDataType.Any });
-
-          return [pinInstance.uuid, { ...pinInstance, dataType }];
+        if (!nodeInstance) {
+          throw new CommutatorError(`Node instance for pin "${pinInstance.name}" not found`);
         }
 
-        return [pinInstance.uuid, { ...pinInstance }];
-      }),
-    );
-    this.wires = snapshot.wires.map((wire) => ({ ...wire }));
+        const nodeConfig = this.getNodeConfig(pinInstance.nodeUuid);
+
+        if (!nodeConfig) {
+          throw new CommutatorError(
+            `Node config for pin "${pinInstance.name}" of node "${nodeInstance.name}" not found`,
+          );
+        }
+
+        const pinConfig: Field<DataTypes> = (
+          pinInstance.type === PinInstanceType.Input ||
+          pinInstance.type === PinInstanceType.InputExec
+            ? nodeConfig.pinsIn
+            : nodeConfig.pinsOut
+        )?.[pinInstance.name];
+
+        const dataType: Field<DataTypes> =
+          pinInstance.type === PinInstanceType.InputExec ||
+          pinInstance.type === PinInstanceType.OutputExec
+            ? { type: CommonDataType.Any }
+            : (pinConfig ?? { type: CommonDataType.Any });
+
+        return { ...pinInstance, dataType } as PinInstance<DataTypes>;
+      }
+
+      return { ...pinInstance } as PinInstance<DataTypes>;
+    });
+
+    this.pinRegistry = new PinsRegistry<DataTypes>(processedPins);
+    this.wiresRegistry = new WiresRegistry(snapshot.wires);
 
     // После восстановления всех пинов, вызываем onConfigChange для всех нод (если есть callback'и)
-    const allNodeInstances = this.getAllNodeInstances();
-
-    for (const nodeInstance of allNodeInstances) {
+    // Используем итератор напрямую - O(n) но без создания промежуточного массива
+    for (const nodeInstance of this.nodesRegistry.getAllNodesIterator()) {
       const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
 
       if (!nodeConfig) {
@@ -189,16 +190,17 @@ export class CommutatorSchema<
           name: pinName,
           dataType,
         };
-        this.pinInstances.set(pinInstance.uuid, pinInstance);
+        this.pinRegistry.addPin(pinInstance);
       }
     }
   }
 
   /**
    * Получает экземпляр ноды по UUID
+   * O(1) - использует индекс NodesRegistry
    */
   private getNodeInstance(uuid: string): AbstractNodeInstance<string> | undefined {
-    return this.nodeInstances.get(uuid);
+    return this.nodesRegistry.getNodeByUuid(uuid);
   }
 
   /**
@@ -217,13 +219,6 @@ export class CommutatorSchema<
       return undefined;
     }
     return this.config.getNodeConfigByName(nodeInstance.name);
-  }
-
-  /**
-   * Получает все экземпляры нод
-   */
-  private getAllNodeInstances(): AbstractNodeInstance<string>[] {
-    return Array.from(this.nodeInstances.values());
   }
 
   /**
@@ -265,7 +260,8 @@ export class CommutatorSchema<
     } as NodeInstanceType;
 
     const nodeInstanceWithUuid = nodeInstance as NodeInstanceType & { uuid: string };
-    this.nodeInstances.set(nodeInstanceWithUuid.uuid, nodeInstance as AbstractNodeInstance<string>);
+    // Добавляем ноду в реестр - O(1) с обновлением всех индексов
+    this.nodesRegistry.addNode(nodeInstance as AbstractNodeInstance<string>);
     this.createPinInstances(
       nodeInstanceWithUuid.uuid,
       (nodeConfig.pinsIn as Record<string, Field<DataTypes>>) || {},
@@ -434,7 +430,7 @@ export class CommutatorSchema<
         }
 
         // Получаем все текущие пины ноды
-        const currentPins = [...this.pinInstances.values()].filter((p) => p.nodeUuid === nodeUuid);
+        const currentPins = this.pinRegistry.getPinsByNodeUuid(nodeUuid);
         const currentPinsMap = new Map<string, PinInstance<DataTypes>>();
         for (const pin of currentPins) {
           currentPinsMap.set(pin.name, pin);
@@ -446,18 +442,14 @@ export class CommutatorSchema<
 
           if (!configPin) {
             // Пина нет в конфигурации - удаляем
-            this.wires = this.wires.filter(
-              (wire) => wire.from !== pin.uuid && wire.to !== pin.uuid,
-            );
-            this.pinInstances.delete(pin.uuid);
+            this.wiresRegistry.removeWiresByPin(pin.uuid);
+            this.pinRegistry.removePin(pin.uuid);
             currentPinsMap.delete(pin.name);
           } else if (configPin.type !== pin.type) {
             // Тип пина не совпадает с конфигурацией - удаляем старый пин
             // Новый будет создан в следующем цикле
-            this.wires = this.wires.filter(
-              (wire) => wire.from !== pin.uuid && wire.to !== pin.uuid,
-            );
-            this.pinInstances.delete(pin.uuid);
+            this.wiresRegistry.removeWiresByPin(pin.uuid);
+            this.pinRegistry.removePin(pin.uuid);
             currentPinsMap.delete(pin.name);
           } else {
             // Пин существует и тип совпадает - обновляем только dataType
@@ -495,19 +487,23 @@ export class CommutatorSchema<
         if (!pin) {
           return false;
         }
-        return this.wires.some((wire) => wire.from === pin.uuid || wire.to === pin.uuid);
+        return this.wiresRegistry.isPinWired(pin.uuid);
       },
       getWiredNode: (name: string) => {
         const pin = this.getPinByName(nodeUuid, name);
         if (!pin) {
           return undefined;
         }
-        const wire = this.wires.find((w) => w.from === pin.uuid || w.to === pin.uuid);
+        const wires = this.wiresRegistry.getWiresByPin(pin.uuid);
+        if (wires.length === 0) {
+          return undefined;
+        }
+        const wire = wires[0];
         if (!wire) {
           return undefined;
         }
         const connectedPinUuid = wire.from === pin.uuid ? wire.to : wire.from;
-        const connectedPin = this.pinInstances.get(connectedPinUuid);
+        const connectedPin = this.pinRegistry.getPinByUuid(connectedPinUuid);
         if (!connectedPin) {
           return undefined;
         }
@@ -529,9 +525,7 @@ export class CommutatorSchema<
   }
 
   private getPinByName(nodeUuid: string, pinName: string): PinInstance<DataTypes> | undefined {
-    return [...this.pinInstances.values()].find(
-      (pin) => pin.nodeUuid === nodeUuid && pin.name === pinName,
-    );
+    return this.pinRegistry.getPinByNameAndNodeUuid(pinName, nodeUuid);
   }
 
   /**
@@ -560,11 +554,21 @@ export class CommutatorSchema<
   }
 
   private wireInternal(from: string, to: string): void {
-    const fromPin = this.pinInstances.get(from);
-    const toPin = this.pinInstances.get(to);
+    if (!from || from === "undefined") {
+      throw new CommutatorError(`Invalid from pin UUID: "${from}"`);
+    }
+    if (!to || to === "undefined") {
+      throw new CommutatorError(`Invalid to pin UUID: "${to}"`);
+    }
 
-    if (!fromPin || !toPin) {
-      throw new CommutatorError("Pin not found");
+    const fromPin = this.pinRegistry.getPinByUuid(from);
+    const toPin = this.pinRegistry.getPinByUuid(to);
+
+    if (!fromPin) {
+      throw new CommutatorError(`Pin not found: from pin "${from}"`);
+    }
+    if (!toPin) {
+      throw new CommutatorError(`Pin not found: to pin "${to}"`);
     }
 
     // Определяем выходной и входной пины
@@ -610,35 +614,31 @@ export class CommutatorSchema<
     }
 
     // Получаем пины для валидации (после возможных callback'ов)
-    const updatedOutputPin = this.pinInstances.get(outputPinUuid);
-    const updatedInputPin = this.pinInstances.get(inputPinUuid);
+    const updatedOutputPin = this.pinRegistry.getPinByUuid(outputPinUuid);
+    const updatedInputPin = this.pinRegistry.getPinByUuid(inputPinUuid);
 
     if (!updatedOutputPin || !updatedInputPin) {
       throw new CommutatorError("Pin not found after callback");
     }
 
-    // Создаем Map всех нод для валидатора
-    const allNodesMap = new Map<string, AbstractNodeInstance<string>>();
-    for (const node of this.getAllNodeInstances()) {
-      allNodesMap.set(node.uuid, node);
-    }
-
     // Используем валидатор для проверки провода
+    // Передаем Map из NodesRegistry (O(n) создание копии, но только один раз)
+    // и используем индексы из реестров для O(1) проверок
     this.validator.validateWire(
       updatedOutputPin,
       updatedInputPin,
-      this.wires,
-      this.pinInstances,
-      allNodesMap,
+      this.wiresRegistry,
+      this.pinRegistry.getAllPinsMap(),
+      this.nodesRegistry.getAllNodesMap(),
       this.config,
     );
 
-    // Создаем провод и добавляем его в массив
+    // Создаем провод и добавляем его в реестр
     const wire: Wire = {
       from: outputPinUuid,
       to: inputPinUuid,
     };
-    this.wires = [...this.wires, wire];
+    this.wiresRegistry.addWire(wire);
   }
 
   /**
@@ -658,21 +658,16 @@ export class CommutatorSchema<
       const fromPin = this.getPin(options.from.node, options.from.pin);
       const toPin = this.getPin(options.to.node, options.to.pin);
 
-      this.wires = this.wires.filter(
-        (wire) =>
-          (wire.from !== fromPin.uuid && wire.to !== toPin.uuid) ||
-          (wire.from !== toPin.uuid && wire.to !== fromPin.uuid),
-      );
+      // Удаляем провод в обоих направлениях (на случай если был создан в обратном порядке)
+      this.wiresRegistry.removeWire(fromPin.uuid, toPin.uuid);
+      this.wiresRegistry.removeWire(toPin.uuid, fromPin.uuid);
 
       return;
     }
 
-    // Удаляем провод
-    this.wires = this.wires.filter(
-      (wire) =>
-        (wire.from !== options.fromPinUuid && wire.to !== options.toPinUuid) ||
-        (wire.from !== options.toPinUuid && wire.to !== options.fromPinUuid),
-    );
+    // Удаляем провод в обоих направлениях
+    this.wiresRegistry.removeWire(options.fromPinUuid, options.toPinUuid);
+    this.wiresRegistry.removeWire(options.toPinUuid, options.fromPinUuid);
   }
 
   /**
@@ -722,14 +717,14 @@ export class CommutatorSchema<
       dataType: finalPinDataType,
     };
 
-    this.pinInstances.set(pinInstance.uuid, pinInstance);
+    this.pinRegistry.addPin(pinInstance);
   }
 
   /**
    * Обновление пина в ноде. Позволяет изменить имя и/или тип пина.
    */
   updatePin(pinUuid: string, args: { name?: string; dataType?: Field<DataTypes> }): void {
-    const pin = this.pinInstances.get(pinUuid);
+    const pin = this.pinRegistry.getPinByUuid(pinUuid);
     if (!pin) {
       throw new CommutatorError("Pin instance not found");
     }
@@ -743,8 +738,8 @@ export class CommutatorSchema<
       if (existingPin) {
         throw new CommutatorError(`Pin with name "${args.name}" already exists`);
       }
-      // Обновляем имя пина
-      pin.name = args.name;
+      // Обновляем имя пина через registry
+      this.pinRegistry.updatePinName(pinUuid, args.name);
     }
   }
 
@@ -820,7 +815,7 @@ export class CommutatorSchema<
   }
 
   removePin(uuid: string): void {
-    const currentPin = this.pinInstances.get(uuid);
+    const currentPin = this.pinRegistry.getPinByUuid(uuid);
 
     if (!currentPin) {
       throw new CommutatorError("Pin instance not found");
@@ -849,18 +844,18 @@ export class CommutatorSchema<
     }
 
     // Проверка: нельзя удалить последний пин данного типа
-    const nodePins = [...this.pinInstances.values()].filter(
-      (p) => p.nodeUuid === currentPin.nodeUuid && p.type === currentPin.type,
-    );
+    const nodePins = this.pinRegistry
+      .getPinsByNodeUuid(currentPin.nodeUuid)
+      .filter((p) => p.type === currentPin.type);
 
     if (nodePins.length <= 1) {
       throw new CommutatorError("Cannot remove last pin from node");
     }
 
     // Удаляем все провода, подключенные к этому пину
-    this.wires = this.wires.filter((wire) => wire.from !== uuid && wire.to !== uuid);
+    this.wiresRegistry.removeWiresByPin(uuid);
 
-    this.pinInstances.delete(uuid);
+    this.pinRegistry.removePin(uuid);
   }
 
   moveNode(uuid: string, x: number, y: number): void {
@@ -869,8 +864,8 @@ export class CommutatorSchema<
       throw new CommutatorError("Node instance not found");
     }
 
-    const updatedNode = { ...nodeInstance, x, y };
-    this.nodeInstances.set(uuid, updatedNode);
+    // Обновляем позицию ноды через реестр - O(1) с обновлением индексов
+    this.nodesRegistry.updateNode(uuid, (node) => ({ ...node, x, y }));
   }
 
   /**
@@ -893,9 +888,8 @@ export class CommutatorSchema<
     // Используем валидатор для проверки обновления конфига
     this.validator.validateUpdateNodeConfig(nodeConfig, config);
 
-    // Обновляем config в nodeInstances
-    const updatedNode = { ...nodeInstance, config };
-    this.nodeInstances.set(uuid, updatedNode);
+    // Обновляем config через реестр - O(1) с обновлением индексов
+    this.nodesRegistry.updateNode(uuid, (node) => ({ ...node, config }));
 
     if (nodeConfig.onConfigChange) {
       nodeConfig.onConfigChange({
@@ -922,13 +916,7 @@ export class CommutatorSchema<
   }
 
   getNodePins(nodeUuid: string): PinInstance<DataTypes>[] {
-    const result: PinInstance<DataTypes>[] = [];
-    for (const pinInstance of this.pinInstances.values()) {
-      if (pinInstance.nodeUuid === nodeUuid) {
-        result.push({ ...pinInstance } as PinInstance<DataTypes>);
-      }
-    }
-    return result;
+    return this.pinRegistry.getPinsByNodeUuid(nodeUuid).map((pin) => ({ ...pin }));
   }
 
   extract(): SchemaSnapshot {
@@ -937,21 +925,19 @@ export class CommutatorSchema<
     const pureFunctions: PureFunctionNodeInstance<any>[] = [];
     const functions: FunctionNodeInstance<any>[] = [];
 
-    for (const node of this.nodeInstances.values()) {
-      switch (node.type) {
-        case NodeType.Event:
-          events.push(node as EventNodeInstance<any>);
-          break;
-        case NodeType.Ref:
-          refs.push(node as RefNodeInstance<any>);
-          break;
-        case NodeType.PureFunction:
-          pureFunctions.push(node as PureFunctionNodeInstance<any>);
-          break;
-        case NodeType.Function:
-          functions.push(node as FunctionNodeInstance<any>);
-          break;
-      }
+    // Используем оптимизированный метод получения нод по типу - O(k) для каждого типа
+    // Вместо O(n) итерации по всем нодам
+    for (const node of this.nodesRegistry.getNodesByType(NodeType.Event)) {
+      events.push(node as EventNodeInstance<any>);
+    }
+    for (const node of this.nodesRegistry.getNodesByType(NodeType.Ref)) {
+      refs.push(node as RefNodeInstance<any>);
+    }
+    for (const node of this.nodesRegistry.getNodesByType(NodeType.PureFunction)) {
+      pureFunctions.push(node as PureFunctionNodeInstance<any>);
+    }
+    for (const node of this.nodesRegistry.getNodesByType(NodeType.Function)) {
+      functions.push(node as FunctionNodeInstance<any>);
     }
 
     return {
@@ -959,8 +945,8 @@ export class CommutatorSchema<
       refs: refs.map((ref) => ({ ...ref })),
       pureFunctions: pureFunctions.map((pureFunc) => ({ ...pureFunc })),
       functions: functions.map((func) => ({ ...func })),
-      pinInstances: Array.from(this.pinInstances.values()).map((pin) => ({ ...pin })),
-      wires: this.wires.map((wire) => ({ ...wire })),
+      pinInstances: this.pinRegistry.getAllPins().map((pin) => ({ ...pin })),
+      wires: this.wiresRegistry.getAllWires().map((wire) => ({ ...wire })),
     };
   }
 }

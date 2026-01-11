@@ -3,6 +3,7 @@ import { CommonDataType, Commutator, NodeType } from ".";
 import { CommutatorError } from "./commutator-error";
 import { ulid } from "../../util/ulid";
 import { PinInstanceType } from "../schema/enums";
+import { WiresRegistry } from "../schema/wires-registry";
 import type { SchemaSnapshot } from "../schema/types";
 
 describe("CommutatorValidator", () => {
@@ -963,12 +964,21 @@ describe("CommutatorValidator", () => {
       allNodesMap.set(event.uuid, event);
       allNodesMap.set(add.uuid, add);
 
+      const allPinsMap = new Map(
+        schema
+          .getNodePins(event.uuid)
+          .concat(schema.getNodePins(add.uuid))
+          .map((pin) => [pin.uuid, pin]),
+      );
+
+      const wiresRegistry = new WiresRegistry();
+
       expect(() => {
         commutator.validator.validateWire(
           eventXPin!,
           addAPin!,
-          [],
-          schema["pinInstances"],
+          wiresRegistry,
+          allPinsMap,
           allNodesMap,
           commutator["config"],
         );
@@ -993,12 +1003,18 @@ describe("CommutatorValidator", () => {
       const allNodesMap = new Map();
       allNodesMap.set(event.uuid, event);
 
+      const allPinsMap = new Map(
+        schema.getNodePins(event.uuid).map((pin) => [pin.uuid, pin]),
+      );
+
+      const wiresRegistry = new WiresRegistry();
+
       expect(() => {
         commutator.validator.validateWire(
           eventXPin!,
           eventXPin!,
-          [],
-          schema["pinInstances"],
+          wiresRegistry,
+          allPinsMap,
           allNodesMap,
           commutator["config"],
         );

@@ -1,5 +1,6 @@
 import { PinInstanceType } from "../schema/enums";
 import type { AbstractNodeInstance, PinInstance, SchemaSnapshot, Wire } from "../schema/types";
+import type { WiresRegistry } from "../schema/wires-registry";
 import type { CommutatorConfig } from "./commutator-config";
 import { CommutatorError } from "./commutator-error";
 import { CommonDataType, PrimitiveDataTypes } from "./enums";
@@ -445,7 +446,9 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     }
 
     // 2. Уникальность UUID нод
+    // Оптимизировано: создаем Map сразу вместо массива для последующего использования
     const nodeUuids = new Set<string>();
+    const allNodesMap = new Map<string, AbstractNodeInstance<string>>();
     const allNodeInstances: AbstractNodeInstance<string>[] = [
       ...snapshot.events,
       ...snapshot.refs,
@@ -473,6 +476,8 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       }
 
       nodeUuids.add(nodeInstance.uuid);
+      // Добавляем в Map для последующего O(1) доступа
+      allNodesMap.set(nodeInstance.uuid, nodeInstance);
 
       // Проверка существования nodeConfig
       const nodeConfig = config.getNodeConfigByName(nodeInstance.name);
@@ -623,7 +628,8 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       }
 
       // Проверка совместимости типов данных для data pins
-      this.validateWireDataTypes(fromPin, toPin, allNodeInstances, config);
+      // Используем уже созданный Map для O(1) доступа к нодам
+      this.validateWireDataTypes(fromPin, toPin, allNodesMap, config);
     }
 
     // 5. Проверка ограничений на провода
@@ -770,11 +776,12 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
 
   /**
    * Проверяет совместимость типов данных для data pins
+   * Оптимизировано: использует Map для O(1) поиска нод вместо O(n) find()
    */
   private validateWireDataTypes(
     outputPin: PinInstance<any>,
     inputPin: PinInstance<any>,
-    allNodeInstances: AbstractNodeInstance<string>[],
+    allNodes: Map<string, AbstractNodeInstance<string>>,
     config: CommutatorConfig<any, any, any, any, any, any>,
   ): void {
     if (outputPin.type !== PinInstanceType.Output || inputPin.type !== PinInstanceType.Input) {
@@ -788,8 +795,9 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       outputPin.dataType?.type === CommonDataType.Any ||
       (inputPin.dataType !== null && inputPin.dataType?.type !== CommonDataType.Any)
     ) {
-      const fromNode = allNodeInstances.find((n) => n.uuid === outputPin.nodeUuid);
-      const toNode = allNodeInstances.find((n) => n.uuid === inputPin.nodeUuid);
+      // O(1) вместо O(n) - используем Map.get() вместо find()
+      const fromNode = allNodes.get(outputPin.nodeUuid);
+      const toNode = allNodes.get(inputPin.nodeUuid);
 
       if (!fromNode || !toNode) {
         throw new CommutatorError("Node instance not found");
@@ -813,13 +821,14 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
 
   /**
    * Проверяет ограничения на провода (self-loop, одна нода, ограничения на количество проводов)
+   * Оптимизировано: использует индексы WiresRegistry для O(1) проверок вместо O(w)
    */
   private validateWireConstraints(
     outputPin: PinInstance<any>,
     inputPin: PinInstance<any>,
     outputPinUuid: string,
     inputPinUuid: string,
-    existingWires: Wire[],
+    wiresRegistry: WiresRegistry,
   ): void {
     // Проверка self-loop
     if (outputPinUuid === inputPinUuid) {
@@ -834,17 +843,17 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     }
 
     // Для data pins (pinIn) может быть только один входной провод
+    // O(1) вместо O(w) - используем индекс
     if (outputPin.type === PinInstanceType.Output && inputPin.type === PinInstanceType.Input) {
-      const isInputWireExists = existingWires.some((wire) => wire.to === inputPinUuid);
-      if (isInputWireExists) {
+      if (wiresRegistry.hasIncomingWire(inputPinUuid)) {
         throw new CommutatorError("To wire already exists");
       }
     }
 
     // Для exec pins: execPinOut может иметь только одну исходящую связь
+    // O(1) вместо O(w) - используем индекс
     if (outputPin.type === PinInstanceType.OutputExec) {
-      const isOutputWireExists = existingWires.some((wire) => wire.from === outputPinUuid);
-      if (isOutputWireExists) {
+      if (wiresRegistry.hasOutgoingWire(outputPinUuid)) {
         throw new CommutatorError("ExecPinOut wire already exists");
       }
     }
@@ -852,11 +861,12 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
 
   /**
    * Валидация операции wire.
+   * Оптимизировано: принимает WiresRegistry для O(1) проверок вместо O(w) массивов
    */
   public validateWire(
     fromPin: PinInstance<any>,
     toPin: PinInstance<any>,
-    existingWires: Wire[],
+    wiresRegistry: WiresRegistry,
     allPins: Map<string, PinInstance<any>>,
     allNodes: Map<string, AbstractNodeInstance<string>>,
     config: CommutatorConfig<any, any, any, any, any, any>,
@@ -911,25 +921,28 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     }
 
     // Проверка ограничений на провода
-    this.validateWireConstraints(outputPin, inputPin, outputPinUuid, inputPinUuid, existingWires);
+    // O(1) вместо O(w) - используем индексы WiresRegistry
+    this.validateWireConstraints(outputPin, inputPin, outputPinUuid, inputPinUuid, wiresRegistry);
 
     // Проверка типов данных для data pins
-    const allNodeInstances = Array.from(allNodes.values());
-    this.validateWireDataTypes(outputPin, inputPin, allNodeInstances, config);
+    // O(1) вместо O(n) - используем Map напрямую
+    this.validateWireDataTypes(outputPin, inputPin, allNodes, config);
 
     // Проверка циклических связей
-    if (this.checkCyclicConnection(outputPin, inputPin, existingWires, allPins)) {
+    // Используем индексы из WiresRegistry для оптимизации
+    if (this.checkCyclicConnection(outputPin, inputPin, wiresRegistry, allPins)) {
       throw new CommutatorError("Cyclic connection detected in pins");
     }
   }
 
   /**
    * Проверяет, создаст ли соединение циклическую связь.
+   * Оптимизировано: использует индексы из WiresRegistry для O(1) доступа
    */
   public checkCyclicConnection(
     outputPin: PinInstance<any>,
     inputPin: PinInstance<any>,
-    existingWires: Wire[],
+    wiresRegistry: WiresRegistry,
     allPins: Map<string, PinInstance<any>>,
   ): boolean {
     const outputNodeUuid = outputPin.nodeUuid;
@@ -964,7 +977,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       undefined, // pinsByNode
       undefined, // wiresByPin
       undefined, // pinInstancesMap
-      existingWires,
+      wiresRegistry,
       allPins,
     );
   }
@@ -974,9 +987,9 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
    * Проверяет, можно ли дойти от startNodeUuid до targetNodeUuid через пины указанных типов.
    *
    * Если индексы переданы (pinsByNode, wiresByPin, pinInstancesMap), использует их.
-   * Если нет, строит индексы из existingWires и allPins.
+   * Если нет, использует WiresRegistry для получения индексов проводов.
    *
-   * Сложность: O(n + w) при использовании готовых индексов, O(n + w + p) при построении индексов.
+   * Сложность: O(n + w) при использовании готовых индексов, O(n + p) при построении индекса пинов.
    */
   private wouldCreateCycle(
     startNodeUuid: string,
@@ -987,8 +1000,8 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     pinsByNode?: Map<string, Map<PinInstanceType, PinInstance[]>>,
     wiresByPin?: Map<string, Wire[]>,
     pinInstancesMap?: Map<string, PinInstance>,
-    // Вариант 2: данные для построения индексов (для validateWire)
-    existingWires?: Wire[],
+    // Вариант 2: WiresRegistry для получения индексов проводов (для validateWire)
+    wiresRegistry?: WiresRegistry,
     allPins?: Map<string, PinInstance<any>>,
   ): boolean {
     // Если стартовая нода совпадает с целевой, это цикл
@@ -998,18 +1011,19 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
 
     // Определяем, нужно ли строить индексы
     let finalPinsByNode: Map<string, Map<PinInstanceType, PinInstance[]>>;
-    let finalWiresByPin: Map<string, Wire[]>;
+    let finalWiresByPin: Map<string, Wire[]> | null = null;
     let finalPinInstancesMap: Map<string, PinInstance>;
+    let useWiresRegistry = false;
 
     if (pinsByNode && wiresByPin && pinInstancesMap) {
       // Используем готовые индексы
       finalPinsByNode = pinsByNode;
       finalWiresByPin = wiresByPin;
       finalPinInstancesMap = pinInstancesMap;
-    } else if (existingWires && allPins) {
-      // Строим индексы на лету
+    } else if (wiresRegistry && allPins) {
+      // Используем WiresRegistry для получения проводов - O(1) доступ через индексы
+      useWiresRegistry = true;
       finalPinsByNode = new Map<string, Map<PinInstanceType, PinInstance[]>>();
-      finalWiresByPin = new Map<string, Wire[]>();
       finalPinInstancesMap = allPins;
 
       // Строим индекс пинов по нодам: O(p)
@@ -1026,19 +1040,9 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
         }
         pinsOfType.push(pin);
       }
-
-      // Строим индекс проводов по пинам: O(w)
-      for (const wire of existingWires) {
-        let wires = finalWiresByPin.get(wire.from);
-        if (!wires) {
-          wires = [];
-          finalWiresByPin.set(wire.from, wires);
-        }
-        wires.push(wire);
-      }
     } else {
       throw new CommutatorError(
-        "Either provide indexes (pinsByNode, wiresByPin, pinInstancesMap) or data (existingWires, allPins)",
+        "Either provide indexes (pinsByNode, wiresByPin, pinInstancesMap) or WiresRegistry (wiresRegistry, allPins)",
       );
     }
 
@@ -1078,8 +1082,17 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
 
       // Для каждого выходного пина проверяем, куда он ведет
       for (const outputPin of currentNodeOutputPins) {
-        // Получаем провода из индекса: O(1)
-        const outgoingWires = finalWiresByPin.get(outputPin.uuid) || [];
+        // Получаем провода: O(1) если используем готовые индексы, или через WiresRegistry
+        let outgoingWires: Wire[];
+        if (useWiresRegistry && wiresRegistry) {
+          // Используем WiresRegistry для O(1) доступа к проводам
+          outgoingWires = wiresRegistry.getWiresByFromPin(outputPin.uuid);
+        } else if (finalWiresByPin) {
+          // Используем готовый индекс
+          outgoingWires = finalWiresByPin.get(outputPin.uuid) || [];
+        } else {
+          outgoingWires = [];
+        }
 
         for (const wire of outgoingWires) {
           // Находим входной пин через индекс: O(1)
