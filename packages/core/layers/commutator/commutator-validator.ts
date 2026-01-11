@@ -539,14 +539,10 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       pinsOfType.push(pinInstance);
 
       // Проверка принадлежности пина ноде
+      // Примечание: nodeUuid уже был валидирован как UUID ноды в предыдущем разделе,
+      // поэтому здесь мы проверяем только существование ноды
       if (!pinInstance.nodeUuid || typeof pinInstance.nodeUuid !== "string") {
         throw new CommutatorError(`Pin "${pinInstance.uuid}" has invalid nodeUuid`);
-      }
-
-      if (!this.isValidUuidOrUlid(pinInstance.nodeUuid)) {
-        throw new CommutatorError(
-          `Pin "${pinInstance.uuid}" has invalid nodeUuid format: "${pinInstance.nodeUuid}" is not a valid UUID or ULID`,
-        );
       }
 
       if (!nodeUuids.has(pinInstance.nodeUuid)) {
@@ -591,26 +587,23 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     const incomingWireCount = new Map<string, number>();
     // Кеш для результатов проверки совместимости типов
     const typeCompatibilityCache = new Map<string, boolean>();
+    // Флаги для оптимизации cycle detection - пропускаем проверку если нет проводов данного типа
+    let hasExecWires = false;
+    let hasDataWires = false;
 
     for (const wire of snapshot.wires) {
       if (!wire || typeof wire !== "object") {
         throw new CommutatorError("Wire is invalid");
       }
 
+      // Примечание: wire.from и wire.to - это UUID пинов, которые уже были валидированы
+      // в предыдущем разделе, поэтому здесь мы проверяем только формат строки
       if (!wire.from || typeof wire.from !== "string") {
         throw new CommutatorError("Wire.from is invalid");
       }
 
-      if (!this.isValidUuidOrUlid(wire.from)) {
-        throw new CommutatorError(`Wire.from "${wire.from}" is not a valid UUID or ULID`);
-      }
-
       if (!wire.to || typeof wire.to !== "string") {
         throw new CommutatorError("Wire.to is invalid");
-      }
-
-      if (!this.isValidUuidOrUlid(wire.to)) {
-        throw new CommutatorError(`Wire.to "${wire.to}" is not a valid UUID or ULID`);
       }
 
       // Проверка уникальности проводов
@@ -648,6 +641,13 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       // Проверка типов пинов
       this.validateWirePinTypes(fromPin, toPin);
 
+      // Отслеживаем типы проводов для оптимизации cycle detection
+      if (fromPin.type === PinInstanceType.OutputExec) {
+        hasExecWires = true;
+      } else if (fromPin.type === PinInstanceType.Output) {
+        hasDataWires = true;
+      }
+
       // Проверка ограничений на провода (self-loop и одна нода)
       if (wire.from === wire.to) {
         throw new CommutatorError(`Self-loop detected: pin ${wire.from} connected to itself`);
@@ -665,10 +665,10 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
         const cacheKey = `${String(fromPin.dataType?.type ?? "null")}:${String(toPin.dataType?.type ?? "null")}`;
         let isCompatible: boolean;
 
-        const cache = typeCompatibilityCache.get(cacheKey);
+        const cachedResult = typeCompatibilityCache.get(cacheKey);
 
-        if (cache) {
-          isCompatible = cache;
+        if (cachedResult !== undefined) {
+          isCompatible = cachedResult;
         } else {
           isCompatible = this.arePinDataTypesCompatible(fromPin, toPin);
           typeCompatibilityCache.set(cacheKey, isCompatible);
@@ -709,30 +709,35 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     // Оптимизировано: O(n + w) вместо O(w * (n + w))
     // Используем detectAllCycles для поиска всех циклов за один проход
     // Разделяем проверку для exec pins и data pins на два отдельных графа
-    const execCycles = this.detectAllCycles(
-      pinsByNode,
-      wiresByPin,
-      pinInstancesMap,
-      PinInstanceType.OutputExec,
-      PinInstanceType.InputExec,
-    );
+    // Пропускаем проверку если нет проводов данного типа
+    if (hasExecWires) {
+      const execCycles = this.detectAllCycles(
+        pinsByNode,
+        wiresByPin,
+        pinInstancesMap,
+        PinInstanceType.OutputExec,
+        PinInstanceType.InputExec,
+      );
 
-    if (execCycles.length > 0) {
-      const cycleNodes = execCycles[0]?.join(" -> ") || "unknown";
-      throw new CommutatorError(`Cyclic connection detected in exec pins: ${cycleNodes}`);
+      if (execCycles.length > 0) {
+        const cycleNodes = execCycles[0]?.join(" -> ") || "unknown";
+        throw new CommutatorError(`Cyclic connection detected in exec pins: ${cycleNodes}`);
+      }
     }
 
-    const dataCycles = this.detectAllCycles(
-      pinsByNode,
-      wiresByPin,
-      pinInstancesMap,
-      PinInstanceType.Output,
-      PinInstanceType.Input,
-    );
+    if (hasDataWires) {
+      const dataCycles = this.detectAllCycles(
+        pinsByNode,
+        wiresByPin,
+        pinInstancesMap,
+        PinInstanceType.Output,
+        PinInstanceType.Input,
+      );
 
-    if (dataCycles.length > 0) {
-      const cycleNodes = dataCycles[0]?.join(" -> ") || "unknown";
-      throw new CommutatorError(`Cyclic connection detected in data pins: ${cycleNodes}`);
+      if (dataCycles.length > 0) {
+        const cycleNodes = dataCycles[0]?.join(" -> ") || "unknown";
+        throw new CommutatorError(`Cyclic connection detected in data pins: ${cycleNodes}`);
+      }
     }
   }
 

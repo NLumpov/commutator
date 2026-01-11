@@ -1211,7 +1211,7 @@ describe("CommutatorValidator", () => {
       const schema = commutator.createSchema();
       expect(() => {
         commutator.validator.validateSnapshot(snapshot, commutator["config"]);
-      }).toThrow('is not a valid UUID or ULID');
+      }).toThrow('Wire references non-existent pin');
     });
 
     test("should reject wire with invalid to UUID format", () => {
@@ -1255,7 +1255,7 @@ describe("CommutatorValidator", () => {
       const schema = commutator.createSchema();
       expect(() => {
         commutator.validator.validateSnapshot(snapshot, commutator["config"]);
-      }).toThrow('is not a valid UUID or ULID');
+      }).toThrow('Wire references non-existent pin');
     });
 
     test("should accept valid ULID format", () => {
