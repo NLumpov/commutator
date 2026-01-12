@@ -1,12 +1,45 @@
+import { CommutatorError, type CommutatorValidator, type Field } from "../commutator";
+import type { NodesRegistry } from "./nodes-registry";
+import type { PinsRegistry } from "./pins-registry";
 import type { Wire } from "./types";
 
-export class WiresRegistry {
+export class WiresRegistry<DataTypes extends Record<string, Field<DataTypes>>> {
   private wiresByFromPin: Map<string, Set<Wire>> = new Map();
   private wiresByToPin: Map<string, Set<Wire>> = new Map();
   private wiresSet: Set<string> = new Set();
 
-  constructor(wires: Wire[] = []) {
+  constructor(
+    wires: Wire[] = [],
+    pinsRegistry: PinsRegistry<DataTypes>,
+    nodesRegistry: NodesRegistry<DataTypes>,
+    validator: CommutatorValidator<DataTypes>,
+  ) {
     for (const wire of wires) {
+      if (!wire || typeof wire !== "object") {
+        throw new CommutatorError("Wire is invalid");
+      }
+
+      if (!wire.from || typeof wire.from !== "string") {
+        throw new CommutatorError("Wire.from is invalid");
+      }
+
+      if (!wire.to || typeof wire.to !== "string") {
+        throw new CommutatorError("Wire.to is invalid");
+      }
+
+      if (this.wiresSet.has(this.getWireKey(wire.from, wire.to))) {
+        throw new CommutatorError(`Duplicate wire: ${wire.from} -> ${wire.to}`);
+      }
+
+      const fromPin = pinsRegistry.getPinByUuid(wire.from);
+      const toPin = pinsRegistry.getPinByUuid(wire.to);
+
+      if (!fromPin || !toPin) {
+        throw new CommutatorError(`Pin not found`);
+      }
+
+      validator.validateWire(fromPin, toPin, this, nodesRegistry);
+
       this.addWireInternal(wire);
     }
   }
@@ -23,9 +56,12 @@ export class WiresRegistry {
    */
   addWire(wire: Wire): void {
     const key = this.getWireKey(wire.from, wire.to);
+
+    // Идемпотентно останавливаем выполнение добавления связи если она уже есть
     if (this.wiresSet.has(key)) {
-      throw new Error(`Wire from "${wire.from}" to "${wire.to}" already exists`);
+      return;
     }
+
     this.addWireInternal(wire);
   }
 

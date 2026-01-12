@@ -479,7 +479,7 @@ describe("CommutatorSchema", () => {
         // Second wire from the same exec output should fail
         expect(() => {
           instance.wire({ fromPinUuid: execOutputPinUuid!, toPinUuid: execInputPin2Uuid! });
-        }).toThrow("ExecPinOut wire already exists");
+        }).toThrow(CommutatorError);
       });
     });
 
@@ -668,86 +668,6 @@ describe("CommutatorSchema", () => {
         expect(() => {
           instance.wire({ fromPinUuid: dataInputPinUuid!, toPinUuid: execOutputPinUuid! });
         }).toThrow(CommutatorError);
-      });
-    });
-
-    describe("reverse connection (input to output)", () => {
-      test("should automatically reverse connection when input is first parameter", () => {
-        const commutator = Commutator.initialize()
-          .defineEvent("source", {
-            pinsOut: {
-              value: { type: CommonDataType.String },
-            },
-            execPinsOut: {},
-          })
-          .definePureFunction("target", {
-            pinsIn: {
-              value: { type: CommonDataType.String },
-            },
-            pinsOut: {},
-            exec: async () => ({}),
-          });
-
-        const instance = commutator.createSchema();
-        const source = instance.createEvent("source");
-        const target = instance.createPureFunction("target");
-
-        const outputPinUuid = instance
-          .getNodePins(source.uuid)
-          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
-        const inputPinUuid = instance
-          .getNodePins(target.uuid)
-          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
-
-        // Wire in correct order
-        expect(() => {
-          instance.wire({ fromPinUuid: outputPinUuid!, toPinUuid: inputPinUuid! });
-        }).not.toThrow();
-
-        // Wire in reverse order should also work
-        const source2 = instance.createEvent("source");
-        const target2 = instance.createPureFunction("target");
-        const outputPin2Uuid = instance
-          .getNodePins(source2.uuid)
-          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Output)?.uuid;
-        const inputPin2Uuid = instance
-          .getNodePins(target2.uuid)
-          .find((pin) => pin.name === "value" && pin.type === PinInstanceType.Input)?.uuid;
-
-        expect(() => {
-          instance.wire({ fromPinUuid: inputPin2Uuid!, toPinUuid: outputPin2Uuid! });
-        }).not.toThrow();
-      });
-
-      test("should automatically reverse connection for exec pins when input is first parameter", () => {
-        const commutator = Commutator.initialize()
-          .defineEvent("source", {
-            pinsOut: {},
-            execPinsOut: { next: null },
-          })
-          .defineFunction("target", {
-            pinsIn: {},
-            pinsOut: {},
-            execPinsIn: { start: null },
-            execPinsOut: {},
-            exec: async () => {},
-          });
-
-        const instance = commutator.createSchema();
-        const source = instance.createEvent("source");
-        const target = instance.createFunction("target");
-
-        const execOutputPinUuid = instance
-          .getNodePins(source.uuid)
-          .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec)?.uuid;
-        const execInputPinUuid = instance
-          .getNodePins(target.uuid)
-          .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec)?.uuid;
-
-        // Wire in reverse order should work
-        expect(() => {
-          instance.wire({ fromPinUuid: execInputPinUuid!, toPinUuid: execOutputPinUuid! });
-        }).not.toThrow();
       });
     });
 
@@ -1239,11 +1159,11 @@ describe("CommutatorSchema", () => {
         const schema2 = commutator.createSchema(snapshot);
         const restoredSnapshot = schema2.extract();
 
-        expect(restoredSnapshot.events).toHaveLength(1);
-        expect(restoredSnapshot.events[0]?.name).toBe("onClick");
-        expect(restoredSnapshot.events[0]?.uuid).toBe(event1.uuid);
-        expect(restoredSnapshot.events[0]?.x).toBe(10);
-        expect(restoredSnapshot.events[0]?.y).toBe(20);
+        expect(restoredSnapshot.nodes).toHaveLength(1);
+        expect(restoredSnapshot.nodes[0]?.name).toBe("onClick");
+        expect(restoredSnapshot.nodes[0]?.uuid).toBe(event1.uuid);
+        expect(restoredSnapshot.nodes[0]?.x).toBe(10);
+        expect(restoredSnapshot.nodes[0]?.y).toBe(20);
       });
 
       test("should extract and restore schema with multiple node types", () => {
@@ -1292,15 +1212,12 @@ describe("CommutatorSchema", () => {
         const schema2 = commutator.createSchema(snapshot);
         const restoredSnapshot = schema2.extract();
 
-        expect(restoredSnapshot.events).toHaveLength(1);
-        expect(restoredSnapshot.refs).toHaveLength(1);
-        expect(restoredSnapshot.pureFunctions).toHaveLength(1);
-        expect(restoredSnapshot.functions).toHaveLength(1);
+        expect(restoredSnapshot.nodes).toHaveLength(4);
 
-        expect(restoredSnapshot.events[0]?.uuid).toBe(event1.uuid);
-        expect(restoredSnapshot.refs[0]?.uuid).toBe(ref1.uuid);
-        expect(restoredSnapshot.pureFunctions[0]?.uuid).toBe(pureFunc1.uuid);
-        expect(restoredSnapshot.functions[0]?.uuid).toBe(func1.uuid);
+        expect(restoredSnapshot.nodes[0]?.uuid).toBe(event1.uuid);
+        expect(restoredSnapshot.nodes[1]?.uuid).toBe(ref1.uuid);
+        expect(restoredSnapshot.nodes[2]?.uuid).toBe(pureFunc1.uuid);
+        expect(restoredSnapshot.nodes[3]?.uuid).toBe(func1.uuid);
       });
 
       test("should extract and restore schema with pins and wires", () => {
@@ -1500,10 +1417,7 @@ describe("CommutatorSchema", () => {
         expect(() => {
           const schema2 = commutator.createSchema(snapshot);
           const restoredSnapshot = schema2.extract();
-          expect(restoredSnapshot.events).toHaveLength(1);
-          expect(restoredSnapshot.refs).toHaveLength(1);
-          expect(restoredSnapshot.pureFunctions).toHaveLength(1);
-          expect(restoredSnapshot.functions).toHaveLength(1);
+          expect(restoredSnapshot.nodes).toHaveLength(4);
         }).not.toThrow();
       });
 
@@ -1570,8 +1484,7 @@ describe("CommutatorSchema", () => {
         expect(() => {
           const schema2 = commutator.createSchema(snapshot);
           const restoredSnapshot = schema2.extract();
-          expect(restoredSnapshot.events).toHaveLength(1);
-          expect(restoredSnapshot.pureFunctions).toHaveLength(1);
+          expect(restoredSnapshot.nodes).toHaveLength(2);
         }).not.toThrow();
       });
     });

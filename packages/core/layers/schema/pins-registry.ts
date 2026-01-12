@@ -1,4 +1,6 @@
-import type { PinInstanceType } from "./enums";
+import { CommutatorError, type CommutatorValidator } from "../commutator";
+import { PinInstanceType } from "./enums";
+import type { NodesRegistry } from "./nodes-registry";
 import type { PinInstance } from "./types";
 
 export class PinsRegistry<DataTypes extends Record<string, any> = any> {
@@ -16,8 +18,59 @@ export class PinsRegistry<DataTypes extends Record<string, any> = any> {
     return `${name}:${type}`;
   }
 
-  constructor(pins: PinInstance<DataTypes>[] = []) {
+  constructor(
+    pins: PinInstance<DataTypes>[],
+    nodesRegistry: NodesRegistry<DataTypes>,
+    validator: CommutatorValidator<DataTypes>,
+  ) {
     for (const pin of pins) {
+      if (!pin || typeof pin !== "object") {
+        throw new CommutatorError("Pin is invalid");
+      }
+
+      if (!pin.uuid || typeof pin.uuid !== "string") {
+        throw new CommutatorError("Pin uuid is invalid");
+      }
+
+      if (!pin.nodeUuid || typeof pin.nodeUuid !== "string") {
+        throw new CommutatorError(`Pin "${pin.uuid}" has invalid nodeUuid`);
+      }
+
+      if (this.pinsByUuid.has(pin.uuid)) {
+        throw new CommutatorError(`Duplicate pin UUID: ${pin.uuid}`);
+      }
+
+      if (!nodesRegistry.getNodeByUuid(pin.nodeUuid)) {
+        throw new CommutatorError(
+          `Pin "${pin.uuid}" belongs to non-existent node "${pin.nodeUuid}"`,
+        );
+      }
+
+      if (
+        (pin.type === PinInstanceType.InputExec || pin.type === PinInstanceType.OutputExec) &&
+        pin.dataType !== null
+      ) {
+        throw new CommutatorError(`Exec pin "${pin.uuid}" must have dataType null`);
+      }
+
+      if (pin.dataType !== null) {
+        validator.validateField(pin.dataType);
+      }
+
+      if (
+        (pin.type === PinInstanceType.Input || pin.type === PinInstanceType.Output) &&
+        pin.dataType === null
+      ) {
+        throw new CommutatorError(`Data pin "${pin.uuid}" must have a valid dataType, got null`);
+      }
+
+      if (
+        (pin.type === PinInstanceType.InputExec || pin.type === PinInstanceType.OutputExec) &&
+        pin.dataType !== null
+      ) {
+        throw new CommutatorError(`Exec pin "${pin.uuid}" must have dataType null`);
+      }
+
       this.addPinInternal(pin);
     }
   }

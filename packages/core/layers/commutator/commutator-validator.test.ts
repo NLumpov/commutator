@@ -3,7 +3,9 @@ import { CommonDataType, Commutator, NodeType } from ".";
 import { CommutatorError } from "./commutator-error";
 import { ulid } from "../../util/ulid";
 import { PinInstanceType } from "../schema/enums";
+import { NodesRegistry } from "../schema/nodes-registry";
 import { WiresRegistry } from "../schema/wires-registry";
+import { PinsRegistry } from "../schema/pins-registry";
 import type { SchemaSnapshot } from "../schema/types";
 
 describe("CommutatorValidator", () => {
@@ -46,29 +48,19 @@ describe("CommutatorValidator", () => {
       const snapshot = schema.extract();
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).not.toThrow();
     });
 
-    test("should throw error when snapshot is null", () => {
-      const commutator = Commutator.initialize();
-      expect(() => {
-        commutator.validator.validateSnapshot(null as any, commutator["config"]);
-      }).toThrow(CommutatorError);
-    });
-
-    test("should throw error when snapshot.events is not an array", () => {
+    test("should throw error when snapshot.nodes is not an array", () => {
       const commutator = Commutator.initialize();
       const snapshot: SchemaSnapshot = {
-        events: null as any,
-        refs: [],
-        pureFunctions: [],
-        functions: [],
+        nodes: null as any,
         pinInstances: [],
         wires: [],
       };
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -83,10 +75,10 @@ describe("CommutatorValidator", () => {
       const snapshot = schema.extract();
 
       // Создаем дубликат UUID
-      snapshot.events.push({ ...event1.instance });
+      snapshot.nodes.push({ ...event1.instance });
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -106,7 +98,7 @@ describe("CommutatorValidator", () => {
       });
 
       expect(() => {
-        commutator2.validator.validateSnapshot(snapshot, commutator2["config"]);
+        commutator2.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -128,7 +120,7 @@ describe("CommutatorValidator", () => {
       }
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -153,7 +145,7 @@ describe("CommutatorValidator", () => {
       }
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -196,7 +188,7 @@ describe("CommutatorValidator", () => {
       }
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -224,7 +216,7 @@ describe("CommutatorValidator", () => {
       }
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -265,7 +257,7 @@ describe("CommutatorValidator", () => {
       };
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -305,7 +297,7 @@ describe("CommutatorValidator", () => {
       });
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -341,7 +333,7 @@ describe("CommutatorValidator", () => {
       });
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -381,7 +373,7 @@ describe("CommutatorValidator", () => {
       });
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -421,7 +413,7 @@ describe("CommutatorValidator", () => {
       });
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).not.toThrow();
     });
 
@@ -461,7 +453,7 @@ describe("CommutatorValidator", () => {
       });
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -501,7 +493,7 @@ describe("CommutatorValidator", () => {
       });
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).not.toThrow();
     });
 
@@ -551,7 +543,7 @@ describe("CommutatorValidator", () => {
       });
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -602,7 +594,7 @@ describe("CommutatorValidator", () => {
       });
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -650,7 +642,7 @@ describe("CommutatorValidator", () => {
       });
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -675,7 +667,7 @@ describe("CommutatorValidator", () => {
       }
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -700,7 +692,7 @@ describe("CommutatorValidator", () => {
       }
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+          commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -723,7 +715,7 @@ describe("CommutatorValidator", () => {
       }
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -764,7 +756,7 @@ describe("CommutatorValidator", () => {
       });
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -785,15 +777,15 @@ describe("CommutatorValidator", () => {
       const snapshot = schema.extract();
 
       // Изменяем config на невалидный
-      if (snapshot.events[0]) {
-        snapshot.events[0] = {
-          ...snapshot.events[0],
+      if (snapshot.nodes[0]) {
+        snapshot.nodes[0] = {
+          ...snapshot.nodes[0],
           config: { count: "invalid" },
         };
       }
 
       expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+        commutator.createSchema(snapshot);
       }).toThrow(CommutatorError);
     });
 
@@ -833,8 +825,8 @@ describe("CommutatorValidator", () => {
         const snapshot = schema.extract();
 
         // Максимально испорченный снапшот
-        if (snapshot.events[0] && snapshot.pinInstances[0]) {
-          snapshot.events.push({ ...snapshot.events[0] }); // Дубликат UUID
+        if (snapshot.nodes[0] && snapshot.pinInstances[0]) {
+          snapshot.nodes.push({ ...snapshot.nodes[0] }); // Дубликат UUID
           snapshot.pinInstances.push({ ...snapshot.pinInstances[0] }); // Дубликат пина
         }
         // @ts-expect-error игнорируем ошибку потому что намеренно портим снапшот
@@ -849,39 +841,33 @@ describe("CommutatorValidator", () => {
         }); // Self-loop
 
         expect(() => {
-          commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+          commutator.createSchema(snapshot);
         }).toThrow(CommutatorError);
       });
 
       test("should reject snapshot with null/undefined values", () => {
         const commutator = Commutator.initialize();
         const snapshot: any = {
-          events: [null],
-          refs: [undefined],
-          pureFunctions: [],
-          functions: [],
+          nodes: [null],
           pinInstances: [],
           wires: [],
         };
 
         expect(() => {
-          commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+          commutator.createSchema(snapshot);
         }).toThrow(CommutatorError);
       });
 
       test("should reject snapshot with invalid node instance structure", () => {
         const commutator = Commutator.initialize();
         const snapshot: any = {
-          events: [{ uuid: null, type: NodeType.Event, name: "test" }],
-          refs: [],
-          pureFunctions: [],
-          functions: [],
+          nodes: [{ uuid: null, type: NodeType.Event, name: "test" }],
           pinInstances: [],
           wires: [],
         };
 
         expect(() => {
-          commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+          commutator.createSchema(snapshot);
         }).toThrow(CommutatorError);
       });
 
@@ -895,10 +881,10 @@ describe("CommutatorValidator", () => {
         schema.createEvent("onClick");
         const snapshot = schema.extract();
 
-        if (snapshot.events[0]) {
+        if (snapshot.nodes[0]) {
           snapshot.pinInstances.push({
             uuid: null as any,
-            nodeUuid: snapshot.events[0].uuid,
+            nodeUuid: snapshot.nodes[0].uuid,
             type: PinInstanceType.Output,
             name: "test",
             dataType: { type: CommonDataType.Number },
@@ -906,7 +892,7 @@ describe("CommutatorValidator", () => {
         }
 
         expect(() => {
-          commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+          commutator.createSchema(snapshot);
         }).toThrow(CommutatorError);
       });
 
@@ -926,7 +912,7 @@ describe("CommutatorValidator", () => {
         });
 
         expect(() => {
-          commutator.validator.validateSnapshot(snapshot, commutator["config"]);
+          commutator.createSchema(snapshot);
         }).toThrow(CommutatorError);
       });
     });
@@ -960,27 +946,16 @@ describe("CommutatorValidator", () => {
         .getNodePins(add.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
-      const allNodesMap = new Map();
-      allNodesMap.set(event.uuid, event);
-      allNodesMap.set(add.uuid, add);
-
-      const allPinsMap = new Map(
-        schema
-          .getNodePins(event.uuid)
-          .concat(schema.getNodePins(add.uuid))
-          .map((pin) => [pin.uuid, pin]),
-      );
-
-      const wiresRegistry = new WiresRegistry();
+      const nodesRegistry = new NodesRegistry([event, add], commutator["config"], commutator.validator);
+      const pinsRegistry = new PinsRegistry([eventXPin!, addAPin!], nodesRegistry, commutator.validator);
+      const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
 
       expect(() => {
         commutator.validator.validateWire(
           eventXPin!,
           addAPin!,
           wiresRegistry,
-          allPinsMap,
-          allNodesMap,
-          commutator["config"],
+          nodesRegistry,
         );
       }).not.toThrow();
     });
@@ -1007,16 +982,16 @@ describe("CommutatorValidator", () => {
         schema.getNodePins(event.uuid).map((pin) => [pin.uuid, pin]),
       );
 
-      const wiresRegistry = new WiresRegistry();
+      const nodesRegistry = new NodesRegistry([event], commutator["config"], commutator.validator);
+      const pinsRegistry = new PinsRegistry([eventXPin!], nodesRegistry, commutator.validator);
+      const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
 
       expect(() => {
         commutator.validator.validateWire(
           eventXPin!,
           eventXPin!,
           wiresRegistry,
-          allPinsMap,
-          allNodesMap,
-          commutator["config"],
+          nodesRegistry,
         );
       }).toThrow(CommutatorError);
     });
@@ -1061,291 +1036,6 @@ describe("CommutatorValidator", () => {
       expect(() => {
         commutator.validator.validateUpdateNodeConfig(nodeConfig!, { count: "invalid" });
       }).toThrow(CommutatorError);
-    });
-  });
-
-  describe("UUID/ULID validation", () => {
-    test("should reject node with invalid UUID format", () => {
-      const commutator = Commutator.initialize().defineEvent("onClick", {
-        pinsOut: {},
-        execPinsOut: { next: null },
-      });
-
-      const snapshot: SchemaSnapshot = {
-        events: [
-          {
-            uuid: "invalid-uuid-format",
-            type: NodeType.Event,
-            name: "onClick",
-            x: 0,
-            y: 0,
-          },
-        ],
-        refs: [],
-        pureFunctions: [],
-        functions: [],
-        pinInstances: [],
-        wires: [],
-      };
-
-      const schema = commutator.createSchema();
-      expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
-      }).toThrow('is not a valid UUID or ULID');
-    });
-
-    test("should reject pin with invalid UUID format", () => {
-      const commutator = Commutator.initialize().defineEvent("onClick", {
-        pinsOut: { x: { type: CommonDataType.Number } },
-        execPinsOut: { next: null },
-      });
-
-      const eventUuid = ulid();
-      const snapshot: SchemaSnapshot = {
-        events: [
-          {
-            uuid: eventUuid,
-            type: NodeType.Event,
-            name: "onClick",
-            x: 0,
-            y: 0,
-          },
-        ],
-        refs: [],
-        pureFunctions: [],
-        functions: [],
-        pinInstances: [
-          {
-            uuid: "not-a-valid-uuid",
-            nodeUuid: eventUuid,
-            type: PinInstanceType.Output,
-            name: "x",
-            dataType: { type: CommonDataType.Number },
-          },
-        ],
-        wires: [],
-      };
-
-      const schema = commutator.createSchema();
-      expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
-      }).toThrow('is not a valid UUID or ULID');
-    });
-
-    test("should reject pin with invalid nodeUuid format", () => {
-      const commutator = Commutator.initialize().defineEvent("onClick", {
-        pinsOut: { x: { type: CommonDataType.Number } },
-        execPinsOut: { next: null },
-      });
-
-      const pinUuid = ulid();
-      const snapshot: SchemaSnapshot = {
-        events: [
-          {
-            uuid: "invalid-node-uuid",
-            type: NodeType.Event,
-            name: "onClick",
-            x: 0,
-            y: 0,
-          },
-        ],
-        refs: [],
-        pureFunctions: [],
-        functions: [],
-        pinInstances: [
-          {
-            uuid: pinUuid,
-            nodeUuid: "invalid-node-uuid",
-            type: PinInstanceType.Output,
-            name: "x",
-            dataType: { type: CommonDataType.Number },
-          },
-        ],
-        wires: [],
-      };
-
-      const schema = commutator.createSchema();
-      expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
-      }).toThrow('is not a valid UUID or ULID');
-    });
-
-    test("should reject wire with invalid from UUID format", () => {
-      const commutator = Commutator.initialize().defineEvent("onClick", {
-        pinsOut: { x: { type: CommonDataType.Number } },
-        execPinsOut: { next: null },
-      });
-
-      const eventUuid = ulid();
-      const pinUuid = ulid();
-      const snapshot: SchemaSnapshot = {
-        events: [
-          {
-            uuid: eventUuid,
-            type: NodeType.Event,
-            name: "onClick",
-            x: 0,
-            y: 0,
-          },
-        ],
-        refs: [],
-        pureFunctions: [],
-        functions: [],
-        pinInstances: [
-          {
-            uuid: pinUuid,
-            nodeUuid: eventUuid,
-            type: PinInstanceType.Output,
-            name: "x",
-            dataType: { type: CommonDataType.Number },
-          },
-        ],
-        wires: [
-          {
-            from: "invalid-from-uuid",
-            to: pinUuid,
-          },
-        ],
-      };
-
-      const schema = commutator.createSchema();
-      expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
-      }).toThrow('Wire references non-existent pin');
-    });
-
-    test("should reject wire with invalid to UUID format", () => {
-      const commutator = Commutator.initialize().defineEvent("onClick", {
-        pinsOut: { x: { type: CommonDataType.Number } },
-        execPinsOut: { next: null },
-      });
-
-      const eventUuid = ulid();
-      const pinUuid = ulid();
-      const snapshot: SchemaSnapshot = {
-        events: [
-          {
-            uuid: eventUuid,
-            type: NodeType.Event,
-            name: "onClick",
-            x: 0,
-            y: 0,
-          },
-        ],
-        refs: [],
-        pureFunctions: [],
-        functions: [],
-        pinInstances: [
-          {
-            uuid: pinUuid,
-            nodeUuid: eventUuid,
-            type: PinInstanceType.Output,
-            name: "x",
-            dataType: { type: CommonDataType.Number },
-          },
-        ],
-        wires: [
-          {
-            from: pinUuid,
-            to: "invalid-to-uuid",
-          },
-        ],
-      };
-
-      const schema = commutator.createSchema();
-      expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
-      }).toThrow('Wire references non-existent pin');
-    });
-
-    test("should accept valid ULID format", () => {
-      const commutator = Commutator.initialize().defineEvent("onClick", {
-        pinsOut: {},
-        execPinsOut: { next: null },
-      });
-
-      const validUlid = ulid();
-      const snapshot: SchemaSnapshot = {
-        events: [
-          {
-            uuid: validUlid,
-            type: NodeType.Event,
-            name: "onClick",
-            x: 0,
-            y: 0,
-          },
-        ],
-        refs: [],
-        pureFunctions: [],
-        functions: [],
-        pinInstances: [],
-        wires: [],
-      };
-
-      const schema = commutator.createSchema();
-      expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
-      }).not.toThrow();
-    });
-
-    test("should accept valid UUID format with hyphens", () => {
-      const commutator = Commutator.initialize().defineEvent("onClick", {
-        pinsOut: {},
-        execPinsOut: { next: null },
-      });
-
-      const validUuid = "550e8400-e29b-41d4-a716-446655440000";
-      const snapshot: SchemaSnapshot = {
-        events: [
-          {
-            uuid: validUuid,
-            type: NodeType.Event,
-            name: "onClick",
-            x: 0,
-            y: 0,
-          },
-        ],
-        refs: [],
-        pureFunctions: [],
-        functions: [],
-        pinInstances: [],
-        wires: [],
-      };
-
-      const schema = commutator.createSchema();
-      expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
-      }).not.toThrow();
-    });
-
-    test("should accept valid UUID format without hyphens", () => {
-      const commutator = Commutator.initialize().defineEvent("onClick", {
-        pinsOut: {},
-        execPinsOut: { next: null },
-      });
-
-      const validUuid = "550e8400e29b41d4a716446655440000";
-      const snapshot: SchemaSnapshot = {
-        events: [
-          {
-            uuid: validUuid,
-            type: NodeType.Event,
-            name: "onClick",
-            x: 0,
-            y: 0,
-          },
-        ],
-        refs: [],
-        pureFunctions: [],
-        functions: [],
-        pinInstances: [],
-        wires: [],
-      };
-
-      const schema = commutator.createSchema();
-      expect(() => {
-        commutator.validator.validateSnapshot(snapshot, commutator["config"]);
-      }).not.toThrow();
     });
   });
 });

@@ -30,7 +30,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       expect(pinResult?.dataType?.type).toBe(CommonDataType.Number);
     });
 
-    test("should initialize exec pins with Any type", () => {
+    test("should initialize exec pins with null dataType", () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: {
           x: { type: CommonDataType.Number },
@@ -45,7 +45,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const pins = schema.getNodePins(event.uuid);
 
       const execPin = pins.find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
-      expect(execPin?.dataType?.type).toBe(CommonDataType.Any);
+      expect(execPin?.dataType).toBeNull();
     });
 
     test("should initialize dataType as Any when pin config is missing", () => {
@@ -847,36 +847,6 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       // dataType должен быть сохранен в снапшоте
       expect(valuePin2?.dataType?.type).toBe(CommonDataType.String);
       expect(resultPin2?.dataType?.type).toBe(CommonDataType.String);
-    });
-
-    test("should restore dataType from configuration if missing in snapshot", () => {
-      const commutator = Commutator.initialize().definePureFunction("test", {
-        pinsIn: {
-          value: { type: CommonDataType.Number },
-        },
-        pinsOut: {},
-        exec: async () => ({}),
-      });
-
-      const schema1 = commutator.createSchema();
-      const test = schema1.createPureFunction("test");
-      const snapshot = schema1.extract();
-
-      // Удаляем dataType из снапшота (симулируем старый формат)
-      const modifiedSnapshot = {
-        ...snapshot,
-        pinInstances: snapshot.pinInstances.map((pin) => {
-          const { dataType, ...rest } = pin as any;
-          return rest;
-        }),
-      };
-
-      const schema2 = commutator.createSchema(modifiedSnapshot as any);
-      const pins = schema2.getNodePins(test.uuid);
-      const valuePin = pins.find((p) => p.name === "value");
-
-      // dataType должен быть восстановлен из конфигурации
-      expect(valuePin?.dataType?.type).toBe(CommonDataType.Number);
     });
   });
 

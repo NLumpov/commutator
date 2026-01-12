@@ -1,17 +1,9 @@
-import type {
-  EventNodeInstance,
-  FunctionNodeInstance,
-  PureFunctionNodeInstance,
-  RefNodeInstance,
-} from "./node-instances";
+import type { AbstractNodeInstance } from "./node-instances";
 import type { PinInstance } from "./pin-instance";
 import type { Wire } from "./wire";
 
 export interface SchemaSnapshot {
-  events: EventNodeInstance<any>[];
-  refs: RefNodeInstance<any>[];
-  pureFunctions: PureFunctionNodeInstance<any>[];
-  functions: FunctionNodeInstance<any>[];
+  nodes: AbstractNodeInstance<string>[];
   pinInstances: PinInstance[];
   wires: Wire[];
 }

@@ -1,7 +1,13 @@
-import type { NodeType } from "../commutator";
+import {
+  type CommutatorConfig,
+  CommutatorError,
+  type CommutatorValidator,
+  type Field,
+  type NodeType,
+} from "../commutator";
 import type { AbstractNodeInstance } from "./types";
 
-export class NodesRegistry {
+export class NodesRegistry<const DataTypes extends Record<string, Field<DataTypes>> = {}> {
   // Основной индекс по UUID
   private nodesByUuid: Map<string, AbstractNodeInstance<string>> = new Map();
   // Индекс по типу ноды для быстрого поиска
@@ -9,8 +15,36 @@ export class NodesRegistry {
   // Индекс по имени и типу для проверки уникальности
   private nodesByNameAndType: Map<string, Map<NodeType, AbstractNodeInstance<string>>> = new Map();
 
-  constructor(nodes: AbstractNodeInstance<string>[] = []) {
+  constructor(
+    nodes: AbstractNodeInstance<string>[] = [],
+    config: CommutatorConfig<DataTypes, any, any, any, any, any>,
+    validator: CommutatorValidator<DataTypes>,
+  ) {
     for (const node of nodes) {
+      if (!node || typeof node !== "object") {
+        throw new CommutatorError("Node is invalid");
+      }
+
+      if (this.nodesByUuid.has(node.uuid)) {
+        throw new CommutatorError(`Node with uuid "${node.uuid}" already exists`);
+      }
+
+      const nodeConfig = config.getNodeConfigByName(node.name);
+
+      if (!nodeConfig) {
+        throw new CommutatorError(
+          `Node config for "${String(node.name)}" of type "${node.type}" not found`,
+        );
+      }
+
+      if (nodeConfig.config && node.config !== undefined) {
+        if (!validator.validateFieldValue(nodeConfig.config, node.config)) {
+          throw new CommutatorError(
+            `Invalid config for node "${String(node.name)}" of type "${node.type}"`,
+          );
+        }
+      }
+
       this.addNodeInternal(node);
     }
   }
