@@ -1,9 +1,8 @@
-import type { PinsRegistry } from "layers/schema/pins-registry";
 import { PinInstanceType } from "../schema/enums";
 import type { NodesRegistry } from "../schema/nodes-registry";
-import type { PinInstance, SchemaSnapshot } from "../schema/types";
+import type { PinsRegistry } from "../schema/pins-registry";
+import type { PinInstance } from "../schema/types";
 import type { WiresRegistry } from "../schema/wires-registry";
-import type { CommutatorConfig } from "./commutator-config";
 import { CommutatorError } from "./commutator-error";
 import { CommonDataType, PrimitiveDataTypes } from "./enums";
 import type { Field, PrimitiveDataType } from "./types";

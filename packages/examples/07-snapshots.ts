@@ -94,26 +94,20 @@ console.log("Snapshot:", JSON.stringify(snapshot, null, 2));
 const schema2 = commutator.createSchema(snapshot);
 
 // Проверка, что все ноды восстановлены
-const schema2Events = schema2.extract().events;
-const schema2Refs = schema2.extract().refs;
-const schema2PureFunctions = schema2.extract().pureFunctions;
-const schema2Functions = schema2.extract().functions;
+const schema2Nodes = schema2.extract().nodes;
 const schema2Wires = schema2.extract().wires;
 
-console.log("Restored events:", schema2Events.length);
-console.log("Restored refs:", schema2Refs.length);
-console.log("Restored pure functions:", schema2PureFunctions.length);
-console.log("Restored functions:", schema2Functions.length);
+console.log("Restored nodes:", schema2Nodes.length);
 console.log("Restored wires:", schema2Wires.length);
 
 // Проверка позиций нод
-const restoredOnClick = schema2Events[0];
+const restoredOnClick = schema2Nodes[0];
 if (restoredOnClick) {
   console.log("Restored onClick position:", restoredOnClick.x, restoredOnClick.y);
 }
 
 // Проверка конфигурации референса
-const restoredUserRef = schema2Refs[0];
+const restoredUserRef = schema2Nodes[1];
 if (restoredUserRef) {
   console.log("Restored userRef config:", restoredUserRef.config);
 }

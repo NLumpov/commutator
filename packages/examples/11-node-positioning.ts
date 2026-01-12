@@ -87,14 +87,8 @@ schema.wire({ from: { node: onClick.uuid, pin: "next" }, to: { node: log.uuid, p
 // Проверка позиций через снапшот
 const snapshot = schema.extract();
 console.log("Node positions:");
-snapshot.events.forEach((event) => {
-  console.log(`Event ${event.name}: (${event.x}, ${event.y})`);
-});
-snapshot.pureFunctions.forEach((pf) => {
-  console.log(`PureFunction ${pf.name}: (${pf.x}, ${pf.y})`);
-});
-snapshot.functions.forEach((f) => {
-  console.log(`Function ${f.name}: (${f.x}, ${f.y})`);
+snapshot.nodes.forEach((node) => {
+  console.log(`Node ${node.name}: (${node.x}, ${node.y})`);
 });
 
 // Перемещение нод (например, для визуального редактора)
@@ -108,8 +102,8 @@ const restoredSchema = commutator.createSchema(snapshot);
 const restoredSnapshot = restoredSchema.extract();
 
 console.log("Restored positions:");
-restoredSnapshot.events.forEach((event) => {
-  console.log(`Event ${event.name}: (${event.x}, ${event.y})`);
+restoredSnapshot.nodes.forEach((node) => {
+  console.log(`Node ${node.name}: (${node.x}, ${node.y})`);
 });
 
 export { schema, restoredSchema, snapshot };
