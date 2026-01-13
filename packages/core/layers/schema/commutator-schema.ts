@@ -96,24 +96,10 @@ export class CommutatorSchema<
       this.validator,
     );
 
-    if (
-      this.validator.checkCyclesInGraph(
-        this.nodesRegistry,
-        this.pinsRegistry,
-        this.wiresRegistry,
-        "data",
-      )
-    ) {
+    if (this.wiresRegistry.hasCycle("data")) {
       throw new CommutatorError("Cyclic connection detected in data wires");
     }
-    if (
-      this.validator.checkCyclesInGraph(
-        this.nodesRegistry,
-        this.pinsRegistry,
-        this.wiresRegistry,
-        "exec",
-      )
-    ) {
+    if (this.wiresRegistry.hasCycle("exec")) {
       throw new CommutatorError("Cyclic connection detected in exec wires");
     }
 
@@ -433,13 +419,13 @@ export class CommutatorSchema<
 
           if (!configPin) {
             // Пина нет в конфигурации - удаляем
-            this.wiresRegistry.removeWiresByPin(pin.uuid);
+            this.wiresRegistry.removeWiresByPin(pin.uuid, this.pinsRegistry);
             this.pinsRegistry.removePin(pin.uuid);
             currentPinsMap.delete(pin.name);
           } else if (configPin.type !== pin.type) {
             // Тип пина не совпадает с конфигурацией - удаляем старый пин
             // Новый будет создан в следующем цикле
-            this.wiresRegistry.removeWiresByPin(pin.uuid);
+            this.wiresRegistry.removeWiresByPin(pin.uuid, this.pinsRegistry);
             this.pinsRegistry.removePin(pin.uuid);
             currentPinsMap.delete(pin.name);
           } else {
@@ -593,20 +579,13 @@ export class CommutatorSchema<
       this.nodesRegistry,
     );
 
-    if (
-      this.validator.willCreateCycleInteractive(
-        this.pinsRegistry,
-        this.wiresRegistry,
-        updatedOutputPin.type === PinInstanceType.OutputExec ? "exec" : "data",
-        { from: updatedOutputPin.uuid, to: updatedInputPin.uuid },
-      )
-    ) {
+    if (this.wiresRegistry.willCreateCycle(updatedOutputPin, updatedInputPin)) {
       throw new CommutatorError("Cyclic connection detected in pins");
     }
 
     // Создаем провод и добавляем его в реестр
     const wire: Wire = { from, to };
-    this.wiresRegistry.addWire(wire);
+    this.wiresRegistry.addWire(wire, this.pinsRegistry);
   }
 
   /**
@@ -627,15 +606,15 @@ export class CommutatorSchema<
       const toPin = this.getPin(options.to.node, options.to.pin);
 
       // Удаляем провод в обоих направлениях (на случай если был создан в обратном порядке)
-      this.wiresRegistry.removeWire(fromPin.uuid, toPin.uuid);
-      this.wiresRegistry.removeWire(toPin.uuid, fromPin.uuid);
+      this.wiresRegistry.removeWire(fromPin.uuid, toPin.uuid, this.pinsRegistry);
+      this.wiresRegistry.removeWire(toPin.uuid, fromPin.uuid, this.pinsRegistry);
 
       return;
     }
 
     // Удаляем провод в обоих направлениях
-    this.wiresRegistry.removeWire(options.fromPinUuid, options.toPinUuid);
-    this.wiresRegistry.removeWire(options.toPinUuid, options.fromPinUuid);
+    this.wiresRegistry.removeWire(options.fromPinUuid, options.toPinUuid, this.pinsRegistry);
+    this.wiresRegistry.removeWire(options.toPinUuid, options.fromPinUuid, this.pinsRegistry);
   }
 
   /**
@@ -821,7 +800,7 @@ export class CommutatorSchema<
     }
 
     // Удаляем все провода, подключенные к этому пину
-    this.wiresRegistry.removeWiresByPin(uuid);
+    this.wiresRegistry.removeWiresByPin(uuid, this.pinsRegistry);
 
     this.pinsRegistry.removePin(uuid);
   }

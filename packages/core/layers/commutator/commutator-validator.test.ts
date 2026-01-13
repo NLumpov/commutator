@@ -1057,12 +1057,7 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-        );
+        const hasCycle = wiresRegistry.hasCycle("exec");
 
         expect(hasCycle).toBe(false);
       });
@@ -1084,12 +1079,7 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-        );
+        const hasCycle = wiresRegistry.hasCycle("exec");
 
         expect(hasCycle).toBe(false);
       });
@@ -1120,12 +1110,7 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-        );
+        const hasCycle = wiresRegistry.hasCycle("exec");
 
         expect(hasCycle).toBe(false);
       });
@@ -1181,12 +1166,7 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-        );
+        const hasCycle = wiresRegistry.hasCycle("exec");
 
         expect(hasCycle).toBe(false);
       });
@@ -1266,12 +1246,7 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-        );
+        const hasCycle = wiresRegistry.hasCycle("exec");
 
         expect(hasCycle).toBe(false);
       });
@@ -1322,15 +1297,10 @@ describe("CommutatorValidator", () => {
         // Manually construct wires registry to bypass validation
         const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
         for (const wire of snapshot.wires) {
-          wiresRegistry.addWire(wire);
+          wiresRegistry.addWire(wire, pinsRegistry);
         }
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-        );
+        const hasCycle = wiresRegistry.hasCycle("exec");
 
         expect(hasCycle).toBe(true);
       });
@@ -1396,15 +1366,10 @@ describe("CommutatorValidator", () => {
         // Manually construct wires registry to bypass validation
         const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
         for (const wire of snapshot.wires) {
-          wiresRegistry.addWire(wire);
+          wiresRegistry.addWire(wire, pinsRegistry);
         }
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-        );
+        const hasCycle = wiresRegistry.hasCycle("exec");
 
         expect(hasCycle).toBe(true);
       });
@@ -1479,15 +1444,10 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
         for (const wire of snapshot.wires) {
-          wiresRegistry.addWire(wire);
+          wiresRegistry.addWire(wire, pinsRegistry);
         }
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-        );
+        const hasCycle = wiresRegistry.hasCycle("exec");
 
         expect(hasCycle).toBe(true);
       });
@@ -1553,12 +1513,7 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-        );
+        const hasCycle = wiresRegistry.hasCycle("exec");
 
         expect(hasCycle).toBe(false);
       });
@@ -1610,12 +1565,7 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "data",
-        );
+        const hasCycle = wiresRegistry.hasCycle("data");
 
         expect(hasCycle).toBe(false);
       });
@@ -1661,15 +1611,10 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
         for (const wire of snapshot.wires) {
-          wiresRegistry.addWire(wire);
+          wiresRegistry.addWire(wire, pinsRegistry);
         }
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "data",
-        );
+        const hasCycle = wiresRegistry.hasCycle("data");
 
         expect(hasCycle).toBe(true);
       });
@@ -1728,25 +1673,15 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
         for (const wire of snapshot.wires) {
-          wiresRegistry.addWire(wire);
+          wiresRegistry.addWire(wire, pinsRegistry);
         }
 
         // Data graph should be acyclic
-        const hasDataCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "data",
-        );
+        const hasDataCycle = wiresRegistry.hasCycle("data");
         expect(hasDataCycle).toBe(false);
 
         // Exec graph has cycle
-        const hasExecCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-        );
+        const hasExecCycle = wiresRegistry.hasCycle("exec");
         expect(hasExecCycle).toBe(true);
       });
     });
@@ -1780,15 +1715,10 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
         for (const wire of snapshot.wires) {
-          wiresRegistry.addWire(wire);
+          wiresRegistry.addWire(wire, pinsRegistry);
         }
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "data",
-        );
+        const hasCycle = wiresRegistry.hasCycle("data");
 
         expect(hasCycle).toBe(true);
       });
@@ -1868,15 +1798,10 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
         for (const wire of snapshot.wires) {
-          wiresRegistry.addWire(wire);
+          wiresRegistry.addWire(wire, pinsRegistry);
         }
 
-        const hasCycle = commutator.validator.checkCyclesInGraph(
-          nodesRegistry,
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-        );
+        const hasCycle = wiresRegistry.hasCycle("exec");
 
         expect(hasCycle).toBe(true);
       });
@@ -1919,11 +1844,9 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-          { from: aNextPin!.uuid, to: bStartPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          aNextPin!,
+          bStartPin!,
         );
 
         expect(willCreateCycle).toBe(false);
@@ -1955,11 +1878,9 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-          { from: aNextPin!.uuid, to: aStartPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          aNextPin!,
+          aStartPin!,
         );
 
         expect(willCreateCycle).toBe(true);
@@ -2009,11 +1930,9 @@ describe("CommutatorValidator", () => {
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
         // Check if adding B -> A would create cycle
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-          { from: bNextPin!.uuid, to: aStartPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          bNextPin!,
+          aStartPin!,
         );
 
         expect(willCreateCycle).toBe(true);
@@ -2078,11 +1997,9 @@ describe("CommutatorValidator", () => {
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
         // Check if adding C -> A would create cycle
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-          { from: cNextPin!.uuid, to: aStartPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          cNextPin!,
+          aStartPin!,
         );
 
         expect(willCreateCycle).toBe(true);
@@ -2149,11 +2066,9 @@ describe("CommutatorValidator", () => {
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
         // Adding X -> Y should not create cycle
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-          { from: xNextPin!.uuid, to: yStartPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          xNextPin!,
+          yStartPin!,
         );
 
         expect(willCreateCycle).toBe(false);
@@ -2182,11 +2097,9 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-          { from: "non-existent-pin", to: aStartPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          "non-existent-pin" as any,
+          aStartPin!,
         );
 
         expect(willCreateCycle).toBe(false);
@@ -2215,11 +2128,9 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-          { from: aNextPin!.uuid, to: "non-existent-pin" },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          aNextPin!,
+          "non-existent-pin" as any,
         );
 
         expect(willCreateCycle).toBe(false);
@@ -2306,11 +2217,9 @@ describe("CommutatorValidator", () => {
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
         // Adding D -> A would create cycle through both branches
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-          { from: dNextPin!.uuid, to: aStartPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          dNextPin!,
+          aStartPin!,
         );
 
         expect(willCreateCycle).toBe(true);
@@ -2348,11 +2257,9 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "data",
-          { from: aValuePin!.uuid, to: bInputPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          aValuePin!,
+          bInputPin!,
         );
 
         expect(willCreateCycle).toBe(false);
@@ -2382,11 +2289,9 @@ describe("CommutatorValidator", () => {
         const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "data",
-          { from: aValuePin!.uuid, to: aInputPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          aValuePin!,
+          aInputPin!,
         );
 
         expect(willCreateCycle).toBe(true);
@@ -2432,11 +2337,9 @@ describe("CommutatorValidator", () => {
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
         // Check if adding B -> A would create cycle
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "data",
-          { from: bValuePin!.uuid, to: aInputPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          bValuePin!,
+          aInputPin!,
         );
 
         expect(willCreateCycle).toBe(true);
@@ -2486,11 +2389,9 @@ describe("CommutatorValidator", () => {
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
 
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "data",
-          { from: aValuePin!.uuid, to: bInputPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          aValuePin!,
+          bInputPin!,
         );
 
         expect(willCreateCycle).toBe(false);
@@ -2592,11 +2493,9 @@ describe("CommutatorValidator", () => {
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
         // Adding E -> A would create a long cycle
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-          { from: eNextPin!.uuid, to: aStartPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          eNextPin!,
+          aStartPin!,
         );
 
         expect(willCreateCycle).toBe(true);
@@ -2646,11 +2545,9 @@ describe("CommutatorValidator", () => {
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
 
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "data",
-          { from: bValuePin!.uuid, to: aInputPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          bValuePin!,
+          aInputPin!,
         );
 
         expect(willCreateCycle).toBe(false);
@@ -2713,11 +2610,9 @@ describe("CommutatorValidator", () => {
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-          { from: n8NextPin!.uuid, to: n9StartPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          n8NextPin!,
+          n9StartPin!,
         );
 
         expect(willCreateCycle).toBe(false);
@@ -2770,11 +2665,9 @@ describe("CommutatorValidator", () => {
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
-        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
-          pinsRegistry,
-          wiresRegistry,
-          "exec",
-          { from: n4NextPin!.uuid, to: n0StartPin!.uuid },
+        const willCreateCycle = wiresRegistry.willCreateCycle(
+          n4NextPin!,
+          n0StartPin!,
         );
 
         expect(willCreateCycle).toBe(true);

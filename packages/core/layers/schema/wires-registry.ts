@@ -1,12 +1,21 @@
 import { CommutatorError, type CommutatorValidator, type Field } from "../commutator";
+import { PinInstanceType } from "./enums";
 import type { NodesRegistry } from "./nodes-registry";
 import type { PinsRegistry } from "./pins-registry";
-import type { Wire } from "./types";
+import { TopologicalIndex } from "./topological-index";
+import type { PinInstance, Wire } from "./types";
 
 export class WiresRegistry<DataTypes extends Record<string, Field<DataTypes>>> {
   private wiresByFromPin: Map<string, Set<Wire>> = new Map();
   private wiresByToPin: Map<string, Set<Wire>> = new Map();
   private wiresSet: Set<string> = new Set();
+
+  // Топологические индексы для data и exec проводов
+  private dataTopologicalIndex: TopologicalIndex<DataTypes>;
+  private execTopologicalIndex: TopologicalIndex<DataTypes>;
+
+  // Сохраняем ссылку на pinsRegistry для методов
+  private pinsRegistry: PinsRegistry<DataTypes>;
 
   constructor(
     wires: Wire[] = [],
@@ -14,6 +23,16 @@ export class WiresRegistry<DataTypes extends Record<string, Field<DataTypes>>> {
     nodesRegistry: NodesRegistry<DataTypes>,
     validator: CommutatorValidator<DataTypes>,
   ) {
+    this.pinsRegistry = pinsRegistry;
+
+    // Инициализируем топологические индексы (пустые, без прохода по нодам)
+    this.dataTopologicalIndex = new TopologicalIndex();
+    this.execTopologicalIndex = new TopologicalIndex();
+
+    // Используем существующий индекс pinUuid -> nodeUuid
+    const pinToNode = pinsRegistry.getPinsToNodeIndex();
+
+    // ОДИН проход: валидация + добавление проводов + построение индекса параллельно
     for (const wire of wires) {
       if (!wire || typeof wire !== "object") {
         throw new CommutatorError("Wire is invalid");
@@ -40,7 +59,25 @@ export class WiresRegistry<DataTypes extends Record<string, Field<DataTypes>>> {
 
       validator.validateWire(fromPin, toPin, this, nodesRegistry);
 
+      // Добавляем провод в реестр
       this.addWireInternal(wire);
+
+      // Параллельно добавляем в топологический индекс (используем pinToNode индекс)
+      const fromNodeUuid = pinToNode.get(wire.from);
+      const toNodeUuid = pinToNode.get(wire.to);
+
+      if (fromNodeUuid && toNodeUuid) {
+        const isDataWire =
+          fromPin.type === PinInstanceType.Output && toPin.type === PinInstanceType.Input;
+        const isExecWire =
+          fromPin.type === PinInstanceType.OutputExec && toPin.type === PinInstanceType.InputExec;
+
+        if (isDataWire) {
+          this.dataTopologicalIndex.addWire(fromNodeUuid, toNodeUuid);
+        } else if (isExecWire) {
+          this.execTopologicalIndex.addWire(fromNodeUuid, toNodeUuid);
+        }
+      }
     }
   }
 
@@ -54,7 +91,7 @@ export class WiresRegistry<DataTypes extends Record<string, Field<DataTypes>>> {
   /**
    * Добавляет провод в реестр и обновляет все индексы
    */
-  addWire(wire: Wire): void {
+  addWire(wire: Wire, pinsRegistry: PinsRegistry<DataTypes>): void {
     const key = this.getWireKey(wire.from, wire.to);
 
     // Идемпотентно останавливаем выполнение добавления связи если она уже есть
@@ -62,7 +99,32 @@ export class WiresRegistry<DataTypes extends Record<string, Field<DataTypes>>> {
       return;
     }
 
+    const fromPin = pinsRegistry.getPinByUuid(wire.from);
+    const toPin = pinsRegistry.getPinByUuid(wire.to);
+
+    if (!fromPin || !toPin) {
+      throw new CommutatorError(`Pin not found`);
+    }
+
     this.addWireInternal(wire);
+
+    // Обновляем топологический индекс
+    const pinToNode = pinsRegistry.getPinsToNodeIndex();
+    const fromNodeUuid = pinToNode.get(wire.from);
+    const toNodeUuid = pinToNode.get(wire.to);
+
+    if (fromNodeUuid && toNodeUuid) {
+      const isDataWire =
+        fromPin.type === PinInstanceType.Output && toPin.type === PinInstanceType.Input;
+      const isExecWire =
+        fromPin.type === PinInstanceType.OutputExec && toPin.type === PinInstanceType.InputExec;
+
+      if (isDataWire) {
+        this.dataTopologicalIndex.addWire(fromNodeUuid, toNodeUuid);
+      } else if (isExecWire) {
+        this.execTopologicalIndex.addWire(fromNodeUuid, toNodeUuid);
+      }
+    }
   }
 
   /**
@@ -94,13 +156,16 @@ export class WiresRegistry<DataTypes extends Record<string, Field<DataTypes>>> {
   /**
    * Удаляет провод из реестра и обновляет все индексы
    */
-  removeWire(from: string, to: string): void {
+  removeWire(from: string, to: string, pinsRegistry: PinsRegistry<DataTypes>): void {
     const key = this.getWireKey(from, to);
     if (!this.wiresSet.has(key)) {
       return;
     }
 
     const wire: Wire = { from, to };
+
+    const fromPin = pinsRegistry.getPinByUuid(from);
+    const toPin = pinsRegistry.getPinByUuid(to);
 
     // Удаляем из индекса существования
     this.wiresSet.delete(key);
@@ -122,12 +187,32 @@ export class WiresRegistry<DataTypes extends Record<string, Field<DataTypes>>> {
         this.wiresByToPin.delete(to);
       }
     }
+
+    // Обновляем топологический индекс
+    if (fromPin && toPin) {
+      const pinToNode = pinsRegistry.getPinsToNodeIndex();
+      const fromNodeUuid = pinToNode.get(from);
+      const toNodeUuid = pinToNode.get(to);
+
+      if (fromNodeUuid && toNodeUuid) {
+        const isDataWire =
+          fromPin.type === PinInstanceType.Output && toPin.type === PinInstanceType.Input;
+        const isExecWire =
+          fromPin.type === PinInstanceType.OutputExec && toPin.type === PinInstanceType.InputExec;
+
+        if (isDataWire) {
+          this.dataTopologicalIndex.removeWire(fromNodeUuid, toNodeUuid);
+        } else if (isExecWire) {
+          this.execTopologicalIndex.removeWire(fromNodeUuid, toNodeUuid);
+        }
+      }
+    }
   }
 
   /**
    * Удаляет все провода, связанные с указанным пином (и входящие, и выходящие)
    */
-  removeWiresByPin(pinUuid: string): void {
+  removeWiresByPin(pinUuid: string, pinsRegistry: PinsRegistry<DataTypes>): void {
     // Собираем все провода, связанные с пином
     const wiresToRemove: Wire[] = [];
 
@@ -145,7 +230,7 @@ export class WiresRegistry<DataTypes extends Record<string, Field<DataTypes>>> {
 
     // Удаляем все найденные провода
     for (const wire of wiresToRemove) {
-      this.removeWire(wire.from, wire.to);
+      this.removeWire(wire.from, wire.to, pinsRegistry);
     }
   }
 
@@ -255,11 +340,63 @@ export class WiresRegistry<DataTypes extends Record<string, Field<DataTypes>>> {
   }
 
   /**
+   * Проверка наличия циклов через топологический индекс
+   */
+  hasCycle(wireType: "exec" | "data"): boolean {
+    if (wireType === "data") {
+      return this.dataTopologicalIndex.hasCycle();
+    }
+    return this.execTopologicalIndex.hasCycle();
+  }
+
+  /**
+   * Проверка, создаст ли новый провод цикл (инкрементально)
+   */
+  willCreateCycle(fromPin: PinInstance<DataTypes>, toPin: PinInstance<DataTypes>): boolean {
+    const pinToNode = this.pinsRegistry.getPinsToNodeIndex();
+    const fromNodeUuid = pinToNode.get(fromPin.uuid);
+    const toNodeUuid = pinToNode.get(toPin.uuid);
+
+    if (!fromNodeUuid || !toNodeUuid) {
+      return false;
+    }
+
+    const isDataWire =
+      fromPin.type === PinInstanceType.Output && toPin.type === PinInstanceType.Input;
+    const isExecWire =
+      fromPin.type === PinInstanceType.OutputExec && toPin.type === PinInstanceType.InputExec;
+
+    if (isDataWire) {
+      return this.dataTopologicalIndex.willCreateCycleFast(
+        fromNodeUuid,
+        toNodeUuid,
+        this.pinsRegistry,
+        this,
+        "data",
+      );
+    }
+
+    if (isExecWire) {
+      return this.execTopologicalIndex.willCreateCycleFast(
+        fromNodeUuid,
+        toNodeUuid,
+        this.pinsRegistry,
+        this,
+        "exec",
+      );
+    }
+
+    return false;
+  }
+
+  /**
    * Очищает реестр
    */
   clear(): void {
     this.wiresByFromPin.clear();
     this.wiresByToPin.clear();
     this.wiresSet.clear();
+    this.dataTopologicalIndex.clear();
+    this.execTopologicalIndex.clear();
   }
 }
