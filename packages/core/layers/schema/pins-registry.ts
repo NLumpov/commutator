@@ -10,6 +10,12 @@ export class PinsRegistry<DataTypes extends Record<string, any> = any> {
   // Индекс для быстрого поиска пинов по nodeUuid и типу пина (для cycle detection)
   private pinsByNodeUuidAndType: Map<string, Map<PinInstanceType, PinInstance<DataTypes>[]>> =
     new Map();
+  // Индекс выходных exec пинов по uuid ноды
+  private nodeOutExecPins: Map<string, Set<PinInstance<DataTypes>>> = new Map();
+  // Индекс всех выходных пинов по uuid ноды
+  private nodeOutPins: Map<string, Set<PinInstance<DataTypes>>> = new Map();
+  // Индекс pinUuid -> nodeUuid
+  private pinsToNode: Map<string, string> = new Map();
 
   /**
    * Создает уникальный ключ для пина (name:type)
@@ -121,6 +127,29 @@ export class PinsRegistry<DataTypes extends Record<string, any> = any> {
       nodeTypePins.set(pin.type, typePins);
     }
     typePins.push(pin);
+
+    // Индекс pinUuid -> nodeUuid
+    this.pinsToNode.set(pin.uuid, pin.nodeUuid);
+
+    // Индекс выходных exec пинов по uuid ноды
+    if (pin.type === PinInstanceType.OutputExec) {
+      let outExecPins = this.nodeOutExecPins.get(pin.nodeUuid);
+      if (!outExecPins) {
+        outExecPins = new Set();
+        this.nodeOutExecPins.set(pin.nodeUuid, outExecPins);
+      }
+      outExecPins.add(pin);
+    }
+
+    // Индекс всех выходных пинов по uuid ноды
+    if (pin.type === PinInstanceType.Output) {
+      let outPins = this.nodeOutPins.get(pin.nodeUuid);
+      if (!outPins) {
+        outPins = new Set();
+        this.nodeOutPins.set(pin.nodeUuid, outPins);
+      }
+      outPins.add(pin);
+    }
   }
 
   /**
@@ -169,6 +198,31 @@ export class PinsRegistry<DataTypes extends Record<string, any> = any> {
       }
       if (nodeTypePins.size === 0) {
         this.pinsByNodeUuidAndType.delete(pin.nodeUuid);
+      }
+    }
+
+    // Удаляем из индекса pinUuid -> nodeUuid
+    this.pinsToNode.delete(uuid);
+
+    // Удаляем из индекса выходных exec пинов
+    if (pin.type === PinInstanceType.OutputExec) {
+      const outExecPins = this.nodeOutExecPins.get(pin.nodeUuid);
+      if (outExecPins) {
+        outExecPins.delete(pin);
+        if (outExecPins.size === 0) {
+          this.nodeOutExecPins.delete(pin.nodeUuid);
+        }
+      }
+    }
+
+    // Удаляем из индекса всех выходных пинов
+    if (pin.type === PinInstanceType.Output) {
+      const outPins = this.nodeOutPins.get(pin.nodeUuid);
+      if (outPins) {
+        outPins.delete(pin);
+        if (outPins.size === 0) {
+          this.nodeOutPins.delete(pin.nodeUuid);
+        }
       }
     }
   }
@@ -312,6 +366,33 @@ export class PinsRegistry<DataTypes extends Record<string, any> = any> {
   }
 
   /**
+   * Возвращает индекс выходных exec пинов по uuid ноды.
+   * ВНИМАНИЕ: Возвращает прямую ссылку на внутренний индекс для производительности.
+   * Не модифицируйте возвращаемое значение!
+   */
+  getNodeOutExecPinsIndex(): Map<string, Set<PinInstance<DataTypes>>> {
+    return this.nodeOutExecPins;
+  }
+
+  /**
+   * Возвращает индекс всех выходных пинов по uuid ноды.
+   * ВНИМАНИЕ: Возвращает прямую ссылку на внутренний индекс для производительности.
+   * Не модифицируйте возвращаемое значение!
+   */
+  getNodeOutPinsIndex(): Map<string, Set<PinInstance<DataTypes>>> {
+    return this.nodeOutPins;
+  }
+
+  /**
+   * Возвращает индекс pinUuid -> nodeUuid.
+   * ВНИМАНИЕ: Возвращает прямую ссылку на внутренний индекс для производительности.
+   * Не модифицируйте возвращаемое значение!
+   */
+  getPinsToNodeIndex(): Map<string, string> {
+    return this.pinsToNode;
+  }
+
+  /**
    * Очищает реестр
    */
   clear(): void {
@@ -319,5 +400,8 @@ export class PinsRegistry<DataTypes extends Record<string, any> = any> {
     this.pinsByNodeUuid.clear();
     this.pinsByName.clear();
     this.pinsByNodeUuidAndType.clear();
+    this.nodeOutExecPins.clear();
+    this.nodeOutPins.clear();
+    this.pinsToNode.clear();
   }
 }

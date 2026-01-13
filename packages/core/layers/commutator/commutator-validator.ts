@@ -540,46 +540,26 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
    * Вызывать ПЕРЕД addWire
    */
   public willCreateCycleInteractive(
-    nodesRegistry: NodesRegistry,
-    pinsRegistry: PinsRegistry,
+    pinsRegistry: PinsRegistry<DataTypes>,
     wiresRegistry: WiresRegistry<DataTypes>,
     wireType: "exec" | "data",
     newWire: { from: string; to: string },
   ): boolean {
-    // pin -> node (только нужные пины)
-    const pinToNode = new Map<string, string>();
-    // node -> out pins
-    const nodeOutPins = new Map<string, string[]>();
-
-    // 1. Подготовка индексов
-    for (const node of nodesRegistry.getAllNodesIterator()) {
-      const outPins: string[] = [];
-
-      for (const pin of pinsRegistry.getPinsByNodeUuid(node.uuid)) {
-        const isData = wireType === "data" && pin.type === PinInstanceType.Output;
-
-        const isExec = wireType === "exec" && pin.type === PinInstanceType.OutputExec;
-
-        if (isData || isExec) {
-          pinToNode.set(pin.uuid, node.uuid);
-          outPins.push(pin.uuid);
-        } else {
-          pinToNode.set(pin.uuid, node.uuid);
-        }
-      }
-
-      nodeOutPins.set(node.uuid, outPins);
-    }
+    const pinToNode = pinsRegistry.getPinsToNodeIndex();
 
     const fromNode = pinToNode.get(newWire.from);
     const toNode = pinToNode.get(newWire.to);
 
-    if (!fromNode || !toNode) return false;
+    if (!fromNode || !toNode || fromNode === toNode) {
+      return false;
+    }
 
-    // self-loop на уровне ноды
-    if (fromNode === toNode) return true;
+    const nodeOutPins =
+      wireType === "exec"
+        ? pinsRegistry.getNodeOutExecPinsIndex()
+        : pinsRegistry.getNodeOutPinsIndex();
 
-    // 2. DFS от toNode → ищем fromNode
+    // DFS от toNode → ищем fromNode
     const stack: string[] = [toNode];
     const visited = new Set<string>();
 
@@ -592,8 +572,8 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       const outPins = nodeOutPins.get(currentNode);
       if (!outPins) continue;
 
-      for (const pinUuid of outPins) {
-        const wires = wiresRegistry.getWiresByFromPin(pinUuid);
+      for (const pin of outPins) {
+        const wires = wiresRegistry.getWiresByFromPin(pin.uuid);
         for (const wire of wires) {
           const nextNode = pinToNode.get(wire.to);
           if (nextNode) stack.push(nextNode);

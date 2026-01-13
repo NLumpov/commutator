@@ -1038,5 +1038,1748 @@ describe("CommutatorValidator", () => {
       }).toThrow(CommutatorError);
     });
   });
+
+  describe("checkCyclesInGraph", () => {
+    describe("exec wires", () => {
+      test("should return false for empty graph", () => {
+        const commutator = Commutator.initialize().defineFunction("A", {
+          pinsIn: {},
+          pinsOut: {},
+          execPinsIn: { start: null },
+          execPinsOut: { next: null },
+          exec: async () => {},
+        });
+
+        const schema = commutator.createSchema();
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+        );
+
+        expect(hasCycle).toBe(false);
+      });
+
+      test("should return false for single node without connections", () => {
+        const commutator = Commutator.initialize().defineFunction("A", {
+          pinsIn: {},
+          pinsOut: {},
+          execPinsIn: { start: null },
+          execPinsOut: { next: null },
+          exec: async () => {},
+        });
+
+        const schema = commutator.createSchema();
+        schema.createFunction("A");
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+        );
+
+        expect(hasCycle).toBe(false);
+      });
+
+      test("should return false for two nodes without connection", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        schema.createFunction("A");
+        schema.createFunction("B");
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+        );
+
+        expect(hasCycle).toBe(false);
+      });
+
+      test("should return false for linear chain A -> B -> C", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("C", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+        const c = schema.createFunction("C");
+
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const bNextPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const cStartPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
+        schema.wire({ fromPinUuid: bNextPin!.uuid, toPinUuid: cStartPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+        );
+
+        expect(hasCycle).toBe(false);
+      });
+
+      test("should return false for diamond pattern (no cycle)", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next1: null, next2: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("C", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("D", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start1: null, start2: null },
+            execPinsOut: {},
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+        const c = schema.createFunction("C");
+        const d = schema.createFunction("D");
+
+        // A -> B -> D
+        // A -> C -> D (diamond pattern)
+        const aNext1Pin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next1" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aNext2Pin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next2" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const bNextPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const cStartPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const cNextPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const dStart1Pin = schema.getNodePins(d.uuid).find(
+          (pin) => pin.name === "start1" && pin.type === PinInstanceType.InputExec,
+        );
+        const dStart2Pin = schema.getNodePins(d.uuid).find(
+          (pin) => pin.name === "start2" && pin.type === PinInstanceType.InputExec,
+        );
+
+        schema.wire({ fromPinUuid: aNext1Pin!.uuid, toPinUuid: bStartPin!.uuid });
+        schema.wire({ fromPinUuid: aNext2Pin!.uuid, toPinUuid: cStartPin!.uuid });
+        schema.wire({ fromPinUuid: bNextPin!.uuid, toPinUuid: dStart1Pin!.uuid });
+        schema.wire({ fromPinUuid: cNextPin!.uuid, toPinUuid: dStart2Pin!.uuid });
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+        );
+
+        expect(hasCycle).toBe(false);
+      });
+
+      test("should return true for simple cycle A -> B -> A (manually constructed)", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        // Manually add the cycle wire (B -> A)
+        const bNextPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aStartPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        snapshot.wires.push({ from: bNextPin!.uuid, to: aStartPin!.uuid });
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        // Manually construct wires registry to bypass validation
+        const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
+        for (const wire of snapshot.wires) {
+          wiresRegistry.addWire(wire);
+        }
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+        );
+
+        expect(hasCycle).toBe(true);
+      });
+
+      test("should return true for longer cycle A -> B -> C -> A (manually constructed)", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("C", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+        const c = schema.createFunction("C");
+
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const bNextPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const cStartPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
+        schema.wire({ fromPinUuid: bNextPin!.uuid, toPinUuid: cStartPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        // Manually add the cycle wire (C -> A)
+        const cNextPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aStartPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        snapshot.wires.push({ from: cNextPin!.uuid, to: aStartPin!.uuid });
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        // Manually construct wires registry to bypass validation
+        const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
+        for (const wire of snapshot.wires) {
+          wiresRegistry.addWire(wire);
+        }
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+        );
+
+        expect(hasCycle).toBe(true);
+      });
+
+      test("should detect cycle in partial graph (one component cyclic, one acyclic)", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("X", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("Y", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: {},
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+        const x = schema.createFunction("X");
+        const y = schema.createFunction("Y");
+
+        // Acyclic component: X -> Y
+        const xNextPin = schema.getNodePins(x.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const yStartPin = schema.getNodePins(y.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        schema.wire({ fromPinUuid: xNextPin!.uuid, toPinUuid: yStartPin!.uuid });
+
+        // Setup cyclic component: A -> B (will manually add B -> A)
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        // Add cycle B -> A
+        const bNextPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aStartPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        snapshot.wires.push({ from: bNextPin!.uuid, to: aStartPin!.uuid });
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
+        for (const wire of snapshot.wires) {
+          wiresRegistry.addWire(wire);
+        }
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+        );
+
+        expect(hasCycle).toBe(true);
+      });
+
+      test("should return false for multiple disconnected acyclic components", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: {},
+            exec: async () => {},
+          })
+          .defineFunction("X", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("Y", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: {},
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+        const x = schema.createFunction("X");
+        const y = schema.createFunction("Y");
+
+        // Component 1: A -> B
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
+
+        // Component 2: X -> Y
+        const xNextPin = schema.getNodePins(x.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const yStartPin = schema.getNodePins(y.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        schema.wire({ fromPinUuid: xNextPin!.uuid, toPinUuid: yStartPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+        );
+
+        expect(hasCycle).toBe(false);
+      });
+    });
+
+    describe("data wires", () => {
+      test("should return false for acyclic data connections", () => {
+        const commutator = Commutator.initialize()
+          .definePureFunction("A", {
+            pinsIn: {},
+            pinsOut: { value: { type: CommonDataType.Number } },
+            exec: async () => ({ value: 1 }),
+          })
+          .definePureFunction("B", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: { value: { type: CommonDataType.Number } },
+            exec: async ({ pinsIn }) => ({ value: (pinsIn.input ?? 0) + 1 }),
+          })
+          .definePureFunction("C", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: {},
+            exec: async () => ({}),
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createPureFunction("A");
+        const b = schema.createPureFunction("B");
+        const c = schema.createPureFunction("C");
+
+        const aValuePin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const bInputPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+        const bValuePin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const cInputPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+
+        schema.wire({ fromPinUuid: aValuePin!.uuid, toPinUuid: bInputPin!.uuid });
+        schema.wire({ fromPinUuid: bValuePin!.uuid, toPinUuid: cInputPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "data",
+        );
+
+        expect(hasCycle).toBe(false);
+      });
+
+      test("should return true for cyclic data connections (manually constructed)", () => {
+        const commutator = Commutator.initialize()
+          .definePureFunction("A", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: { value: { type: CommonDataType.Number } },
+            exec: async ({ pinsIn }) => ({ value: (pinsIn.input ?? 0) + 1 }),
+          })
+          .definePureFunction("B", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: { value: { type: CommonDataType.Number } },
+            exec: async ({ pinsIn }) => ({ value: (pinsIn.input ?? 0) * 2 }),
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createPureFunction("A");
+        const b = schema.createPureFunction("B");
+
+        const aValuePin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const bInputPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+
+        schema.wire({ fromPinUuid: aValuePin!.uuid, toPinUuid: bInputPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        // Manually add cycle B -> A
+        const bValuePin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const aInputPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+        snapshot.wires.push({ from: bValuePin!.uuid, to: aInputPin!.uuid });
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
+        for (const wire of snapshot.wires) {
+          wiresRegistry.addWire(wire);
+        }
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "data",
+        );
+
+        expect(hasCycle).toBe(true);
+      });
+
+      test("should ignore exec wires when checking data cycles", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: { value: { type: CommonDataType.Number } },
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+
+        // Data wire: A -> B
+        const aValuePin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const bInputPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+        schema.wire({ fromPinUuid: aValuePin!.uuid, toPinUuid: bInputPin!.uuid });
+
+        // Exec wire: A -> B
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        // Add exec cycle B -> A (should not affect data cycle check)
+        const bNextPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aStartPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        snapshot.wires.push({ from: bNextPin!.uuid, to: aStartPin!.uuid });
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
+        for (const wire of snapshot.wires) {
+          wiresRegistry.addWire(wire);
+        }
+
+        // Data graph should be acyclic
+        const hasDataCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "data",
+        );
+        expect(hasDataCycle).toBe(false);
+
+        // Exec graph has cycle
+        const hasExecCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+        );
+        expect(hasExecCycle).toBe(true);
+      });
+    });
+
+    describe("complex scenarios", () => {
+      test("should return true for self-referencing cycle on node level", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: { value: { type: CommonDataType.Number } },
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+
+        const snapshot = schema.extract();
+
+        // Self-loop on node level
+        const aValuePin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const aInputPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+        snapshot.wires.push({ from: aValuePin!.uuid, to: aInputPin!.uuid });
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
+        for (const wire of snapshot.wires) {
+          wiresRegistry.addWire(wire);
+        }
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "data",
+        );
+
+        expect(hasCycle).toBe(true);
+      });
+
+      test("should handle graph with 5 nodes in cycle", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("N1", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("N2", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("N3", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("N4", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("N5", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const n1 = schema.createFunction("N1");
+        const n2 = schema.createFunction("N2");
+        const n3 = schema.createFunction("N3");
+        const n4 = schema.createFunction("N4");
+        const n5 = schema.createFunction("N5");
+
+        // N1 -> N2 -> N3 -> N4 -> N5
+        const nodes = [n1, n2, n3, n4, n5];
+        for (let i = 0; i < nodes.length - 1; i++) {
+          const currentNode = nodes[i];
+          const nextNode = nodes[i + 1];
+          if (!currentNode || !nextNode) continue;
+          const nextPin = schema.getNodePins(currentNode.uuid).find(
+            (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+          );
+          const startPin = schema.getNodePins(nextNode.uuid).find(
+            (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+          );
+          schema.wire({ fromPinUuid: nextPin!.uuid, toPinUuid: startPin!.uuid });
+        }
+
+        const snapshot = schema.extract();
+
+        // Add cycle N5 -> N1
+        const n5NextPin = schema.getNodePins(n5.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const n1StartPin = schema.getNodePins(n1.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        snapshot.wires.push({ from: n5NextPin!.uuid, to: n1StartPin!.uuid });
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
+        for (const wire of snapshot.wires) {
+          wiresRegistry.addWire(wire);
+        }
+
+        const hasCycle = commutator.validator.checkCyclesInGraph(
+          nodesRegistry,
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+        );
+
+        expect(hasCycle).toBe(true);
+      });
+    });
+  });
+
+  describe("willCreateCycleInteractive", () => {
+    describe("exec wires", () => {
+      test("should return false when adding wire that doesn't create cycle", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: {},
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+          { from: aNextPin!.uuid, to: bStartPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(false);
+      });
+
+      test("should return true for self-loop on same node", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aStartPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+          { from: aNextPin!.uuid, to: aStartPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(true);
+      });
+
+      test("should return true when adding wire would create simple cycle A -> B -> A", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const bNextPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aStartPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        // First add A -> B
+        schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        // Check if adding B -> A would create cycle
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+          { from: bNextPin!.uuid, to: aStartPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(true);
+      });
+
+      test("should return true when adding wire would create longer cycle A -> B -> C -> A", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("C", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+        const c = schema.createFunction("C");
+
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const bNextPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const cStartPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const cNextPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aStartPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        // Add A -> B -> C
+        schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
+        schema.wire({ fromPinUuid: bNextPin!.uuid, toPinUuid: cStartPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        // Check if adding C -> A would create cycle
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+          { from: cNextPin!.uuid, to: aStartPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(true);
+      });
+
+      test("should return false when adding wire to disconnected component", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("X", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("Y", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: {},
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+        const x = schema.createFunction("X");
+        const y = schema.createFunction("Y");
+
+        // Component 1: A -> B (cycle)
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
+
+        // Component 2 is disconnected
+        const xNextPin = schema.getNodePins(x.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const yStartPin = schema.getNodePins(y.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        // Adding X -> Y should not create cycle
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+          { from: xNextPin!.uuid, to: yStartPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(false);
+      });
+
+      test("should return false when from pin doesn't exist", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+
+        const aStartPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+          { from: "non-existent-pin", to: aStartPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(false);
+      });
+
+      test("should return false when to pin doesn't exist", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+          { from: aNextPin!.uuid, to: "non-existent-pin" },
+        );
+
+        expect(willCreateCycle).toBe(false);
+      });
+
+      test("should detect cycle through multiple branches (diamond pattern closing to cycle)", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next1: null, next2: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("C", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("D", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start1: null, start2: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+        const c = schema.createFunction("C");
+        const d = schema.createFunction("D");
+
+        // A -> B -> D and A -> C -> D
+        const aNext1Pin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next1" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aNext2Pin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next2" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const bNextPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const cStartPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const cNextPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const dStart1Pin = schema.getNodePins(d.uuid).find(
+          (pin) => pin.name === "start1" && pin.type === PinInstanceType.InputExec,
+        );
+        const dStart2Pin = schema.getNodePins(d.uuid).find(
+          (pin) => pin.name === "start2" && pin.type === PinInstanceType.InputExec,
+        );
+        const dNextPin = schema.getNodePins(d.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aStartPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        schema.wire({ fromPinUuid: aNext1Pin!.uuid, toPinUuid: bStartPin!.uuid });
+        schema.wire({ fromPinUuid: aNext2Pin!.uuid, toPinUuid: cStartPin!.uuid });
+        schema.wire({ fromPinUuid: bNextPin!.uuid, toPinUuid: dStart1Pin!.uuid });
+        schema.wire({ fromPinUuid: cNextPin!.uuid, toPinUuid: dStart2Pin!.uuid });
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        // Adding D -> A would create cycle through both branches
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+          { from: dNextPin!.uuid, to: aStartPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(true);
+      });
+    });
+
+    describe("data wires", () => {
+      test("should return false when adding data wire that doesn't create cycle", () => {
+        const commutator = Commutator.initialize()
+          .definePureFunction("A", {
+            pinsIn: {},
+            pinsOut: { value: { type: CommonDataType.Number } },
+            exec: async () => ({ value: 1 }),
+          })
+          .definePureFunction("B", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: {},
+            exec: async () => ({}),
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createPureFunction("A");
+        const b = schema.createPureFunction("B");
+
+        const aValuePin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const bInputPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "data",
+          { from: aValuePin!.uuid, to: bInputPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(false);
+      });
+
+      test("should return true for self-referencing data wire", () => {
+        const commutator = Commutator.initialize()
+          .definePureFunction("A", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: { value: { type: CommonDataType.Number } },
+            exec: async ({ pinsIn }) => ({ value: (pinsIn.input ?? 0) + 1 }),
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createPureFunction("A");
+
+        const aValuePin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const aInputPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "data",
+          { from: aValuePin!.uuid, to: aInputPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(true);
+      });
+
+      test("should return true when adding data wire would create cycle", () => {
+        const commutator = Commutator.initialize()
+          .definePureFunction("A", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: { value: { type: CommonDataType.Number } },
+            exec: async ({ pinsIn }) => ({ value: (pinsIn.input ?? 0) + 1 }),
+          })
+          .definePureFunction("B", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: { value: { type: CommonDataType.Number } },
+            exec: async ({ pinsIn }) => ({ value: (pinsIn.input ?? 0) * 2 }),
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createPureFunction("A");
+        const b = schema.createPureFunction("B");
+
+        const aValuePin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const bInputPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+        const bValuePin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const aInputPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+
+        // Add A -> B
+        schema.wire({ fromPinUuid: aValuePin!.uuid, toPinUuid: bInputPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        // Check if adding B -> A would create cycle
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "data",
+          { from: bValuePin!.uuid, to: aInputPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(true);
+      });
+
+      test("should ignore exec wires when checking data cycle", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: { value: { type: CommonDataType.Number } },
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: { value: { type: CommonDataType.Number } },
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+
+        // Exec wire B -> A
+        const bNextPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aStartPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        schema.wire({ fromPinUuid: bNextPin!.uuid, toPinUuid: aStartPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        // Adding data wire A -> B should not consider exec wires
+        const aValuePin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const bInputPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "data",
+          { from: aValuePin!.uuid, to: bInputPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(false);
+      });
+    });
+
+    describe("complex scenarios", () => {
+      test("should detect cycle in complex graph with multiple paths", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next1: null, next2: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("C", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("D", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("E", {
+            pinsIn: {},
+            pinsOut: {},
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+        const c = schema.createFunction("C");
+        const d = schema.createFunction("D");
+        const e = schema.createFunction("E");
+
+        // A -> B -> D -> E
+        // A -> C -> D -> E
+        const aNext1Pin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next1" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aNext2Pin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next2" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const bNextPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const cStartPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const cNextPin = schema.getNodePins(c.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const dStartPin = schema.getNodePins(d.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const dNextPin = schema.getNodePins(d.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const eStartPin = schema.getNodePins(e.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        const eNextPin = schema.getNodePins(e.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const aStartPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        schema.wire({ fromPinUuid: aNext1Pin!.uuid, toPinUuid: bStartPin!.uuid });
+        schema.wire({ fromPinUuid: aNext2Pin!.uuid, toPinUuid: cStartPin!.uuid });
+        schema.wire({ fromPinUuid: bNextPin!.uuid, toPinUuid: dStartPin!.uuid });
+        // Note: C -> D would need another input pin, using same D for simplicity
+        schema.wire({ fromPinUuid: dNextPin!.uuid, toPinUuid: eStartPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        // Adding E -> A would create a long cycle
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+          { from: eNextPin!.uuid, to: aStartPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(true);
+      });
+
+      test("should not detect cycle for backward edge in different wire type", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("A", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: { value: { type: CommonDataType.Number } },
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          })
+          .defineFunction("B", {
+            pinsIn: { input: { type: CommonDataType.Number } },
+            pinsOut: { value: { type: CommonDataType.Number } },
+            execPinsIn: { start: null },
+            execPinsOut: { next: null },
+            exec: async () => {},
+          });
+
+        const schema = commutator.createSchema();
+        const a = schema.createFunction("A");
+        const b = schema.createFunction("B");
+
+        // Exec: A -> B
+        const aNextPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const bStartPin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+        schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        // Adding data wire B -> A should not be affected by exec wire A -> B
+        const bValuePin = schema.getNodePins(b.uuid).find(
+          (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
+        );
+        const aInputPin = schema.getNodePins(a.uuid).find(
+          (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
+        );
+
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "data",
+          { from: bValuePin!.uuid, to: aInputPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(false);
+      });
+
+      test("should handle large chain without false positive", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("N0", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N1", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N2", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N3", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N4", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N5", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N6", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N7", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N8", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N9", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: {}, exec: async () => {} });
+
+        const schema = commutator.createSchema();
+        const nodes = [
+          schema.createFunction("N0"),
+          schema.createFunction("N1"),
+          schema.createFunction("N2"),
+          schema.createFunction("N3"),
+          schema.createFunction("N4"),
+          schema.createFunction("N5"),
+          schema.createFunction("N6"),
+          schema.createFunction("N7"),
+          schema.createFunction("N8"),
+          schema.createFunction("N9"),
+        ];
+
+        // Create chain N0 -> N1 -> N2 -> ... -> N8
+        for (let i = 0; i < nodes.length - 2; i++) {
+          const currentNode = nodes[i];
+          const nextNode = nodes[i + 1];
+          if (!currentNode || !nextNode) continue;
+          const nextPin = schema.getNodePins(currentNode.uuid).find(
+            (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+          );
+          const startPin = schema.getNodePins(nextNode.uuid).find(
+            (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+          );
+          schema.wire({ fromPinUuid: nextPin!.uuid, toPinUuid: startPin!.uuid });
+        }
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        // Adding N8 -> N9 should not create cycle
+        const n8 = nodes[8];
+        const n9 = nodes[9];
+        const n8NextPin = schema.getNodePins(n8!.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const n9StartPin = schema.getNodePins(n9!.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+          { from: n8NextPin!.uuid, to: n9StartPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(false);
+      });
+
+      test("should detect cycle when closing long chain", () => {
+        const commutator = Commutator.initialize()
+          .defineFunction("N0", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N1", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N2", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N3", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} })
+          .defineFunction("N4", { pinsIn: {}, pinsOut: {}, execPinsIn: { start: null }, execPinsOut: { next: null }, exec: async () => {} });
+
+        const schema = commutator.createSchema();
+        const nodes = [
+          schema.createFunction("N0"),
+          schema.createFunction("N1"),
+          schema.createFunction("N2"),
+          schema.createFunction("N3"),
+          schema.createFunction("N4"),
+        ];
+
+        // Create chain N0 -> N1 -> N2 -> N3 -> N4
+        for (let i = 0; i < nodes.length - 1; i++) {
+          const currentNode = nodes[i];
+          const nextNode = nodes[i + 1];
+          if (!currentNode || !nextNode) continue;
+          const nextPin = schema.getNodePins(currentNode.uuid).find(
+            (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+          );
+          const startPin = schema.getNodePins(nextNode.uuid).find(
+            (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+          );
+          schema.wire({ fromPinUuid: nextPin!.uuid, toPinUuid: startPin!.uuid });
+        }
+
+        const snapshot = schema.extract();
+
+        const nodesRegistry = new NodesRegistry(snapshot.nodes, commutator["config"], commutator.validator);
+        const pinsRegistry = new PinsRegistry(snapshot.pinInstances, nodesRegistry, commutator.validator);
+        const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
+
+        // Adding N4 -> N0 should create cycle
+        const n4 = nodes[4];
+        const n0 = nodes[0];
+        const n4NextPin = schema.getNodePins(n4!.uuid).find(
+          (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
+        );
+        const n0StartPin = schema.getNodePins(n0!.uuid).find(
+          (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
+        );
+
+        const willCreateCycle = commutator.validator.willCreateCycleInteractive(
+          pinsRegistry,
+          wiresRegistry,
+          "exec",
+          { from: n4NextPin!.uuid, to: n0StartPin!.uuid },
+        );
+
+        expect(willCreateCycle).toBe(true);
+      });
+    });
+  });
 });
 

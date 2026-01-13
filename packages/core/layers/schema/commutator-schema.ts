@@ -96,18 +96,26 @@ export class CommutatorSchema<
       this.validator,
     );
 
-    this.validator.checkCyclesInGraph(
-      this.nodesRegistry,
-      this.pinsRegistry,
-      this.wiresRegistry,
-      "data",
-    );
-    this.validator.checkCyclesInGraph(
-      this.nodesRegistry,
-      this.pinsRegistry,
-      this.wiresRegistry,
-      "exec",
-    );
+    if (
+      this.validator.checkCyclesInGraph(
+        this.nodesRegistry,
+        this.pinsRegistry,
+        this.wiresRegistry,
+        "data",
+      )
+    ) {
+      throw new CommutatorError("Cyclic connection detected in data wires");
+    }
+    if (
+      this.validator.checkCyclesInGraph(
+        this.nodesRegistry,
+        this.pinsRegistry,
+        this.wiresRegistry,
+        "exec",
+      )
+    ) {
+      throw new CommutatorError("Cyclic connection detected in exec wires");
+    }
 
     // После восстановления всех пинов, вызываем onConfigChange для всех нод (если есть callback'и)
     // Используем итератор напрямую - O(n) но без создания промежуточного массива
@@ -587,7 +595,6 @@ export class CommutatorSchema<
 
     if (
       this.validator.willCreateCycleInteractive(
-        this.nodesRegistry,
         this.pinsRegistry,
         this.wiresRegistry,
         updatedOutputPin.type === PinInstanceType.OutputExec ? "exec" : "data",
