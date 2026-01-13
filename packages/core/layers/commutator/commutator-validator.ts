@@ -550,8 +550,12 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
     const fromNode = pinToNode.get(newWire.from);
     const toNode = pinToNode.get(newWire.to);
 
-    if (!fromNode || !toNode || fromNode === toNode) {
+    if (!fromNode || !toNode) {
       return false;
+    }
+
+    if (fromNode === toNode) {
+      return true;
     }
 
     const nodeOutPins =
