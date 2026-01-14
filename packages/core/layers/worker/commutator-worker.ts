@@ -13,7 +13,6 @@ import {
 import {
   type AbstractNodeInstance,
   type NodesRegistry,
-  type PinInstance,
   PinInstanceType,
   type PinsRegistry,
   type WiresRegistry,
