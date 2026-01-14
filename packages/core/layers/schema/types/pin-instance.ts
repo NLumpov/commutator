@@ -5,6 +5,7 @@ export interface PinInstance<DataTypes extends Record<string, Field<DataTypes>> 
   readonly nodeUuid: string;
   readonly uuid: string;
   readonly type: PinInstanceType;
+  default?: unknown;
   name: string;
   dataType: null | Field<DataTypes>;
 }

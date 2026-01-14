@@ -1,6 +1,7 @@
 import { Queue } from "../../util/queue";
 import {
   type CommutatorConfig,
+  CommutatorError,
   type CommutatorValidator,
   type EventNode,
   type Field,
@@ -9,7 +10,13 @@ import {
   type PureFunctionNode,
   type RefNode,
 } from "../commutator";
-import type { AbstractNodeInstance, NodesRegistry, PinsRegistry, WiresRegistry } from "../schema";
+import {
+  type AbstractNodeInstance,
+  type NodesRegistry,
+  PinInstanceType,
+  type PinsRegistry,
+  type WiresRegistry,
+} from "../schema";
 import type { WorkerSnapshot } from "./types";
 
 export class CommutatorWorker<
@@ -107,7 +114,7 @@ export class CommutatorWorker<
 
   public async triggerEvent<Name extends keyof Events>(
     event: Name,
-    payload: NonNullable<Events[Name]["config"]>,
+    payload: Record<string, unknown>,
   ): Promise<void> {
     const runtimePinCache: Map<string, unknown> = new Map();
 
@@ -115,14 +122,29 @@ export class CommutatorWorker<
 
     const nodesToProcess: Queue<AbstractNodeInstance<string>> = new Queue();
 
-    const nodeTypeToProcessor = {
-      [NodeType.Function]: this.processFunction,
-      [NodeType.PureFunction]: this.processPureFunction,
-      [NodeType.Ref]: this.processRef,
-    } as const;
-
     for (const event of events) {
-      nodesToProcess.enqueue(event);
+      this.saveToPinCache(this.pinCache, event, payload);
+
+      // Берём все exec пины на выход из ивента
+      const eventExecPinsOut = this.pinsRegistry.getNodeOutExecPinsIndex().get(event.uuid);
+
+      if (!eventExecPinsOut) {
+        continue;
+      }
+
+      // Бежим по всем exec-пинам ивента (обычно 1)
+      for (const execPinOut of eventExecPinsOut.values()) {
+        const wiresFromExecPin = this.wiresRegistry.getWiresByFromPin(execPinOut.uuid);
+
+        // Бежим по всем проводам из exec-пина (обычно 1)
+        for (const wire of wiresFromExecPin) {
+          const nodeToEnqueue = this.nodesRegistry.getNodeByUuid(wire.to);
+
+          if (nodeToEnqueue) {
+            nodesToProcess.enqueue(nodeToEnqueue);
+          }
+        }
+      }
     }
 
     while (nodesToProcess.size > 0) {
@@ -130,19 +152,12 @@ export class CommutatorWorker<
 
       if (!node) break;
 
-      if (node.type === NodeType.Event) {
+      // Ивентов в очереди быть не может
+      if (node.type !== NodeType.Function) {
         continue;
       }
 
-      const processor = nodeTypeToProcessor[node.type];
-
-      if (!processor) {
-        continue;
-      }
-
-      for (const nextNode of await processor(runtimePinCache, node)) {
-        nodesToProcess.enqueue(nextNode);
-      }
+      await this.processFunction(runtimePinCache, node);
     }
   }
 
@@ -156,14 +171,127 @@ export class CommutatorWorker<
   private async processPureFunction(
     runtimePinCache: Map<string, unknown>,
     node: AbstractNodeInstance<string>,
-  ): Promise<AbstractNodeInstance<string>[]> {
-    return [];
+  ): Promise<void> {
+    const pureFunctionConfig = this.config.pureFunctions[node.name];
+
+    if (!pureFunctionConfig) {
+      throw new CommutatorError(`Pure function "${node.name}" not found in configuration`);
+    }
+
+    const pinsIn = this.pinsRegistry.getPinsByNodeUuid(node.uuid);
+    const pinsOut = this.pinsRegistry.getPinsByNodeUuid(node.uuid);
+
+    for (const pinIn of pinsIn) {
+      if (pinIn.type !== PinInstanceType.Input || pinIn.dataType === null) {
+        continue;
+      }
+
+      const wires = this.wiresRegistry.getWiresByToPin(pinIn.uuid);
+
+      if (wires.length > 0) {
+        for (const wire of wires) {
+          const pinFrom = this.pinsRegistry.getPinByUuid(wire.from);
+
+          if (!pinFrom) {
+            throw new CommutatorError(`Pin not found: "${wire.from}"`);
+          }
+
+          const pinNode = this.nodesRegistry.getNodeByUuid(pinFrom.nodeUuid);
+
+          if (!pinNode) {
+            throw new CommutatorError(`Node not found: "${pinFrom.nodeUuid}"`);
+          }
+
+          if (pinNode.type === NodeType.Event) {
+          }
+        }
+      } else if (pinIn.default !== undefined) {
+        runtimePinCache.set(pinIn.uuid, pinIn.default);
+      } else {
+        throw new CommutatorError(`Pin "${pinIn.uuid}" has no default value and no wires`);
+      }
+    }
   }
 
   private async processRef(
     runtimePinCache: Map<string, unknown>,
     node: AbstractNodeInstance<string>,
-  ): Promise<AbstractNodeInstance<string>[]> {
-    return [];
+  ): Promise<void> {
+    const refConfig = this.config.refs[node.name];
+
+    if (!refConfig) {
+      throw new CommutatorError(`Ref "${node.name}" not found in configuration`);
+    }
+
+    const pinsOut = this.pinsRegistry.getPinsByNodeUuid(node.uuid);
+    let needToResolve = false;
+
+    for (const pin of pinsOut) {
+      if (pin.type !== PinInstanceType.Output || pin.dataType === null) {
+        continue;
+      }
+
+      const pinCache = runtimePinCache.get(pin.uuid);
+
+      // Если кеш пина существует и данные из кеша соответствуют типу данных пина, то пропускаем кешированное значение
+      if (pinCache !== undefined && this.validator.validateFieldValue(pin.dataType, pinCache)) {
+        continue;
+      }
+
+      needToResolve = true;
+      // Как только выясняем что хотя бы одного значения нет в кеше - перезагружаем реф
+      break;
+    }
+
+    if (needToResolve) {
+      const pinData = await refConfig.resolveRef({
+        pinsOut: pinsOut,
+        config: node.config,
+        api: this.config.apis,
+      });
+
+      for (const pin of pinsOut) {
+        if (pin.type !== PinInstanceType.Output || pin.dataType === null) {
+          continue;
+        }
+
+        if (pinData === null) {
+          runtimePinCache.set(pin.uuid, null);
+          continue;
+        }
+
+        const pinValue = pinData[pin.name];
+
+        if (pinValue !== undefined && !this.validator.validateFieldValue(pin.dataType, pinValue)) {
+          runtimePinCache.set(pin.uuid, pinValue);
+          continue;
+        }
+
+        // Если значение не соответствует типу данных пина, то ставим null на момент выполнения
+        runtimePinCache.set(pin.uuid, null);
+      }
+    }
+  }
+
+  private saveToPinCache(
+    pinCache: Map<string, unknown>,
+    node: AbstractNodeInstance<string>,
+    value: Record<string, unknown>,
+  ): void {
+    const pins = this.pinsRegistry.getPinsByNodeUuid(node.uuid);
+
+    for (const pin of pins) {
+      if (pin.type !== PinInstanceType.Output || pin.dataType === null) {
+        continue;
+      }
+
+      const pinData = value[pin.name];
+
+      if (pinData === undefined || !this.validator.validateFieldValue(pin.dataType, pinData)) {
+        continue;
+      }
+
+      pinCache.set(pin.uuid, pinData);
+    }
   }
 }

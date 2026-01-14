@@ -158,11 +158,17 @@ export class CommutatorSchema<
       { pins: execPinsIn, type: PinInstanceType.InputExec },
       { pins: execPinsOut, type: PinInstanceType.OutputExec },
     ] as const) {
-      for (const [pinName] of Object.entries(pins)) {
+      for (const [pinName, pinField] of Object.entries(pins)) {
         const pinInstance: PinInstance<DataTypes> = {
           nodeUuid,
           uuid: ulid(),
           type,
+          default:
+            type === PinInstanceType.Input
+              ? pinField === null
+                ? null
+                : this.getDefaultByFieldType(pinField)
+              : null,
           name: pinName,
           dataType: pins[pinName as keyof typeof pins] || null,
         };
@@ -503,6 +509,37 @@ export class CommutatorSchema<
 
   private getPinByName(nodeUuid: string, pinName: string): PinInstance<DataTypes> | undefined {
     return this.pinsRegistry.getPinByNameAndNodeUuid(pinName, nodeUuid);
+  }
+
+  private getDefaultByFieldType(fieldType: Field<DataTypes>): unknown {
+    if (
+      fieldType.type === CommonDataType.Any ||
+      fieldType.type === CommonDataType.Object ||
+      fieldType.type === CommonDataType.Array
+    ) {
+      return null;
+    }
+
+    if (fieldType.type === CommonDataType.StringEnum) {
+      return (fieldType as { type: CommonDataType.StringEnum; values: string[] }).values[0];
+    }
+    if (fieldType.type === CommonDataType.NumberEnum) {
+      return (fieldType as { type: CommonDataType.NumberEnum; values: number[] }).values[0];
+    }
+    if (fieldType.type === CommonDataType.Boolean) {
+      return true;
+    }
+    if (fieldType.type === CommonDataType.Date) {
+      return new Date(Date.now() - new Date().getTimezoneOffset() * 1000 * 60).toISOString();
+    }
+    if (fieldType.type === CommonDataType.String) {
+      return "";
+    }
+    if (fieldType.type === CommonDataType.Number) {
+      return 0;
+    }
+
+    return null;
   }
 
   /**
@@ -864,6 +901,28 @@ export class CommutatorSchema<
 
   getNodePins(nodeUuid: string): PinInstance<DataTypes>[] {
     return this.pinsRegistry.getPinsByNodeUuid(nodeUuid).map((pin) => ({ ...pin }));
+  }
+
+  setPinDefaultValue(uuid: string, defaultValue: unknown): void {
+    const pin = this.pinsRegistry.getPinByUuid(uuid);
+
+    if (!pin) {
+      throw new CommutatorError("Pin instance not found");
+    }
+
+    if (pin.type !== PinInstanceType.Input) {
+      throw new CommutatorError("Pin is not an input");
+    }
+
+    if (pin.dataType === null) {
+      throw new CommutatorError("Pin has no data type");
+    }
+
+    if (!this.validator.validateFieldValue(pin.dataType, defaultValue)) {
+      throw new CommutatorError("Invalid default value for pin");
+    }
+
+    pin.default = defaultValue;
   }
 
   extract(): SchemaSnapshot {
