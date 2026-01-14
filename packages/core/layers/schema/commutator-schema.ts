@@ -512,6 +512,11 @@ export class CommutatorSchema<
   }
 
   private getDefaultByFieldType(fieldType: Field<DataTypes>): unknown {
+    // Если в конфигурации явно указано значение default, используем его
+    if ("default" in fieldType && fieldType.default !== undefined) {
+      return fieldType.default;
+    }
+
     if (
       fieldType.type === CommonDataType.Any ||
       fieldType.type === CommonDataType.Object ||

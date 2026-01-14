@@ -1,12 +1,10 @@
 import { Queue } from "../../util/queue";
 import {
-  CommonDataType,
   type CommutatorConfig,
   CommutatorError,
   type CommutatorValidator,
   type EventNode,
   type Field,
-  type FieldRecordValues,
   type FunctionNode,
   NodeType,
   type PureFunctionNode,
@@ -241,7 +239,7 @@ export class CommutatorWorker<
         }
 
         if (pinNode.type === NodeType.PureFunction) {
-          let cachedValue = this.pinCache.get(pinOut.uuid);
+          let cachedValue = runtimePinCache.get(pinOut.uuid);
 
           if (cachedValue === undefined) {
             await this.processPureFunction(runtimePinCache, pinNode);
@@ -258,7 +256,7 @@ export class CommutatorWorker<
             cachedValue = null;
           }
 
-          pinsIn[pin.name] = cachedValue === undefined ? null : cachedValue;
+          pinsIn[pin.name] = cachedValue;
         }
       } else if (pin.default !== undefined) {
         pinsIn[pin.name] = pin.default;
@@ -269,12 +267,12 @@ export class CommutatorWorker<
 
     let meta = this.metaCache.get(node.uuid);
 
-    if (meta === undefined) {
+    if (meta === undefined && functionConfig.meta !== undefined) {
       meta = this.validator.buildDefaultValueFromField(functionConfig.meta);
     }
 
-    // Будем хранить цепочку промисов, которые возвращаются из exec
-    let execPromise: Promise<any> = Promise.resolve();
+    // Собираем все промисы от вызовов exec для ожидания в конце
+    const pendingExecPromises: Promise<AbstractNodeInstance<string>[]>[] = [];
 
     const exec = async (args: {
       meta: unknown;
@@ -287,14 +285,45 @@ export class CommutatorWorker<
 
       if (args.pinsOut) {
         this.saveToPinCache(runtimePinCache, node, args.pinsOut);
+        // Также сохраняем в persistent cache для последующих вызовов
+        this.saveToPinCache(this.pinCache, node, args.pinsOut);
       }
 
-      // Если вызывается execPinOut – вызываем processFunction и дожидаемся цепочки
-      if (args.execPinOut !== null) {
-        await execPromise;
-        // Эта цепочка может обновиться, если в processFunction снова вызовется exec
-        execPromise = this.processFunction(runtimePinCache, node, args.execPinOut);
-        await execPromise;
+      // Если вызывается execPinOut – находим подключенные ноды и вызываем processFunction для них
+      if (args.execPinOut === null) {
+        return;
+      }
+
+      // Находим exec output пин текущей ноды по имени
+      const execPinOutInstance = pins.find(
+        (p) => p.type === PinInstanceType.OutputExec && p.name === args.execPinOut,
+      );
+
+      if (!execPinOutInstance) {
+        return;
+      }
+
+      // Получаем все провода из этого exec-пина
+      const wiresFromExecPin = this.wiresRegistry.getWiresByFromPin(execPinOutInstance.uuid);
+
+      // Обрабатываем каждую подключенную ноду последовательно
+      for (const wire of wiresFromExecPin) {
+        const targetExecPinIn = this.pinsRegistry.getPinByUuid(wire.to);
+
+        if (!targetExecPinIn || targetExecPinIn.type !== PinInstanceType.InputExec) {
+          continue;
+        }
+
+        const targetNode = this.nodesRegistry.getNodeByUuid(targetExecPinIn.nodeUuid);
+
+        if (!targetNode || targetNode.type !== NodeType.Function) {
+          continue;
+        }
+
+        // Вызываем processFunction для подключенной ноды и ждём завершения
+        const promise = this.processFunction(runtimePinCache, targetNode, targetExecPinIn.name);
+        pendingExecPromises.push(promise);
+        await promise;
       }
     };
 
@@ -308,8 +337,11 @@ export class CommutatorWorker<
       exec,
     });
 
-    // Дожидаемся завершения всех вложенных processFunction, если они были вызваны через exec
-    await execPromise;
+    // Дожидаемся завершения всех вложенных processFunction
+    // Это нужно на случай, если пользователь вызвал exec() без await
+    if (pendingExecPromises.length > 0) {
+      await Promise.all(pendingExecPromises);
+    }
 
     return [];
   }
@@ -373,7 +405,7 @@ export class CommutatorWorker<
         }
 
         if (pinNode.type === NodeType.PureFunction) {
-          let cachedValue = this.pinCache.get(pinOut.uuid);
+          let cachedValue = runtimePinCache.get(pinOut.uuid);
 
           if (cachedValue === undefined) {
             await this.processPureFunction(runtimePinCache, pinNode);
@@ -390,7 +422,7 @@ export class CommutatorWorker<
             cachedValue = null;
           }
 
-          pinsIn[pin.name] = cachedValue === undefined ? null : cachedValue;
+          pinsIn[pin.name] = cachedValue;
         }
       } else if (pin.default !== undefined) {
         pinsIn[pin.name] = pin.default;
