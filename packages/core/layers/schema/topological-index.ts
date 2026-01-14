@@ -1,3 +1,4 @@
+import { Queue } from "../../util/queue";
 import type { Field } from "../commutator";
 import type { PinsRegistry } from "./pins-registry";
 import type { WiresRegistry } from "./wires-registry";
@@ -63,29 +64,27 @@ export class TopologicalIndex<DataTypes extends Record<string, Field<DataTypes>>
     }
 
     const inDeg = new Map(this.inDegree);
-    const queue: string[] = [];
-    let qi = 0;
+    const queue = new Queue<string>();
 
     for (const [n, d] of inDeg) {
-      if (d === 0) queue.push(n);
+      if (d === 0) queue.enqueue(n);
     }
 
     const topo: string[] = [];
 
-    while (qi < queue.length) {
-      const n = queue[qi++];
+    while (queue.size > 0) {
+      const n = queue.dequeue();
+      if (!n) break;
 
-      // biome-ignore lint/style/noNonNullAssertion: Inline for optimization
-      topo.push(n!);
+      topo.push(n);
 
-      // biome-ignore lint/style/noNonNullAssertion: Inline for optimization
-      const out = this.adjacency.get(n!);
+      const out = this.adjacency.get(n);
       if (!out) continue;
 
       for (const m of out) {
         const d = (inDeg.get(m) ?? 0) - 1;
         inDeg.set(m, d);
-        if (d === 0) queue.push(m);
+        if (d === 0) queue.enqueue(m);
       }
     }
 

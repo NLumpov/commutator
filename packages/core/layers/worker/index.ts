@@ -7,3 +7,5 @@
  * "Ладно, давай рассмотрим елки без украшений"
  * @author Ilya Azin (@azinitt)
  */
+export * from "./commutator-worker";
+export * from "./types";

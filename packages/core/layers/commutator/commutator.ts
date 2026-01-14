@@ -343,6 +343,6 @@ export class Commutator<
   }
 
   createSchema(snapshot?: SchemaSnapshot) {
-    return CommutatorSchema.initialize(this.config, snapshot);
+    return CommutatorSchema.initialize(this.config, this.validator, snapshot);
   }
 }

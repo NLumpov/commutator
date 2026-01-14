@@ -12,8 +12,8 @@ export class NodesRegistry<const DataTypes extends Record<string, Field<DataType
   private nodesByUuid: Map<string, AbstractNodeInstance<string>> = new Map();
   // Индекс по типу ноды для быстрого поиска
   private nodesByType: Map<NodeType, Set<AbstractNodeInstance<string>>> = new Map();
-  // Индекс по имени и типу для проверки уникальности
-  private nodesByNameAndType: Map<string, Map<NodeType, AbstractNodeInstance<string>>> = new Map();
+  // Индекс по имени (может быть несколько инстансов с одним именем)
+  private nodesByName: Map<string, Set<AbstractNodeInstance<string>>> = new Map();
 
   constructor(
     nodes: AbstractNodeInstance<string>[] = [],
@@ -74,13 +74,13 @@ export class NodesRegistry<const DataTypes extends Record<string, Field<DataType
     }
     nodesOfType.add(node);
 
-    // Индекс по имени и типу (для проверки уникальности)
-    let nameNodes = this.nodesByNameAndType.get(node.name);
-    if (!nameNodes) {
-      nameNodes = new Map();
-      this.nodesByNameAndType.set(node.name, nameNodes);
+    // Индекс по имени (может быть несколько инстансов с одним именем)
+    let nodesWithName = this.nodesByName.get(node.name);
+    if (!nodesWithName) {
+      nodesWithName = new Set();
+      this.nodesByName.set(node.name, nodesWithName);
     }
-    nameNodes.set(node.type, node);
+    nodesWithName.add(node);
   }
 
   /**
@@ -95,21 +95,21 @@ export class NodesRegistry<const DataTypes extends Record<string, Field<DataType
     // Удаляем из основного индекса
     this.nodesByUuid.delete(uuid);
 
+    // Удаляем из индекса по имени
+    const nodesWithName = this.nodesByName.get(node.name);
+    if (nodesWithName) {
+      nodesWithName.delete(node);
+      if (nodesWithName.size === 0) {
+        this.nodesByName.delete(node.name);
+      }
+    }
+
     // Удаляем из индекса по типу
     const nodesOfType = this.nodesByType.get(node.type);
     if (nodesOfType) {
       nodesOfType.delete(node);
       if (nodesOfType.size === 0) {
         this.nodesByType.delete(node.type);
-      }
-    }
-
-    // Удаляем из индекса по имени и типу
-    const nameNodes = this.nodesByNameAndType.get(node.name);
-    if (nameNodes) {
-      nameNodes.delete(node.type);
-      if (nameNodes.size === 0) {
-        this.nodesByNameAndType.delete(node.name);
       }
     }
   }
@@ -164,27 +164,27 @@ export class NodesRegistry<const DataTypes extends Record<string, Field<DataType
     // Если изменилось имя, переиндексируем
     if (updatedNode.name !== oldName) {
       // Удаляем из старого имени
-      const oldNameNodes = this.nodesByNameAndType.get(oldName);
-      if (oldNameNodes) {
-        oldNameNodes.delete(oldType);
-        if (oldNameNodes.size === 0) {
-          this.nodesByNameAndType.delete(oldName);
+      const oldNodesWithName = this.nodesByName.get(oldName);
+      if (oldNodesWithName) {
+        oldNodesWithName.delete(node);
+        if (oldNodesWithName.size === 0) {
+          this.nodesByName.delete(oldName);
         }
       }
 
       // Добавляем в новое имя
-      let newNameNodes = this.nodesByNameAndType.get(updatedNode.name);
-      if (!newNameNodes) {
-        newNameNodes = new Map();
-        this.nodesByNameAndType.set(updatedNode.name, newNameNodes);
+      let newNodesWithName = this.nodesByName.get(updatedNode.name);
+      if (!newNodesWithName) {
+        newNodesWithName = new Set();
+        this.nodesByName.set(updatedNode.name, newNodesWithName);
       }
-      newNameNodes.set(updatedNode.type, updatedNode);
-    } else if (updatedNode.type !== oldType) {
-      // Имя не изменилось, но тип изменился - обновляем индекс по имени
-      const nameNodes = this.nodesByNameAndType.get(updatedNode.name);
-      if (nameNodes) {
-        nameNodes.delete(oldType);
-        nameNodes.set(updatedNode.type, updatedNode);
+      newNodesWithName.add(updatedNode);
+    } else {
+      // Имя не изменилось - обновляем ссылку в Set
+      const nodesWithName = this.nodesByName.get(updatedNode.name);
+      if (nodesWithName) {
+        nodesWithName.delete(node);
+        nodesWithName.add(updatedNode);
       }
     }
   }
@@ -218,27 +218,38 @@ export class NodesRegistry<const DataTypes extends Record<string, Field<DataType
   }
 
   /**
-   * Проверяет, существует ли нода с указанным именем и типом
+   * Проверяет, существует ли нода с указанным именем
    * O(1) - использует индекс
    */
-  hasNodeByNameAndType(name: string, type: NodeType): boolean {
-    const nameNodes = this.nodesByNameAndType.get(name);
-    if (!nameNodes) {
-      return false;
-    }
-    return nameNodes.has(type);
+  hasNodeByName(name: string): boolean {
+    const nodesWithName = this.nodesByName.get(name);
+    return nodesWithName !== undefined && nodesWithName.size > 0;
   }
 
   /**
-   * Получает ноду по имени и типу
+   * Получает первую ноду по имени
    * O(1) - использует индекс
+   * Примечание: может быть несколько инстансов с одним именем
    */
-  getNodeByNameAndType(name: string, type: NodeType): AbstractNodeInstance<string> | undefined {
-    const nameNodes = this.nodesByNameAndType.get(name);
-    if (!nameNodes) {
+  getNodeByName(name: string): AbstractNodeInstance<string> | undefined {
+    const nodesWithName = this.nodesByName.get(name);
+    if (!nodesWithName || nodesWithName.size === 0) {
       return undefined;
     }
-    return nameNodes.get(type);
+    // Возвращаем первый найденный инстанс
+    return nodesWithName.values().next().value;
+  }
+
+  /**
+   * Получает все ноды с указанным именем
+   * O(1) для получения Set, O(k) для итерации, где k - количество нод с этим именем
+   */
+  getNodesByName(name: string): AbstractNodeInstance<string>[] {
+    const nodesWithName = this.nodesByName.get(name);
+    if (!nodesWithName) {
+      return [];
+    }
+    return Array.from(nodesWithName);
   }
 
   /**
@@ -271,7 +282,7 @@ export class NodesRegistry<const DataTypes extends Record<string, Field<DataType
   clear(): void {
     this.nodesByUuid.clear();
     this.nodesByType.clear();
-    this.nodesByNameAndType.clear();
+    this.nodesByName.clear();
   }
 
   /**

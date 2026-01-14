@@ -3,7 +3,7 @@ import {
   CommonDataType,
   type CommutatorConfig,
   CommutatorError,
-  CommutatorValidator,
+  type CommutatorValidator,
   type EventNode,
   type Field,
   type FieldValue,
@@ -13,6 +13,7 @@ import {
   type PureFunctionNode,
   type RefNode,
 } from "../commutator";
+import { CommutatorWorker, type WorkerSnapshot } from "../worker";
 import { PinInstanceType } from "./enums";
 import { FluentNodeBuilder } from "./fluent-node-builder";
 import { NodesRegistry } from "./nodes-registry";
@@ -46,14 +47,12 @@ export class CommutatorSchema<
   private nodesRegistry: NodesRegistry;
   private pinsRegistry: PinsRegistry<DataTypes>;
   private wiresRegistry: WiresRegistry<DataTypes>;
-  private validator: CommutatorValidator<DataTypes>;
 
   private constructor(
     private config: CommutatorConfig<DataTypes, Events, Refs, PureFunctions, Functions, Apis>,
+    private validator: CommutatorValidator<DataTypes>,
     snapshot?: SchemaSnapshot,
   ) {
-    this.validator = new CommutatorValidator(config.dataTypes);
-
     if (!snapshot) {
       this.nodesRegistry = new NodesRegistry<DataTypes>([], config, this.validator);
       this.pinsRegistry = new PinsRegistry<DataTypes>([], this.nodesRegistry, this.validator);
@@ -140,9 +139,10 @@ export class CommutatorSchema<
     const Apis extends Record<string, any> = {},
   >(
     config: CommutatorConfig<DataTypes, Events, Refs, PureFunctions, Functions, Apis>,
+    validator: CommutatorValidator<DataTypes>,
     snapshot?: SchemaSnapshot,
   ): CommutatorSchema<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
-    return new CommutatorSchema(config, snapshot);
+    return new CommutatorSchema(config, validator, snapshot);
   }
 
   private createPinInstances(
@@ -872,5 +872,18 @@ export class CommutatorSchema<
       pinInstances: this.pinsRegistry.getAllPins(),
       wires: this.wiresRegistry.getAllWires(),
     };
+  }
+
+  createWorker(
+    snapshot?: WorkerSnapshot,
+  ): CommutatorWorker<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
+    return CommutatorWorker.initialize(
+      this.config,
+      this.validator,
+      this.nodesRegistry,
+      this.pinsRegistry,
+      this.wiresRegistry,
+      snapshot,
+    );
   }
 }
