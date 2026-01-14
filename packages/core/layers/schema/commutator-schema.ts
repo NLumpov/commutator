@@ -530,7 +530,7 @@ export class CommutatorSchema<
       return true;
     }
     if (fieldType.type === CommonDataType.Date) {
-      return new Date(Date.now() - new Date().getTimezoneOffset() * 1000 * 60).toISOString();
+      return Date.now();
     }
     if (fieldType.type === CommonDataType.String) {
       return "";

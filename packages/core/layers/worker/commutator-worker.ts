@@ -1,10 +1,12 @@
 import { Queue } from "../../util/queue";
 import {
+  CommonDataType,
   type CommutatorConfig,
   CommutatorError,
   type CommutatorValidator,
   type EventNode,
   type Field,
+  type FieldRecordValues,
   type FunctionNode,
   NodeType,
   type PureFunctionNode,
@@ -13,6 +15,7 @@ import {
 import {
   type AbstractNodeInstance,
   type NodesRegistry,
+  type PinInstance,
   PinInstanceType,
   type PinsRegistry,
   type WiresRegistry,
@@ -120,7 +123,8 @@ export class CommutatorWorker<
 
     const events = this.nodesRegistry.getNodesByName(String(event));
 
-    const nodesToProcess: Queue<AbstractNodeInstance<string>> = new Queue();
+    const nodesToProcess: Queue<{ execPinIn: string; node: AbstractNodeInstance<string> }> =
+      new Queue();
 
     for (const event of events) {
       this.saveToPinCache(this.pinCache, event, payload);
@@ -138,33 +142,175 @@ export class CommutatorWorker<
 
         // Бежим по всем проводам из exec-пина (обычно 1)
         for (const wire of wiresFromExecPin) {
-          const nodeToEnqueue = this.nodesRegistry.getNodeByUuid(wire.to);
+          const execPinIn = this.pinsRegistry.getPinByUuid(wire.to);
 
-          if (nodeToEnqueue) {
-            nodesToProcess.enqueue(nodeToEnqueue);
+          if (execPinIn === undefined || execPinIn.type !== PinInstanceType.InputExec) {
+            continue;
+          }
+
+          const node = this.nodesRegistry.getNodeByUuid(execPinIn.nodeUuid);
+
+          if (node) {
+            nodesToProcess.enqueue({ execPinIn: execPinIn.name, node });
           }
         }
       }
     }
 
     while (nodesToProcess.size > 0) {
-      const node = nodesToProcess.dequeue();
+      const data = nodesToProcess.dequeue();
 
-      if (!node) break;
+      if (!data) break;
+
+      const { node, execPinIn } = data;
 
       // Ивентов в очереди быть не может
       if (node.type !== NodeType.Function) {
         continue;
       }
 
-      await this.processFunction(runtimePinCache, node);
+      await this.processFunction(runtimePinCache, node, execPinIn);
     }
   }
 
   private async processFunction(
     runtimePinCache: Map<string, unknown>,
     node: AbstractNodeInstance<string>,
+    execPinIn: string,
   ): Promise<AbstractNodeInstance<string>[]> {
+    const functionConfig = this.config.functions[node.name];
+
+    if (!functionConfig) {
+      throw new CommutatorError(`Function "${node.name}" not found in configuration`);
+    }
+
+    const pins = this.pinsRegistry.getPinsByNodeUuid(node.uuid);
+    const pinsIn: Record<string, unknown> = {};
+    const pinsOut: Record<string, Field<DataTypes>> = {};
+    const execPinsIn: Record<string, null> = {};
+    const execPinsOut: Record<string, null> = {};
+
+    for (const pin of pins) {
+      if (pin.type === PinInstanceType.Output && pin.dataType !== null) {
+        pinsOut[pin.name] = pin.dataType;
+        continue;
+      }
+      if (pin.type === PinInstanceType.InputExec) {
+        execPinsIn[pin.name] = null;
+        continue;
+      }
+      if (pin.type === PinInstanceType.OutputExec) {
+        execPinsOut[pin.name] = null;
+        continue;
+      }
+      if (pin.type !== PinInstanceType.Input || pin.dataType === null) {
+        continue;
+      }
+
+      const wires = this.wiresRegistry.getWiresByToPin(pin.uuid);
+
+      if (wires[0]) {
+        const pinOut = this.pinsRegistry.getPinByUuid(wires[0].from);
+
+        if (!pinOut) {
+          throw new CommutatorError(`Pin not found: "${wires[0].from}"`);
+        }
+
+        const pinNode = this.nodesRegistry.getNodeByUuid(pinOut.nodeUuid);
+
+        if (!pinNode) {
+          throw new CommutatorError(`Node not found: "${pinOut.nodeUuid}"`);
+        }
+
+        if (pinNode.type === NodeType.Event) {
+          const cachedValue = this.pinCache.get(pinOut.uuid);
+
+          pinsIn[pin.name] = cachedValue === undefined ? null : cachedValue;
+        }
+
+        if (pinNode.type === NodeType.Ref) {
+          let cachedValue = runtimePinCache.get(pinOut.uuid);
+
+          // Если один из пинов вернул undefined, то значит что надо обрабатывать реф
+          if (cachedValue === undefined) {
+            await this.processRef(runtimePinCache, pinNode);
+            cachedValue = runtimePinCache.get(pinOut.uuid);
+          }
+
+          pinsIn[pin.name] = cachedValue === undefined ? null : cachedValue;
+        }
+
+        if (pinNode.type === NodeType.PureFunction) {
+          let cachedValue = this.pinCache.get(pinOut.uuid);
+
+          if (cachedValue === undefined) {
+            await this.processPureFunction(runtimePinCache, pinNode);
+            cachedValue = runtimePinCache.get(pinOut.uuid);
+          }
+
+          pinsIn[pin.name] = cachedValue === undefined ? null : cachedValue;
+        }
+
+        if (pinNode.type === NodeType.Function) {
+          let cachedValue = this.pinCache.get(pinOut.uuid);
+
+          if (cachedValue === undefined) {
+            cachedValue = null;
+          }
+
+          pinsIn[pin.name] = cachedValue === undefined ? null : cachedValue;
+        }
+      } else if (pin.default !== undefined) {
+        pinsIn[pin.name] = pin.default;
+      } else {
+        pinsIn[pin.name] = null;
+      }
+    }
+
+    let meta = this.metaCache.get(node.uuid);
+
+    if (meta === undefined) {
+      meta = this.validator.buildDefaultValueFromField(functionConfig.meta);
+    }
+
+    // Будем хранить цепочку промисов, которые возвращаются из exec
+    let execPromise: Promise<any> = Promise.resolve();
+
+    const exec = async (args: {
+      meta: unknown;
+      pinsOut: Record<string, unknown>;
+      execPinOut: string | null;
+    }): Promise<void> => {
+      if (args.meta !== undefined) {
+        this.metaCache.set(node.uuid, args.meta);
+      }
+
+      if (args.pinsOut) {
+        this.saveToPinCache(runtimePinCache, node, args.pinsOut);
+      }
+
+      // Если вызывается execPinOut – вызываем processFunction и дожидаемся цепочки
+      if (args.execPinOut !== null) {
+        await execPromise;
+        // Эта цепочка может обновиться, если в processFunction снова вызовется exec
+        execPromise = this.processFunction(runtimePinCache, node, args.execPinOut);
+        await execPromise;
+      }
+    };
+
+    await functionConfig.exec({
+      pinsIn,
+      execPinsIn,
+      execPinsOut,
+      meta,
+      config: node.config,
+      triggeredExecPinKey: execPinIn,
+      exec,
+    });
+
+    // Дожидаемся завершения всех вложенных processFunction, если они были вызваны через exec
+    await execPromise;
+
     return [];
   }
 
@@ -178,39 +324,88 @@ export class CommutatorWorker<
       throw new CommutatorError(`Pure function "${node.name}" not found in configuration`);
     }
 
-    const pinsIn = this.pinsRegistry.getPinsByNodeUuid(node.uuid);
-    const pinsOut = this.pinsRegistry.getPinsByNodeUuid(node.uuid);
+    const pins = this.pinsRegistry.getPinsByNodeUuid(node.uuid);
 
-    for (const pinIn of pinsIn) {
-      if (pinIn.type !== PinInstanceType.Input || pinIn.dataType === null) {
+    const pinsIn: Record<string, unknown> = {};
+    const pinsOut: Record<string, Field<DataTypes>> = {};
+
+    for (const pin of pins) {
+      if (pin.type === PinInstanceType.Output && pin.dataType !== null) {
+        pinsOut[pin.name] = pin.dataType;
         continue;
       }
 
-      const wires = this.wiresRegistry.getWiresByToPin(pinIn.uuid);
+      if (pin.type !== PinInstanceType.Input || pin.dataType === null) {
+        continue;
+      }
 
-      if (wires.length > 0) {
-        for (const wire of wires) {
-          const pinFrom = this.pinsRegistry.getPinByUuid(wire.from);
+      const wires = this.wiresRegistry.getWiresByToPin(pin.uuid);
 
-          if (!pinFrom) {
-            throw new CommutatorError(`Pin not found: "${wire.from}"`);
-          }
+      if (wires[0]) {
+        const pinOut = this.pinsRegistry.getPinByUuid(wires[0].from);
 
-          const pinNode = this.nodesRegistry.getNodeByUuid(pinFrom.nodeUuid);
-
-          if (!pinNode) {
-            throw new CommutatorError(`Node not found: "${pinFrom.nodeUuid}"`);
-          }
-
-          if (pinNode.type === NodeType.Event) {
-          }
+        if (!pinOut) {
+          throw new CommutatorError(`Pin not found: "${wires[0].from}"`);
         }
-      } else if (pinIn.default !== undefined) {
-        runtimePinCache.set(pinIn.uuid, pinIn.default);
+
+        const pinNode = this.nodesRegistry.getNodeByUuid(pinOut.nodeUuid);
+
+        if (!pinNode) {
+          throw new CommutatorError(`Node not found: "${pinOut.nodeUuid}"`);
+        }
+
+        if (pinNode.type === NodeType.Event) {
+          const cachedValue = this.pinCache.get(pinOut.uuid);
+
+          pinsIn[pin.name] = cachedValue === undefined ? null : cachedValue;
+        }
+
+        if (pinNode.type === NodeType.Ref) {
+          let cachedValue = runtimePinCache.get(pinOut.uuid);
+
+          // Если один из пинов вернул undefined, то значит что надо обрабатывать реф
+          if (cachedValue === undefined) {
+            await this.processRef(runtimePinCache, pinNode);
+            cachedValue = runtimePinCache.get(pinOut.uuid);
+          }
+
+          pinsIn[pin.name] = cachedValue === undefined ? null : cachedValue;
+        }
+
+        if (pinNode.type === NodeType.PureFunction) {
+          let cachedValue = this.pinCache.get(pinOut.uuid);
+
+          if (cachedValue === undefined) {
+            await this.processPureFunction(runtimePinCache, pinNode);
+            cachedValue = runtimePinCache.get(pinOut.uuid);
+          }
+
+          pinsIn[pin.name] = cachedValue === undefined ? null : cachedValue;
+        }
+
+        if (pinNode.type === NodeType.Function) {
+          let cachedValue = this.pinCache.get(pinOut.uuid);
+
+          if (cachedValue === undefined) {
+            cachedValue = null;
+          }
+
+          pinsIn[pin.name] = cachedValue === undefined ? null : cachedValue;
+        }
+      } else if (pin.default !== undefined) {
+        pinsIn[pin.name] = pin.default;
       } else {
-        throw new CommutatorError(`Pin "${pinIn.uuid}" has no default value and no wires`);
+        pinsIn[pin.name] = null;
       }
     }
+
+    const result = await pureFunctionConfig.exec({
+      pinsIn,
+      pinsOut,
+      config: node.config,
+    });
+
+    this.saveToPinCache(runtimePinCache, node, result);
   }
 
   private async processRef(
@@ -293,5 +488,12 @@ export class CommutatorWorker<
 
       pinCache.set(pin.uuid, pinData);
     }
+  }
+
+  extract(): WorkerSnapshot {
+    return {
+      pinCache: Array.from(this.pinCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
+      metaCache: Array.from(this.metaCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
+    };
   }
 }

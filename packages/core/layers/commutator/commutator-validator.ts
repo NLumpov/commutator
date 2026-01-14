@@ -208,6 +208,104 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
   }
 
   /**
+   * Строит стандартное значение для поля на основе его типа.
+   * Для Object возвращает объект с дефолтными значениями для всех свойств.
+   * Для Array возвращает пустой массив.
+   * Для StringEnum/NumberEnum возвращает первое значение.
+   * Для кастомных типов рекурсивно резолвит их через dataTypes.
+   */
+  public buildDefaultValueFromField(
+    field: Field<DataTypes>,
+    visited: Set<string> = new Set(),
+  ): unknown {
+    // Проверка для Object
+    if (field.type === CommonDataType.Object) {
+      if (!("properties" in field)) {
+        return {};
+      }
+      const result: Record<string, unknown> = {};
+      for (const [key, propertyField] of Object.entries(field.properties)) {
+        result[key] = this.buildDefaultValueFromField(propertyField, visited);
+      }
+      return result;
+    }
+
+    // Проверка для Array
+    if (field.type === CommonDataType.Array) {
+      if (!("itemType" in field)) {
+        return [];
+      }
+      return [];
+    }
+
+    // Проверка для StringEnum
+    if (field.type === CommonDataType.StringEnum) {
+      if (!("values" in field)) {
+        return null;
+      }
+      const stringEnumField = field as {
+        type: CommonDataType.StringEnum;
+        values: string[];
+      };
+      if (stringEnumField.values.length === 0) {
+        return null;
+      }
+      return stringEnumField.values[0];
+    }
+
+    // Проверка для NumberEnum
+    if (field.type === CommonDataType.NumberEnum) {
+      if (!("values" in field)) {
+        return null;
+      }
+      const numberEnumField = field as {
+        type: CommonDataType.NumberEnum;
+        values: number[];
+      };
+      if (numberEnumField.values.length === 0) {
+        return null;
+      }
+      return numberEnumField.values[0];
+    }
+
+    // Проверка для простых типов
+    if (field.type === CommonDataType.String) {
+      return "";
+    }
+
+    if (field.type === CommonDataType.Number || field.type === CommonDataType.Date) {
+      return 0;
+    }
+
+    if (field.type === CommonDataType.Boolean) {
+      return false;
+    }
+
+    if (field.type === CommonDataType.Any) {
+      return null;
+    }
+
+    // Проверка для кастомных типов из DataTypes
+    if (typeof field.type === "string" && field.type in this.dataTypes) {
+      // Предотвращаем циклические ссылки
+      if (visited.has(field.type)) {
+        return null; // Уже обрабатывали, возвращаем null для циклических ссылок
+      }
+
+      visited.add(field.type);
+
+      const customField = this.dataTypes[field.type];
+      if (!customField) {
+        return null;
+      }
+
+      return this.buildDefaultValueFromField(customField, visited);
+    }
+
+    return null;
+  }
+
+  /**
    * Глубокая проверка совместимости двух Field.
    * Проверяет структуру Object, Array, StringEnum, NumberEnum и пользовательские типы.
    */

@@ -7,6 +7,7 @@ import { NodesRegistry } from "../schema/nodes-registry";
 import { WiresRegistry } from "../schema/wires-registry";
 import { PinsRegistry } from "../schema/pins-registry";
 import type { SchemaSnapshot } from "../schema/types";
+import type { Field } from "./types";
 
 describe("CommutatorValidator", () => {
   describe("validateSnapshot", () => {
@@ -2671,6 +2672,287 @@ describe("CommutatorValidator", () => {
         );
 
         expect(willCreateCycle).toBe(true);
+      });
+    });
+  });
+
+  describe("buildDefaultValueFromField", () => {
+    test("should return empty string for String type", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = { type: CommonDataType.String };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toBe("");
+    });
+
+    test("should return 0 for Number type", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = { type: CommonDataType.Number };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toBe(0);
+    });
+
+    test("should return 0 for Date type", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = { type: CommonDataType.Date };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toBe(0);
+    });
+
+    test("should return false for Boolean type", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = { type: CommonDataType.Boolean };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toBe(false);
+    });
+
+    test("should return null for Any type", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = { type: CommonDataType.Any };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toBe(null);
+    });
+
+    test("should return object with default values for Object type", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = {
+        type: CommonDataType.Object,
+        properties: {
+          a: { type: CommonDataType.String },
+          b: { type: CommonDataType.Number },
+        },
+      };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toEqual({ a: "", b: 0 });
+    });
+
+    test("should return empty array for Array type", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = {
+        type: CommonDataType.Array,
+        itemType: { type: CommonDataType.String },
+      };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toEqual([]);
+    });
+
+    test("should return first value for StringEnum type", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = {
+        type: CommonDataType.StringEnum,
+        values: ["value1", "value2", "value3"],
+      };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toBe("value1");
+    });
+
+    test("should return null for empty StringEnum", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = {
+        type: CommonDataType.StringEnum,
+        values: [],
+      };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toBe(null);
+    });
+
+    test("should return first value for NumberEnum type", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = {
+        type: CommonDataType.NumberEnum,
+        values: [1, 2, 3],
+      };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toBe(1);
+    });
+
+    test("should return null for empty NumberEnum", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = {
+        type: CommonDataType.NumberEnum,
+        values: [],
+      };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toBe(null);
+    });
+
+    test("should resolve custom data type recursively", () => {
+      const commutator = Commutator.initialize()
+        .defineDataType("User", {
+          type: CommonDataType.Object,
+          properties: {
+            id: { type: CommonDataType.String },
+            name: { type: CommonDataType.String },
+            age: { type: CommonDataType.Number },
+          },
+        });
+
+      const field = { type: "User" } as Field<{ User: Field<{}> }>;
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toEqual({
+        id: "",
+        name: "",
+        age: 0,
+      });
+    });
+
+    test("should handle nested Object types", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = {
+        type: CommonDataType.Object,
+        properties: {
+          user: {
+            type: CommonDataType.Object,
+            properties: {
+              name: { type: CommonDataType.String },
+              age: { type: CommonDataType.Number },
+            },
+          },
+          count: { type: CommonDataType.Number },
+        },
+      };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toEqual({
+        user: {
+          name: "",
+          age: 0,
+        },
+        count: 0,
+      });
+    });
+
+    test("should handle Array with nested types", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = {
+        type: CommonDataType.Array,
+        itemType: {
+          type: CommonDataType.Object,
+          properties: {
+            name: { type: CommonDataType.String },
+            value: { type: CommonDataType.Number },
+          },
+        },
+      };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toEqual([]);
+    });
+
+    test("should handle custom type with nested Object", () => {
+      const commutator = Commutator.initialize()
+        .defineDataType("Config", {
+          type: CommonDataType.Object,
+          properties: {
+            settings: {
+              type: CommonDataType.Object,
+              properties: {
+                enabled: { type: CommonDataType.Boolean },
+                count: { type: CommonDataType.Number },
+              },
+            },
+          },
+        });
+
+      const field = { type: "Config" } as Field<{ Config: Field<{}> }>;
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toEqual({
+        settings: {
+          enabled: false,
+          count: 0,
+        },
+      });
+    });
+
+    test("should handle circular custom types by returning null", () => {
+      const commutator = Commutator.initialize()
+        .defineDataType("Node", {
+          type: CommonDataType.Object,
+          properties: {
+            value: { type: CommonDataType.String },
+            next: { type: "Node" as any },
+          },
+        });
+
+      const field = { type: "Node" } as Field<{ Node: Field<{ Node: Field<{}> }> }>;
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      // При циклической ссылке возвращается null для циклического поля
+      expect(result).toEqual({
+        value: "",
+        next: null,
+      });
+    });
+
+    test("should handle complex nested structure", () => {
+      const commutator = Commutator.initialize()
+        .defineDataType("Address", {
+          type: CommonDataType.Object,
+          properties: {
+            street: { type: CommonDataType.String },
+            zip: { type: CommonDataType.Number },
+          },
+        })
+        .defineDataType("Person", {
+          type: CommonDataType.Object,
+          properties: {
+            name: { type: CommonDataType.String },
+            age: { type: CommonDataType.Number },
+            address: { type: "Address" },
+            tags: {
+              type: CommonDataType.Array,
+              itemType: { type: CommonDataType.String },
+            },
+          },
+        });
+
+      const field = { type: "Person" } as Field<{ Address: Field<{}>; Person: Field<{}> }>;
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toEqual({
+        name: "",
+        age: 0,
+        address: {
+          street: "",
+          zip: 0,
+        },
+        tags: [],
+      });
+    });
+
+    test("should handle Object with Array properties", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = {
+        type: CommonDataType.Object,
+        properties: {
+          items: {
+            type: CommonDataType.Array,
+            itemType: { type: CommonDataType.Number },
+          },
+          name: { type: CommonDataType.String },
+        },
+      };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toEqual({
+        items: [],
+        name: "",
+      });
+    });
+
+    test("should handle Object with Enum properties", () => {
+      const commutator = Commutator.initialize();
+      const field: Field<{}> = {
+        type: CommonDataType.Object,
+        properties: {
+          status: {
+            type: CommonDataType.StringEnum,
+            values: ["active", "inactive", "pending"],
+          },
+          priority: {
+            type: CommonDataType.NumberEnum,
+            values: [1, 2, 3],
+          },
+        },
+      };
+      const result = commutator.validator.buildDefaultValueFromField(field);
+      expect(result).toEqual({
+        status: "active",
+        priority: 1,
       });
     });
   });
