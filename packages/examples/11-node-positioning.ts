@@ -84,11 +84,13 @@ schema.wire({ from: { node: add.uuid, pin: "result" }, to: { node: multiply.uuid
 schema.wire({ from: { node: multiply.uuid, pin: "result" }, to: { node: log.uuid, pin: "value" } });
 schema.wire({ from: { node: onClick.uuid, pin: "next" }, to: { node: log.uuid, pin: "start" } });
 
+console.log("✅ Пример 11: Позиционирование нод");
+
 // Проверка позиций через снапшот
 const snapshot = schema.extract();
-console.log("Node positions:");
+console.log("\nНачальные позиции нод:");
 snapshot.nodes.forEach((node) => {
-  console.log(`Node ${node.name}: (${node.x}, ${node.y})`);
+  console.log(`  ${node.name}: (${node.x}, ${node.y})`);
 });
 
 // Перемещение нод (например, для визуального редактора)
@@ -97,13 +99,20 @@ schema.moveNode(add.uuid, 300, 100);
 schema.moveNode(multiply.uuid, 500, 100);
 schema.moveNode(log.uuid, 700, 100);
 
+console.log("\nПеремещение нод:");
+console.log("  onClick: (0, 0) -> (100, 100)");
+console.log("  add: (200, 0) -> (300, 100)");
+console.log("  multiply: (400, 0) -> (500, 100)");
+console.log("  log: (600, 0) -> (700, 100)");
+
 // Восстановление позиций из снапшота
 const restoredSchema = commutator.createSchema(snapshot);
 const restoredSnapshot = restoredSchema.extract();
 
-console.log("Restored positions:");
+console.log("\nВосстановленные позиции из снапшота:");
 restoredSnapshot.nodes.forEach((node) => {
-  console.log(`Node ${node.name}: (${node.x}, ${node.y})`);
+  console.log(`  ${node.name}: (${node.x}, ${node.y})`);
 });
+console.log("✅ Позиционирование нод работает!");
 
 export { schema, restoredSchema, snapshot };

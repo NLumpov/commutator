@@ -61,6 +61,31 @@ const commutator = Commutator.initialize()
     },
   });
 
-const _schema = commutator.createSchema();
+const schema = commutator.createSchema();
 
-// TODO красивый Fluent API
+// Создание нод с Fluent API
+const onClick = schema.createEvent("onClick");
+const add = schema.createPureFunction("add");
+const multiply = schema.createPureFunction("multiply");
+const log = schema.createFunction("log");
+
+// Использование Fluent API для подключения пинов
+onClick.wire("x", add, "a").wire("y", add, "b").wire("next", log, "start");
+schema.wire({
+  from: { node: add.uuid, pin: "result" },
+  to: { node: multiply.uuid, pin: "value" },
+});
+schema.wire({
+  from: { node: multiply.uuid, pin: "result" },
+  to: { node: log.uuid, pin: "value" },
+});
+
+console.log("✅ Пример 5: Fluent API");
+console.log("Создан граф с использованием Fluent API:");
+console.log("  - onClick -> add (через Fluent API)");
+console.log("  - add -> multiply -> log");
+console.log("Fluent API позволяет создавать цепочки вызовов:");
+console.log(`  onClick.wire("x", add, "a").wire("y", add, "b").wire("next", log, "start")`);
+console.log("✅ Fluent API работает!");
+
+export { schema, onClick, add, multiply, log };

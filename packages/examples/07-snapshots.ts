@@ -88,7 +88,11 @@ schema1.wire({ from: { node: onClick.uuid, pin: "next" }, to: { node: log.uuid, 
 // Экспорт схемы в снапшот
 const snapshot = schema1.extract();
 
-console.log("Snapshot:", JSON.stringify(snapshot, null, 2));
+console.log("\n✅ Пример 7: Снапшоты (Snapshots)");
+console.log("Экспортирован снапшот схемы:");
+console.log(`  - Нод: ${snapshot.nodes.length}`);
+console.log(`  - Пинов: ${snapshot.pinInstances.length}`);
+console.log(`  - Связей: ${snapshot.wires.length}`);
 
 // Создание новой схемы из снапшота
 const schema2 = commutator.createSchema(snapshot);
@@ -97,19 +101,22 @@ const schema2 = commutator.createSchema(snapshot);
 const schema2Nodes = schema2.extract().nodes;
 const schema2Wires = schema2.extract().wires;
 
-console.log("Restored nodes:", schema2Nodes.length);
-console.log("Restored wires:", schema2Wires.length);
+console.log("\nВосстановлена схема из снапшота:");
+console.log(`  - Нод восстановлено: ${schema2Nodes.length}`);
+console.log(`  - Связей восстановлено: ${schema2Wires.length}`);
 
 // Проверка позиций нод
-const restoredOnClick = schema2Nodes[0];
+const restoredOnClick = schema2Nodes.find((n) => n.name === "onClick");
 if (restoredOnClick) {
-  console.log("Restored onClick position:", restoredOnClick.x, restoredOnClick.y);
+  console.log(`  - Позиция onClick: (${restoredOnClick.x}, ${restoredOnClick.y})`);
 }
 
 // Проверка конфигурации референса
-const restoredUserRef = schema2Nodes[1];
+const restoredUserRef = schema2Nodes.find((n) => n.name === "userRef");
 if (restoredUserRef) {
-  console.log("Restored userRef config:", restoredUserRef.config);
+  console.log(`  - Конфигурация userRef:`, restoredUserRef.config);
 }
+
+console.log("✅ Снапшот успешно сохранён и восстановлен!");
 
 export { schema1, schema2, snapshot };

@@ -118,28 +118,68 @@ schema.addExecPinOut(dynamicLog.uuid); // Добавит branch1
 schema.addPinIn(variableInputs.uuid); // Добавит input2
 schema.addPinOut(variableInputs.uuid); // Добавит output2
 
+console.log("✅ Пример 6: Динамические пины");
+
 // Получение всех пинов ноды
 const sumPins = schema.getNodePins(dynamicSum.uuid);
+console.log("\nДинамические пины dynamicSum:");
 console.log(
-  "Dynamic sum pins:",
-  sumPins.map((p) => p.name),
+  "  Начальные пины:",
+  sumPins.filter((p) => p.name === "value1").map((p) => p.name),
+);
+
+// Проверка добавленных пинов
+const sumPinsAfter = schema.getNodePins(dynamicSum.uuid);
+console.log(
+  "  После добавления:",
+  sumPinsAfter.map((p) => p.name),
+);
+
+const logPins = schema.getNodePins(dynamicLog.uuid);
+console.log("\nДинамические exec-пины dynamicLog:");
+console.log(
+  "  После добавления:",
+  logPins.filter((p) => p.type === PinInstanceType.OutputExec).map((p) => p.name),
+);
+
+const variablePins = schema.getNodePins(variableInputs.uuid);
+console.log("\nДинамические пины variableInputs:");
+console.log(
+  "  Входные пины:",
+  variablePins.filter((p) => p.type === PinInstanceType.Input).map((p) => p.name),
+);
+console.log(
+  "  Выходные пины:",
+  variablePins.filter((p) => p.type === PinInstanceType.Output).map((p) => p.name),
 );
 
 // Обновление пина (изменение типа или имени)
-const firstPin = sumPins.find((p) => p.name === "value1");
+const firstPin = sumPinsAfter.find((p) => p.name === "value1");
 if (firstPin) {
   schema.updatePin(firstPin.uuid, { name: "firstValue" });
+  console.log("\nОбновление пина:");
+  console.log(`  value1 -> firstValue`);
 }
 
 // Удаление пина (если это не последний пин данного типа)
-const pinsToRemove = sumPins.filter((p) => p.name.startsWith("value") && p.name !== "value1");
+const pinsToRemove = sumPinsAfter.filter(
+  (p) => p.name.startsWith("value") && p.name !== "value1" && p.name !== "firstValue",
+);
 if (pinsToRemove.length > 0) {
   // Удаляем последний добавленный пин
   const lastPin = pinsToRemove[pinsToRemove.length - 1];
   if (lastPin && pinsToRemove.length > 1) {
     // Можно удалить только если останется хотя бы один пин
     schema.removePin(lastPin.uuid);
+    console.log(`  Удалён пин: ${lastPin.name}`);
   }
 }
+
+const finalPins = schema.getNodePins(dynamicSum.uuid);
+console.log(
+  "\nФинальные пины dynamicSum:",
+  finalPins.map((p) => p.name),
+);
+console.log("✅ Динамические пины работают!");
 
 export { schema, dynamicSum, dynamicLog, variableInputs };

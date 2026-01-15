@@ -110,4 +110,18 @@ const multiply = schema.createPureFunction("multiply", { multiplier: 2 });
 // Создание функций с конфигурацией
 const conditionalLog = schema.createFunction("conditionalLog", { logLevel: "DEBUG" });
 
+console.log("✅ Пример 3: Создание нод в схеме");
+console.log("Созданы ноды:");
+console.log(`  - Event: ${startEvent.name} (UUID: ${startEvent.uuid})`);
+console.log(
+  `  - Ref: ${userRef.name} (UUID: ${userRef.uuid}, config: ${JSON.stringify(userRef.config)})`,
+);
+console.log(
+  `  - PureFunction: ${multiply.name} (UUID: ${multiply.uuid}, config: ${JSON.stringify(multiply.config)})`,
+);
+console.log(
+  `  - Function: ${conditionalLog.name} (UUID: ${conditionalLog.uuid}, config: ${JSON.stringify(conditionalLog.config)})`,
+);
+console.log("✅ Все ноды созданы успешно!");
+
 export { schema, startEvent, userRef, multiply, conditionalLog };

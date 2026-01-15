@@ -15,20 +15,21 @@ import { CommonDataType, Commutator } from "@commutator/core";
 
 // Создание комплексного коммутатора
 const workflowCommutator = Commutator.initialize()
+  .defineDataType("OrderItem", {
+    type: CommonDataType.Object,
+    properties: {
+      name: { type: CommonDataType.String },
+      price: { type: CommonDataType.Number },
+      quantity: { type: CommonDataType.Number },
+    },
+  })
   .defineDataType("Order", {
     type: CommonDataType.Object,
     properties: {
       id: { type: CommonDataType.String },
       items: {
         type: CommonDataType.Array,
-        itemType: {
-          type: CommonDataType.Object,
-          properties: {
-            name: { type: CommonDataType.String },
-            price: { type: CommonDataType.Number },
-            quantity: { type: CommonDataType.Number },
-          },
-        },
+        itemType: { type: "OrderItem" },
       },
       status: {
         type: CommonDataType.StringEnum,
@@ -63,17 +64,27 @@ const workflowCommutator = Commutator.initialize()
       },
     }),
   })
+  .definePureFunction("extractItems", {
+    pinsIn: {
+      order: { type: "Order" },
+    },
+    pinsOut: {
+      items: {
+        type: CommonDataType.Array,
+        itemType: { type: "OrderItem" },
+      },
+    },
+    exec: async ({ pinsIn }) => {
+      const order = pinsIn.order as any;
+      const items = order?.items ?? [];
+      return { items };
+    },
+  })
   .definePureFunction("calculateTotal", {
     pinsIn: {
       items: {
         type: CommonDataType.Array,
-        itemType: {
-          type: CommonDataType.Object,
-          properties: {
-            price: { type: CommonDataType.Number },
-            quantity: { type: CommonDataType.Number },
-          },
-        },
+        itemType: { type: "OrderItem" },
       },
     },
     pinsOut: {
@@ -188,11 +199,10 @@ const workflowCommutator = Commutator.initialize()
 const schema = workflowCommutator.createSchema();
 
 // Создание нод с использованием Fluent API
-const orderCreated = schema
-  .createEvent("onOrderCreated")
-  .wire("orderId", schema.createRef("orderRef", { orderId: "order-123" }), "orderId");
+const orderCreated = schema.createEvent("onOrderCreated");
 
 const orderRef = schema.createRef("orderRef", { orderId: "order-123" });
+const extractItems = schema.createPureFunction("extractItems");
 const calculateTotal = schema.createPureFunction("calculateTotal");
 const applyDiscount = schema.createPureFunction("applyDiscount");
 const validateOrder = schema.createFunction("validateOrder");
@@ -201,6 +211,10 @@ const processPayment = schema.createFunction("processPayment", { apiKey: "api-ke
 // Создание связей
 schema.wire({
   from: { node: orderRef.uuid, pin: "order" },
+  to: { node: extractItems.uuid, pin: "order" },
+});
+schema.wire({
+  from: { node: extractItems.uuid, pin: "items" },
   to: { node: calculateTotal.uuid, pin: "items" },
 });
 schema.wire({
@@ -231,5 +245,17 @@ const snapshot = schema.extract();
 
 // Восстановление из снапшота
 const restoredSchema = workflowCommutator.createSchema(snapshot);
+
+console.log("\n✅ Пример 10: Сложный workflow");
+console.log("Создан комплексный workflow с:");
+console.log(`  - Нод: ${snapshot.nodes.length}`);
+console.log(`  - Пинов: ${snapshot.pinInstances.length}`);
+console.log(`  - Связей: ${snapshot.wires.length}`);
+console.log("Типы нод:");
+console.log("  - Event: onOrderCreated");
+console.log("  - Ref: orderRef");
+console.log("  - PureFunction: calculateTotal, applyDiscount");
+console.log("  - Function: validateOrder, processPayment");
+console.log("✅ Сложный workflow создан успешно!");
 
 export { workflowCommutator, schema, restoredSchema, snapshot };

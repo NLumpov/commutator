@@ -148,4 +148,17 @@ const commutator = Commutator.initialize()
 
 const schema = commutator.createSchema();
 
+console.log("✅ Пример 2: Все типы данных");
+console.log("Создан коммутатор с примерами всех типов данных:");
+console.log("  - String: concatStrings");
+console.log("  - Number: multiplyNumbers");
+console.log("  - Boolean: andLogic");
+console.log("  - Date: getTimestamp");
+console.log("  - Object: Person (пользовательский тип)");
+console.log("  - Array: sumArray");
+console.log("  - StringEnum: checkStatus");
+console.log("  - NumberEnum: checkPriority");
+console.log("  - Any: passThrough");
+console.log("Схема создана успешно!");
+
 export { commutator, schema };

@@ -98,4 +98,14 @@ const commutator = Commutator.initialize()
 // Создание схемы из коммутатора
 const schema = commutator.createSchema();
 
+console.log("✅ Пример 1: Базовые методы Commutator");
+console.log("Создан коммутатор с:");
+console.log("  - Пользовательский тип данных: User");
+console.log("  - Событие: onClick");
+console.log("  - Чистая функция: add");
+console.log("  - Функция: log");
+console.log("  - Референс: userRef");
+console.log("  - API: userService");
+console.log("Схема создана успешно!");
+
 export { commutator, schema };

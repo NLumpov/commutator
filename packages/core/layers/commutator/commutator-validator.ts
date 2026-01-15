@@ -40,6 +40,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       for (const property of Object.values(field.properties)) {
         this.validateField(property);
       }
+      return;
     }
 
     if (field.type === CommonDataType.Array) {
@@ -48,6 +49,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       }
 
       this.validateField(field.itemType);
+      return;
     }
 
     if (field.type === CommonDataType.StringEnum) {
@@ -58,6 +60,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       if (field.values.some((value) => typeof value !== "string")) {
         throw new CommutatorError("Field values must be strings");
       }
+      return;
     }
 
     if (field.type === CommonDataType.NumberEnum) {
@@ -68,16 +71,36 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       if (field.values.some((value) => typeof value !== "number")) {
         throw new CommutatorError("Field values must be numbers");
       }
+      return;
     }
 
-    if (typeof field.type === "string" && !this.dataTypes[field.type]) {
-      const customField = this.dataTypes[field.type];
+    if (typeof field.type === "string") {
+      // Проверяем, является ли это пользовательским типом
+      if (field.type in this.dataTypes) {
+        const customField = this.dataTypes[field.type];
 
-      if (!customField) {
-        throw new CommutatorError(`Field type "${field.type}" does not exist in DataTypes`);
+        if (!customField) {
+          throw new CommutatorError(`Field type "${field.type}" does not exist in DataTypes`);
+        }
+
+        this.validateField(customField);
+        return;
       }
 
-      this.validateField(customField);
+      // Если это не базовый тип и не пользовательский тип, выбрасываем ошибку
+      if (
+        field.type !== CommonDataType.Any &&
+        field.type !== CommonDataType.String &&
+        field.type !== CommonDataType.Number &&
+        field.type !== CommonDataType.Boolean &&
+        field.type !== CommonDataType.Date &&
+        field.type !== CommonDataType.Object &&
+        field.type !== CommonDataType.Array &&
+        field.type !== CommonDataType.StringEnum &&
+        field.type !== CommonDataType.NumberEnum
+      ) {
+        throw new CommutatorError(`Field type "${field.type}" does not exist in DataTypes`);
+      }
     }
   }
 

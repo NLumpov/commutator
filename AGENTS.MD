@@ -8,7 +8,7 @@
 
 1. **Commutator** (Коммутатор) — слой настройки типов нод и типов данных блюпринта
 2. **CommutatorSchema** (Схема) — слой настройки конкретного блюпринта, связей между нодами и структуры графа
-3. **CommutatorInstance** (Инстанс) — слой выполнения, отвечающий за хранение промежуточных состояний, метаданных и запуск блюпринта
+3. **CommutatorWorker** (Воркер) — слой выполнения, отвечающий за запуск блюпринта, кеширование промежуточных состояний и метаданных
 
 ## Архитектура
 
@@ -34,6 +34,7 @@ Commutator.initialize() // Создание нового коммутатора
 .defineRef(name, config) // Определение типа референса
 .definePureFunction(name, config) // Определение чистой функции
 .defineFunction(name, config) // Определение функции
+.defineApi(name, api) // Определение API для внешних систем
 .inject(otherCommutator) // Инъекция другого коммутатора (расширение)
 .createSchema(snapshot?) // Создание схемы из коммутатора
 ```
@@ -66,8 +67,6 @@ const commutator = Commutator.initialize()
     pinsOut: {
       result: { type: CommonDataType.Number },
     },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
     }),
@@ -87,75 +86,142 @@ const commutator = Commutator.initialize()
 **Ключевые методы:**
 
 ```typescript
+// Создание нод (возвращают FluentNodeBuilder)
 .createEvent(name, config?) // Создание экземпляра события
 .createRef(name, config?) // Создание экземпляра референса
 .createPureFunction(name, config?) // Создание экземпляра чистой функции
 .createFunction(name, config?) // Создание экземпляра функции
-.wire(fromPinUuid, toPinUuid) // Создание связи между пинами
-.unwire(fromPinUuid, toPinUuid) // Удаление связи
-.addPin(nodeUuid, name, type) // Добавление пина к ноде
-.removePin(pinUuid) // Удаление пина из ноды
-.moveNode(nodeUuid, x, y) // Перемещение ноды
+
+// Работа с проводами
+.wire({ from: { node, pin }, to: { node, pin } }) // Создание связи (именованные параметры)
+.wire({ fromPinUuid, toPinUuid }) // Создание связи (по UUID пинов)
+.unwire({ from: { node, pin }, to: { node, pin } }) // Удаление связи
+
+// Работа с пинами
+.getPin(nodeUuid, pinName) // Получение пина по имени
 .getNodePins(nodeUuid) // Получение всех пинов ноды
+.addPinIn(nodeUuid) // Добавление входного data-пина (через callback)
+.addPinOut(nodeUuid) // Добавление выходного data-пина (через callback)
+.addExecPinIn(nodeUuid) // Добавление входного exec-пина (через callback)
+.addExecPinOut(nodeUuid) // Добавление выходного exec-пина (через callback)
+.removePin(pinUuid) // Удаление пина
+.updatePin(pinUuid, { name?, dataType? }) // Обновление пина
+.setPinDefaultValue(pinUuid, value) // Установка значения по умолчанию
+
+// Работа с нодами
+.moveNode(nodeUuid, x, y) // Перемещение ноды
+.updateNodeConfig(nodeUuid, config) // Обновление конфигурации ноды
+
+// Снапшоты и воркер
 .extract() // Экспорт схемы в снапшот
+.createWorker(snapshot?) // Создание воркера для выполнения
 ```
 
 **Правила валидации:**
 
-1. **Типы данных:** При создании связи между data-пинами проверяется совместимость типов
+1. **Типы данных:** При создании связи между data-пинами проверяется глубокая совместимость типов (включая вложенные Object, Array, Enum)
 2. **Циклические связи:** Запрещены циклические связи в графе (проверка выполняется автоматически)
-3. **Уникальность входов:** Data-пин на входе может иметь только одну входящую связь
-4. **Exec-пины:** Могут иметь множественные входы
-5. **Динамические пины:** Можно добавлять/удалять пины только если `canAddPinIn/Out` или `canAddExecPinIn/Out` разрешены
+3. **Self-loop:** Запрещены связи пина с самим собой и связи между пинами одной ноды
+4. **Уникальность входов:** Data-пин на входе может иметь только одну входящую связь
+5. **OutputExec ограничение:** OutputExec-пин может иметь только один исходящий провод
+6. **Динамические пины:** Можно добавлять/удалять пины только если определены соответствующие callback'и (`addPinIn`, `addPinOut`, `addExecPinIn`, `addExecPinOut`)
 
 **Пример:**
 
 ```typescript
 const schema = commutator.createSchema();
-const onClickEvent = schema.createEvent("onClick");
-const addFunction = schema.createPureFunction("add");
 
-const eventOutputPin = schema
-  .getNodePins(onClickEvent.uuid)
-  .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
-const functionInputPin = schema
-  .getNodePins(addFunction.uuid)
-  .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
+// Создание нод с Fluent API
+const event = schema.createEvent("onClick");
+const add = schema.createPureFunction("add");
+const log = schema.createFunction("log");
 
-schema.wire(eventOutputPin.uuid, functionInputPin.uuid);
+// Подключение через Fluent API
+event.wire("x", add, "a").wire("next", log, "");
+
+// Или через именованные параметры
+schema.wire({
+  from: { node: event.uuid, pin: "y" },
+  to: { node: add.uuid, pin: "b" },
+});
+
+// Создание воркера для выполнения
+const worker = schema.createWorker();
+await worker.triggerEvent("onClick", { x: 10, y: 20 });
 ```
 
-### Слой 3: CommutatorInstance (Инстанс)
+### Слой 3: CommutatorWorker (Воркер)
 
-**Назначение:** Выполнение блюпринта, хранение промежуточных состояний и метаданных.
+**Назначение:** Выполнение блюпринта, кеширование промежуточных состояний и метаданных.
 
-**Примечание:** Слой выполнения находится в разработке. Предполагаемая функциональность:
+**Ключевые методы:**
 
-- Хранение значений пинов (кеширование результатов выполнения)
-- Управление метаданными нод
-- Выполнение графа по exec-пинам
-- Pull-стратегия для pure functions (вычисление по требованию)
-- Push-стратегия для functions (выполнение при триггере exec-пина)
+```typescript
+.triggerEvent(name, payload) // Запуск события с payload
+.extract() // Экспорт состояния воркера в снапшот
+```
 
-**Промежуточные значения:**
+**Стратегии выполнения:**
 
-Промежуточные значения хранятся в двух местах:
+1. **Push-стратегия** — для Functions: выполнение происходит при триггере входного exec-пина, затем управление передаётся по выходному exec-пину
+2. **Pull-стратегия** — для PureFunctions и Refs: вычисление происходит по требованию, когда Function запрашивает значение входного пина
 
-1. **meta в каждой ноде** — метаданные ноды, которые сохраняются между вызовами и используются для хранения состояния ноды (например, счётчик, флаги и т.д.)
+**Кеширование:**
 
-2. **Кеширование в пинах** — Functions и Events кешируют промежуточные данные в своих выходных пинах (pinsOut). Значения кешируются после выполнения функции и используются при последующих обращениях к пину, пока функция не будет вызвана снова
+Воркер использует два уровня кеширования:
+
+1. **Persistent Cache (`pinCache`)** — постоянный кеш для Events и Functions:
+   - Значения сохраняются между вызовами
+   - Events: кешируют payload после триггера
+   - Functions: кешируют выходные значения после выполнения
+
+2. **Runtime Cache (`runtimePinCache`)** — временный кеш для одного выполнения:
+   - PureFunctions: кешируют результаты в рамках одного triggerEvent
+   - Refs: кешируют загруженные данные в рамках одного triggerEvent
+
+3. **Meta Cache (`metaCache`)** — кеш метаданных нод:
+   - Хранит состояние между вызовами (счётчики, флаги и т.д.)
+   - Обновляется через `exec({ meta: newValue })`
+
+**Порядок выполнения:**
+
+1. `triggerEvent` находит все ноды события по имени
+2. Сохраняет payload в `pinCache` для пинов события
+3. Добавляет подключённые Function-ноды в очередь выполнения
+4. Последовательно обрабатывает очередь:
+   - Для каждой Function собирает входные значения
+   - Если входной пин подключён к PureFunction/Ref — вычисляет их (pull-стратегия)
+   - Выполняет функцию и кеширует результаты
+   - Добавляет в очередь ноды, подключённые к активированным exec-пинам
+
+**Пример:**
+
+```typescript
+// Создание воркера из схемы
+const worker = schema.createWorker();
+
+// Запуск события
+await worker.triggerEvent("onClick", { x: 100, y: 200 });
+
+// Сохранение состояния
+const workerSnapshot = worker.extract();
+
+// Восстановление состояния
+const restoredWorker = schema.createWorker(workerSnapshot);
+```
 
 ## Типы нод
 
 ### Event (Событие)
 
-**Назначение:** Точка входа в блюпринт, триггерится извне.
+**Назначение:** Точка входа в блюпринт, триггерится извне через `worker.triggerEvent()`.
 
 **Характеристики:**
-- Имеет только выходные пины (pinsOut, execPinsOut)
+
+- Имеет только выходные пины (`pinsOut`, `execPinsOut`)
 - Не имеет входных пинов
 - Используется для инициирования выполнения графа
-- **Кеширует промежуточные данные в выходных пинах** — значения пинов сохраняются после триггера события и используются до следующего триггера
+- **Кеширует данные в Persistent Cache** — значения payload сохраняются и используются до следующего триггера
 
 **Пример:**
 
@@ -168,6 +234,10 @@ schema.wire(eventOutputPin.uuid, functionInputPin.uuid);
   execPinsOut: {
     next: {},
   },
+  config: { type: CommonDataType.String }, // Опциональная конфигурация
+  onConfigChange: ({ config, actions }) => {
+    // Реакция на изменение конфигурации
+  },
 })
 ```
 
@@ -176,10 +246,11 @@ schema.wire(eventOutputPin.uuid, functionInputPin.uuid);
 **Назначение:** Функция без побочных эффектов, вычисляет результат на основе входных данных.
 
 **Характеристики:**
+
 - Имеет входные и выходные data-пины
 - Не имеет exec-пинов
 - Выполняется по pull-стратегии (когда требуется значение)
-- **Не кеширует промежуточные данные** — вычисляется каждый раз при запросе значения
+- **Кеширует результаты в Runtime Cache** — вычисляется один раз за triggerEvent
 
 **Пример:**
 
@@ -192,11 +263,13 @@ schema.wire(eventOutputPin.uuid, functionInputPin.uuid);
   pinsOut: {
     result: { type: CommonDataType.Number },
   },
-  canAddPinIn: false,
-  canAddPinOut: false,
   exec: async ({ pinsIn }) => ({
     result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
   }),
+  // Опционально: динамические пины
+  addPinIn: ({ actions }) => {
+    actions.addPin("c", PinInstanceType.Input, { type: CommonDataType.Number });
+  },
 })
 ```
 
@@ -205,37 +278,44 @@ schema.wire(eventOutputPin.uuid, functionInputPin.uuid);
 **Назначение:** Функция с побочными эффектами и управлением потоком выполнения.
 
 **Характеристики:**
+
 - Имеет входные и выходные data-пины
 - Имеет входные и выходные exec-пины
 - Выполняется по push-стратегии (при триггере exec-пина)
-- Может иметь метаданные (meta) для хранения состояния между вызовами
-- Может управлять потоком выполнения через exec-пины
-- **Кеширует промежуточные данные в выходных пинах** — значения выходных пинов сохраняются после выполнения функции и используются при последующих обращениях, пока функция не будет вызвана снова
+- Может иметь метаданные (`meta`) для хранения состояния между вызовами
+- **Кеширует данные в Persistent Cache** — выходные значения сохраняются между вызовами
 
 **Пример:**
 
 ```typescript
-.defineFunction("log", {
+.defineFunction("counter", {
   pinsIn: {
-    message: { type: CommonDataType.String },
+    step: { type: CommonDataType.Number },
   },
-  pinsOut: {},
+  pinsOut: {
+    value: { type: CommonDataType.Number },
+  },
   execPinsIn: {
-    start: {},
+    increment: {},
+    reset: {},
   },
   execPinsOut: {
     next: {},
   },
-  canAddPinIn: false,
-  canAddPinOut: false,
-  canAddExecPinIn: false,
-  canAddExecPinOut: false,
-  exec: async ({ pinsIn, exec }) => {
-    console.log(pinsIn.message);
+  meta: { type: CommonDataType.Number }, // Состояние счётчика
+  exec: async ({ pinsIn, meta, triggeredExecPinKey, exec }) => {
+    let newValue = meta ?? 0;
+
+    if (triggeredExecPinKey === "increment") {
+      newValue += pinsIn.step ?? 1;
+    } else if (triggeredExecPinKey === "reset") {
+      newValue = 0;
+    }
+
     await exec({
       execPinOut: "next",
-      pinsOut: {},
-      meta: null,
+      pinsOut: { value: newValue },
+      meta: newValue,
     });
   },
 })
@@ -243,24 +323,31 @@ schema.wire(eventOutputPin.uuid, functionInputPin.uuid);
 
 ### Ref (Референс)
 
-**Назначение:** Загрузка внешних сущностей по метаданным.
+**Назначение:** Загрузка внешних сущностей по конфигурации.
 
 **Характеристики:**
-- Имеет выходные пины (pinsOut)
+
+- Имеет выходные пины (`pinsOut`)
 - Использует `resolveRef` для загрузки данных
 - Имеет доступ к API для работы с внешними системами
-- **Не кеширует промежуточные данные** — данные загружаются каждый раз при запросе
+- **Кеширует данные в Runtime Cache** — загружается один раз за triggerEvent
 
 **Пример:**
 
 ```typescript
 .defineRef("userRef", {
   pinsOut: {
-    user: { type: CommonDataType.String },
+    user: { type: "User" }, // Пользовательский тип
+  },
+  config: {
+    type: CommonDataType.Object,
+    properties: {
+      userId: { type: CommonDataType.String },
+    },
   },
   resolveRef: async ({ config, api }) => {
     const user = await api.userService.getById(config.userId);
-    return { user: user.name };
+    return { user };
   },
 })
 ```
@@ -269,11 +356,11 @@ schema.wire(eventOutputPin.uuid, functionInputPin.uuid);
 
 ### Базовые типы (CommonDataType)
 
-- `Any` — любой тип (принимает все типы при валидации)
+- `Any` — любой тип (принимает все типы при валидации, но не может быть источником для других типов кроме Any)
 - `String` — строка
 - `Number` — число
 - `Boolean` — булево значение
-- `Date` — дата (хранится как число)
+- `Date` — дата (хранится как число timestamp)
 - `Object` — объект с определёнными свойствами
 - `Array` — массив с определённым типом элементов
 - `StringEnum` — перечисление строковых значений
@@ -294,42 +381,213 @@ schema.wire(eventOutputPin.uuid, functionInputPin.uuid);
 })
 ```
 
+### Значения по умолчанию
+
+Каждый тип имеет значение по умолчанию, которое генерируется автоматически:
+
+- `String` → `""`
+- `Number` / `Date` → `0`
+- `Boolean` → `false`
+- `Array` → `[]`
+- `Object` → объект со значениями по умолчанию для каждого свойства
+- `StringEnum` / `NumberEnum` → первое значение из списка
+- `Any` → `null`
+
+Можно переопределить через свойство `default` в определении поля:
+
+```typescript
+pinsIn: {
+  value: { type: CommonDataType.Number, default: 100 },
+}
+```
+
 ## Пины (Pins)
 
-### Типы пинов
+### Типы пинов (PinInstanceType)
 
-1. **Input/Output** — data-пины для передачи данных
-2. **InputExec/OutputExec** — exec-пины для управления потоком выполнения
+1. **Input** — входной data-пин для получения данных
+2. **Output** — выходной data-пин для передачи данных
+3. **InputExec** — входной exec-пин для получения сигнала выполнения
+4. **OutputExec** — выходной exec-пин для передачи сигнала выполнения
 
-### Характеристики пинов
+### Структура PinInstance
 
-- **type** — тип данных пина (для data-пинов)
-- **name** — имя пина
-- **uuid** — уникальный идентификатор экземпляра пина
+```typescript
+interface PinInstance {
+  readonly nodeUuid: string; // UUID родительской ноды
+  readonly uuid: string; // Уникальный идентификатор пина
+  readonly type: PinInstanceType; // Тип пина
+  default?: unknown; // Значение по умолчанию (только для Input)
+  name: string; // Имя пина
+  dataType: Field | null; // Тип данных (null для exec-пинов)
+}
+```
 
 ### Правила работы с пинами
 
-1. Data-пин на входе может иметь только одну входящую связь
-2. Exec-пины могут иметь множественные входы
-3. При создании связи проверяется совместимость типов (кроме `Any`)
-4. Пины можно добавлять/удалять только если это разрешено в конфигурации ноды
+1. **Input** пин может иметь только одну входящую связь
+2. **InputExec** пины могут иметь множественные входящие связи
+3. **OutputExec** пин может иметь только одну исходящую связь
+4. При создании связи проверяется глубокая совместимость типов
+5. Пины можно добавлять/удалять только если определены callback'и `addPinIn/Out` или `addExecPinIn/Out`
+6. Нельзя удалить последний пин данного типа в ноде
 
 ## Связи (Wires)
 
 **Назначение:** Соединение пинов для передачи данных и управления потоком.
 
-**Правила:**
-
-1. Связь создаётся между выходным и входным пином одного типа (data или exec)
-2. Запрещены циклические связи
-3. Запрещены self-loop (связь пина с самим собой)
-4. При удалении связи метод `unwire` работает идемпотентно
-
-**Пример:**
+**Структура Wire:**
 
 ```typescript
-schema.wire(outputPinUuid, inputPinUuid);
-schema.unwire(outputPinUuid, inputPinUuid);
+interface Wire {
+  from: string; // UUID выходного пина
+  to: string; // UUID входного пина
+}
+```
+
+**Правила:**
+
+1. Связь создаётся только между Output → Input или OutputExec → InputExec
+2. Запрещены циклические связи
+3. Запрещены self-loop (связь пина с самим собой или между пинами одной ноды)
+4. Метод `unwire` работает идемпотентно
+
+**Примеры использования wire:**
+
+```typescript
+// 1. Через именованные параметры
+schema.wire({
+  from: { node: event.uuid, pin: "x" },
+  to: { node: add.uuid, pin: "a" },
+});
+
+// 2. Через UUID пинов
+schema.wire({
+  fromPinUuid: xPin.uuid,
+  toPinUuid: aPin.uuid,
+});
+
+// 3. Через Fluent API
+event.wire("x", add, "a");
+```
+
+## Node Callbacks
+
+Ноды могут реагировать на изменения через callback'и:
+
+### onConfigChange
+
+Вызывается при создании ноды и при изменении её конфигурации через `updateNodeConfig`:
+
+```typescript
+.defineEvent("dynamicEvent", {
+  config: {
+    type: CommonDataType.Object,
+    properties: {
+      outputCount: { type: CommonDataType.Number },
+    },
+  },
+  pinsOut: {},
+  execPinsOut: {},
+  onConfigChange: ({ config, actions }) => {
+    // Сбросить пины до начального состояния
+    actions.resetPins();
+
+    // Добавить динамические пины на основе конфигурации
+    for (let i = 0; i < (config?.outputCount ?? 0); i++) {
+      actions.addPin(`output_${i}`, PinInstanceType.Output, {
+        type: CommonDataType.String,
+      });
+    }
+  },
+})
+```
+
+### NodeCallbackActions
+
+Объект `actions` предоставляет методы для манипуляции пинами:
+
+```typescript
+interface NodeCallbackActions {
+  // Добавление пинов
+  addPin(name: string, type: Input | Output, dataType: Field): void;
+  addExecPin(name: string, type: InputExec | OutputExec): void;
+
+  // Изменение пинов
+  updatePin(pinUuid: string, args: { name?: string; dataType?: Field }): void;
+  removePin(pinUuid: string): void;
+  resetPins(): void; // Сброс к начальному состоянию из конфигурации
+
+  // Получение информации
+  getPin(name: string): PinInstance | undefined;
+  getAllPins(): PinInstance[];
+  isWired(name: string): boolean;
+  getWiredNode(name: string): PinInstance | undefined;
+  getPinConfig(name: string): Field | undefined;
+}
+```
+
+## Снапшоты (Snapshots)
+
+### SchemaSnapshot
+
+Сериализуемое представление схемы:
+
+```typescript
+interface SchemaSnapshot {
+  nodes: AbstractNodeInstance[]; // Все ноды
+  pinInstances: PinInstance[]; // Все пины
+  wires: Wire[]; // Все связи
+}
+```
+
+### WorkerSnapshot
+
+Сериализуемое представление состояния воркера:
+
+```typescript
+interface WorkerSnapshot {
+  pinCache: { uuid: string; cache: any }[]; // Кеш значений пинов
+  metaCache: { uuid: string; cache: any }[]; // Кеш метаданных нод
+}
+```
+
+**Использование:**
+
+```typescript
+// Экспорт схемы
+const schemaSnapshot = schema.extract();
+
+// Восстановление схемы
+const restoredSchema = commutator.createSchema(schemaSnapshot);
+
+// Экспорт состояния воркера
+const workerSnapshot = worker.extract();
+
+// Восстановление воркера с состоянием
+const restoredWorker = restoredSchema.createWorker(workerSnapshot);
+```
+
+## Fluent API
+
+### FluentNodeBuilder
+
+Методы `createEvent`, `createRef`, `createPureFunction`, `createFunction` возвращают `FluentNodeBuilder`, который:
+
+1. Реализует интерфейс `AbstractNodeInstance` для обратной совместимости
+2. Предоставляет метод `wire` для цепочечного подключения пинов
+
+```typescript
+// Создание и подключение в одной цепочке
+const event = schema
+  .createEvent("onClick")
+  .wire("x", addNode, "a")
+  .wire("y", addNode, "b")
+  .wire("next", logNode, "");
+
+// Доступ к свойствам ноды
+console.log(event.uuid); // UUID ноды
+console.log(event.name); // "onClick"
 ```
 
 ## Расширения (Extensions)
@@ -338,41 +596,21 @@ schema.unwire(outputPinUuid, inputPinUuid);
 
 ```typescript
 const baseCommutator = Commutator.initialize()...;
-const extension = Commutator.initialize()
-  .defineFunction("customFunction", {...});
 
-const combined = baseCommutator.inject(extension);
+const mathExtension = Commutator.initialize()
+  .definePureFunction("multiply", {...})
+  .definePureFunction("divide", {...});
+
+const combined = baseCommutator.inject(mathExtension);
 ```
 
 **Примеры расширений:**
 
-- `@commutator/flow-control` — ноды управления потоком (Branch, Switch, Gate и т.д.)
+- `@commutator/flow-control` — ноды управления потоком (Branch, ForLoop, Gate и т.д.)
 - `@commutator/maths` — математические функции (Add, Subtract, Sin, Cos и т.д.)
-
-## Снапшоты (Snapshots)
-
-**CommutatorInstanceSnapshot** — сериализуемое представление схемы:
-
-```typescript
-interface CommutatorInstanceSnapshot {
-  events: EventNodeInstance<any>[];
-  refs: RefNodeInstance<any>[];
-  pureFunctions: PureFunctionNodeInstance<any>[];
-  functions: FunctionNodeInstance<any>[];
-  pinInstances: PinInstance[];
-  wires: Wire[];
-}
-```
-
-**Использование:**
-
-```typescript
-// Экспорт
-const snapshot = schema.extract();
-
-// Импорт
-const schema = commutator.createSchema(snapshot);
-```
+- `@commutator/string` — операции со строками
+- `@commutator/boolean` — логические операции
+- `@commutator/variables` — переменные
 
 ## Правила разработки
 
@@ -381,6 +619,7 @@ const schema = commutator.createSchema(snapshot);
 Библиотека использует строгую типизацию TypeScript. Все типы выводятся автоматически на основе конфигурации коммутатора.
 
 **Важно:**
+
 - Используйте `const` для конфигураций нод и типов данных
 - Типы выводятся автоматически, не нужно указывать их явно
 - При использовании пользовательских типов данных они должны быть определены до использования
@@ -390,58 +629,27 @@ const schema = commutator.createSchema(snapshot);
 
 **Правила:**
 
-- Имена нод должны быть уникальными в рамках одного типа (Event, Ref, PureFunction, Function)
+- Имена нод должны быть уникальными в рамках всего коммутатора (нельзя иметь Event и Function с одинаковым именем)
 - Конфигурация ноды должна соответствовать её типу
 - Для функций с состоянием используйте `meta` для хранения промежуточных данных
-
-**Пример правильной конфигурации:**
-
-```typescript
-.defineFunction("counter", {
-  pinsIn: { step: { type: CommonDataType.Number } },
-  pinsOut: { value: { type: CommonDataType.Number } },
-  execPinsIn: { "": {} },
-  execPinsOut: { next: {} },
-  canAddPinIn: false,
-  canAddPinOut: false,
-  canAddExecPinIn: false,
-  canAddExecPinOut: false,
-  meta: { type: CommonDataType.Number }, // Состояние
-  exec: async ({ pinsIn, meta, exec }) => {
-    const newValue = (meta ?? 0) + (pinsIn.step ?? 1);
-    await exec({
-      execPinOut: "next",
-      pinsOut: { value: newValue },
-      meta: newValue,
-    });
-  },
-})
-```
+- Используйте `onConfigChange` для реакции на изменения конфигурации
 
 ### 3. Работа с пинами
 
 **Правила:**
 
-- Всегда проверяйте наличие пина перед созданием связи
-- Используйте `getNodePins` для получения списка пинов ноды
-- При добавлении динамических пинов проверяйте флаги `canAddPinIn/Out`
-
-**Пример:**
-
-```typescript
-const pins = schema.getNodePins(nodeUuid);
-const outputPin = pins.find(
-  (pin) => pin.name === "value" && pin.type === PinInstanceType.Output
-);
-```
+- Используйте `schema.getPin(nodeUuid, pinName)` для получения пина по имени
+- Для динамических пинов определите callback'и `addPinIn/Out` или `addExecPinIn/Out`
+- Используйте `actions.resetPins()` в `onConfigChange` для сброса к начальному состоянию
 
 ### 4. Валидация и ошибки
 
 **Типы ошибок:**
 
 - `CommutatorError` — базовый класс для всех ошибок библиотеки
-- Ошибки валидации типов
+- Ошибки валидации типов (несовместимые типы пинов)
 - Ошибки циклических связей
+- Ошибки self-loop (связь пина с самим собой)
 - Ошибки отсутствия конфигураций
 
 **Обработка:**
@@ -454,34 +662,23 @@ const outputPin = pins.find(
 
 - Все функции выполнения (`exec`, `resolveRef`) асинхронные
 - Используйте `async/await` при работе с функциями нод
-- Exec-функции должны возвращать `Promise<void>`
-- Pure-функции должны возвращать `Promise<PinRecordValue>`
+- `exec` в Function должен вызывать переданный `exec` callback для продолжения выполнения
+- `exec` в PureFunction возвращает `Promise` со значениями выходных пинов
 
-### 6. Расширяемость
+### 6. Кеширование
 
-**Создание расширений:**
+**Pull-стратегия (PureFunctions, Refs):**
 
-1. Создайте новый пакет в `packages/`
-2. Используйте `Commutator.initialize()` для создания базового коммутатора
-3. Определите необходимые ноды и типы данных
-4. Экспортируйте готовое расширение
-5. Используйте `inject` для объединения с другими коммутаторами
+- Вычисляются только при запросе значения
+- Кешируются в `runtimePinCache` на время одного `triggerEvent`
+- После завершения `triggerEvent` кеш очищается
 
-**Пример структуры расширения:**
+**Push-стратегия (Events, Functions):**
 
-```typescript
-// packages/my-extension/index.ts
-import { Commutator, CommonDataType } from "@commutator/core";
-
-export const myExtension = Commutator.initialize()
-  .defineFunction("myFunction", {
-    // конфигурация
-  });
-
-// Использование
-import { myExtension } from "@commutator/my-extension";
-const commutator = baseCommutator.inject(myExtension);
-```
+- Events: кешируют payload в `pinCache`
+- Functions: кешируют выходные значения в `pinCache` и `runtimePinCache`
+- Значения сохраняются между вызовами `triggerEvent`
+- Метаданные (`meta`) сохраняются в `metaCache`
 
 ### 7. Тестирование
 
@@ -499,10 +696,11 @@ const commutator = baseCommutator.inject(myExtension);
 
 **Оптимизации:**
 
-- Pure-функции могут кешировать результаты
+- PureFunctions кешируются в рамках одного `triggerEvent`
+- Refs загружаются один раз за `triggerEvent`
 - Используйте снапшоты для сохранения состояния
 - Избегайте создания избыточных связей
-- Минимизируйте количество нод с состоянием (meta)
+- Минимизируйте количество нод с состоянием (`meta`)
 
 ## Примеры использования
 
@@ -528,30 +726,122 @@ const commutator = Commutator.initialize()
     pinsOut: {
       result: { type: CommonDataType.Number },
     },
-    canAddPinIn: false,
-    canAddPinOut: false,
     exec: async ({ pinsIn }) => ({
       result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0),
     }),
+  })
+  .defineFunction("log", {
+    pinsIn: {
+      message: { type: CommonDataType.Any },
+    },
+    pinsOut: {},
+    execPinsIn: { "": {} },
+    execPinsOut: { next: {} },
+    exec: async ({ pinsIn, exec }) => {
+      console.log(pinsIn.message);
+      await exec({ execPinOut: "next", pinsOut: {}, meta: null });
+    },
   });
 
 // 2. Создание схемы
 const schema = commutator.createSchema();
+
+// 3. Создание нод с Fluent API
 const event = schema.createEvent("onClick");
 const add = schema.createPureFunction("add");
+const log = schema.createFunction("log");
 
-// 3. Создание связей
-const eventXPin = schema
-  .getNodePins(event.uuid)
-  .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
-const addAPin = schema
-  .getNodePins(add.uuid)
-  .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
+// 4. Подключение пинов
+event.wire("x", add, "a").wire("y", add, "b").wire("next", log, "");
 
-schema.wire(eventXPin.uuid, addAPin.uuid);
+schema.wire({
+  from: { node: add.uuid, pin: "result" },
+  to: { node: log.uuid, pin: "message" },
+});
 
-// 4. Экспорт снапшота
-const snapshot = schema.extract();
+// 5. Создание воркера и выполнение
+const worker = schema.createWorker();
+await worker.triggerEvent("onClick", { x: 10, y: 20 });
+// Console: 30
+
+// 6. Сохранение и восстановление
+const schemaSnapshot = schema.extract();
+const workerSnapshot = worker.extract();
+
+const restoredSchema = commutator.createSchema(schemaSnapshot);
+const restoredWorker = restoredSchema.createWorker(workerSnapshot);
+```
+
+### Функция с состоянием (Counter)
+
+```typescript
+const commutator = Commutator.initialize()
+  .defineEvent("onTick", {
+    pinsOut: {},
+    execPinsOut: { next: {} },
+  })
+  .defineFunction("counter", {
+    pinsIn: {
+      step: { type: CommonDataType.Number, default: 1 },
+    },
+    pinsOut: {
+      count: { type: CommonDataType.Number },
+    },
+    execPinsIn: { "": {} },
+    execPinsOut: { next: {} },
+    meta: { type: CommonDataType.Number },
+    exec: async ({ pinsIn, meta, exec }) => {
+      const newCount = (meta ?? 0) + (pinsIn.step ?? 1);
+      await exec({
+        execPinOut: "next",
+        pinsOut: { count: newCount },
+        meta: newCount,
+      });
+    },
+  });
+
+const schema = commutator.createSchema();
+const tick = schema.createEvent("onTick");
+const counter = schema.createFunction("counter");
+
+tick.wire("next", counter, "");
+
+const worker = schema.createWorker();
+await worker.triggerEvent("onTick", {}); // count = 1
+await worker.triggerEvent("onTick", {}); // count = 2
+await worker.triggerEvent("onTick", {}); // count = 3
+```
+
+### Динамические пины
+
+```typescript
+const commutator = Commutator.initialize().definePureFunction("join", {
+  pinsIn: {
+    separator: { type: CommonDataType.String, default: ", " },
+    input_0: { type: CommonDataType.String },
+  },
+  pinsOut: {
+    result: { type: CommonDataType.String },
+  },
+  addPinIn: ({ actions }) => {
+    const pins = actions.getAllPins();
+    const inputPins = pins.filter(
+      (p) => p.type === PinInstanceType.Input && p.name.startsWith("input_")
+    );
+    const nextIndex = inputPins.length;
+    actions.addPin(`input_${nextIndex}`, PinInstanceType.Input, {
+      type: CommonDataType.String,
+    });
+  },
+  exec: async ({ pinsIn }) => {
+    const values = Object.entries(pinsIn)
+      .filter(([key]) => key.startsWith("input_"))
+      .map(([, value]) => value ?? "");
+    return {
+      result: values.join(pinsIn.separator ?? ", "),
+    };
+  },
+});
 ```
 
 ### Использование расширений
@@ -570,85 +860,8 @@ const branch = schema.createFunction("Branch");
 const add = schema.createPureFunction("Add");
 ```
 
-## Упрощенное API для работы со схемой
-
-Библиотека предоставляет несколько способов работы со схемой для максимального удобства:
-
-### 1. Метод `getPin` - получение пина по имени
-
-Вместо поиска пина через `getNodePins().find()`:
-
-```typescript
-// Старый способ
-const pin = schema.getNodePins(node.uuid).find((p) => p.name === "pinName");
-
-// Новый способ
-const pin = schema.getPin(node.uuid, "pinName");
-```
-
-### 2. Упрощенный синтаксис `wire`
-
-Подключение пинов можно выполнять напрямую, передавая ноды и имена пинов:
-
-```typescript
-// Старый способ
-const pin1 = schema.getNodePins(node1.uuid).find((p) => p.name === "pin1");
-const pin2 = schema.getNodePins(node2.uuid).find((p) => p.name === "pin2");
-schema.wire(pin1.uuid, pin2.uuid);
-
-// Новый способ
-schema.wire(node1, "pin1", node2, "pin2");
-
-// Или используя UUID
-schema.wire(node1.uuid, "pin1", node2.uuid, "pin2");
-```
-
-### 3. Именованные параметры `wireWithOptions`
-
-Для большей явности можно использовать именованные параметры:
-
-```typescript
-schema.wireWithOptions({
-  from: { node: node1, pin: "pin1" },
-  to: { node: node2, pin: "pin2" },
-});
-```
-
-### 4. Fluent API для работы с нодами
-
-Для более читаемого кода можно использовать fluent API:
-
-```typescript
-// Получение пина и работа с ним
-schema.node(node1.uuid).pin("pin1").wireTo(node2, "pin2");
-
-// Обновление пина
-schema.node(node1.uuid).pin("pin1").update({ name: "newName" });
-```
-
-### 5. Fluent API при создании нод
-
-Методы `create*` возвращают `FluentNodeBuilder`, который позволяет сразу подключать пины:
-
-```typescript
-// Создание ноды и подключение пинов в одной цепочке
-schema
-  .createEvent("onClick")
-  .wire("x", addNode, "a")
-  .wire("y", addNode, "b");
-
-// Цепочка вызовов
-const event = schema.createEvent("onClick");
-event.wire("x", node1, "input1").wire("y", node2, "input2");
-```
-
-### Обратная совместимость
-
-Все старые методы API продолжают работать без изменений. Новые методы являются дополнениями, а не заменой существующих.
-
 ## Заключение
 
-Commutator — это мощная библиотека для создания визуальных блюпринтов с полной типобезопасностью TypeScript. Трёхслойная архитектура обеспечивает разделение ответственности между определением типов, созданием схем и выполнением графов.
+Commutator — это мощная библиотека для создания визуальных блюпринтов с полной типобезопасностью TypeScript. Трёхслойная архитектура обеспечивает разделение ответственности между определением типов (Commutator), созданием схем (CommutatorSchema) и выполнением графов (CommutatorWorker).
 
 При разработке следуйте правилам типобезопасности, используйте расширения для модульности и тестируйте все компоненты изолированно.
-

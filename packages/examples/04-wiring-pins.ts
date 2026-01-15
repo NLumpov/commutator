@@ -102,7 +102,7 @@ const log = schema.createFunction("log");
  */
 schema.wire({
   from: { node: multiply.uuid, pin: "result" },
-  to: { node: log.uuid, pin: "valueIn" },
+  to: { node: log.uuid, pin: "value" },
 });
 /**
  * Способ 4: wire({ fromPinUuid: string; toPinUuid: string }) - подключение по UUID пинов
@@ -139,11 +139,20 @@ schema.wire({
   toPinUuid: logExecPin.uuid,
 });
 
+console.log("✅ Пример 4: Подключение пинов");
+console.log("Созданы связи:");
+console.log("  - multiply.result -> log.value (data)");
+console.log("  - onClick.next -> log.start (exec)");
+
 // Отключение пинов работает так же
+console.log("\nОтключение связей:");
 schema.unwire({ fromPinUuid: onClickExecPin.uuid, toPinUuid: logExecPin.uuid });
+console.log("  - onClick.next -> log.start (отключено)");
 schema.unwire({
   from: { node: multiply.uuid, pin: "result" },
-  to: { node: log.uuid, pin: "valueIn" },
+  to: { node: log.uuid, pin: "value" },
 });
+console.log("  - multiply.result -> log.value (отключено)");
+console.log("✅ Подключение и отключение пинов работает!");
 
 export { schema, onClick, add, multiply, log };

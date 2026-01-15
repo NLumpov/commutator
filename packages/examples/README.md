@@ -130,6 +130,44 @@
 - Фильтрация пинов по типу
 - Работа с пинами через различные методы
 
+### 13-worker-basic.ts
+**Базовое использование воркера**
+
+Демонстрирует базовую работу с воркером:
+- `createWorker()` - создание воркера из схемы
+- `triggerEvent()` - запуск события с payload
+- Выполнение графа через push и pull стратегии
+- Комбинация Event, PureFunction и Function
+
+### 14-worker-caching.ts
+**Кеширование в воркере**
+
+Показывает систему кеширования:
+- Persistent cache для Events и Functions
+- Runtime cache для PureFunctions и Refs
+- Сохранение и восстановление состояния воркера через `extract()`
+- Разница в поведении кеширования между типами нод
+
+### 15-worker-meta.ts
+**Метаданные в воркере**
+
+Демонстрирует работу с метаданными:
+- Использование `meta` для хранения состояния между вызовами
+- Счётчик с метаданными
+- Сохранение и восстановление метаданных
+- Управление состоянием через `exec({ meta })`
+
+### 16-worker-complex.ts
+**Комплексный пример с воркером**
+
+Полный цикл работы с воркером:
+- Комбинация всех типов нод (Event, Ref, PureFunction, Function)
+- Ref с загрузкой данных через API
+- PureFunction с вычислениями
+- Function с состоянием и ветвлением
+- Сохранение и восстановление полного состояния
+- Реальный сценарий: система покупок с инвентарём
+
 ## Использование
 
 Каждый пример можно импортировать и использовать отдельно:
@@ -196,23 +234,33 @@ import * as examples from "@commutator/examples";
 - ✅ `NumberEnum`
 - ✅ `Any`
 
+### Методы CommutatorWorker
+- ✅ `createWorker()` - создание воркера из схемы
+- ✅ `triggerEvent()` - запуск события с payload
+- ✅ `extract()` - экспорт состояния воркера в снапшот
+
 ### Дополнительные возможности
 - ✅ Fluent API (FluentNodeBuilder, NodeBuilder, PinBuilder)
 - ✅ Динамические пины
 - ✅ Callbacks (onConfigChange)
-- ✅ Снапшоты
+- ✅ Снапшоты (SchemaSnapshot, WorkerSnapshot)
 - ✅ Расширения (inject)
+- ✅ Кеширование (Persistent и Runtime cache)
+- ✅ Метаданные нод
 
 ## Запуск примеров
 
-Для запуска конкретного примера:
+Каждый пример можно запустить через `bun run`:
 
 ```bash
+# Из корня проекта
 bun run packages/examples/01-basic-commutator-methods.ts
+
+# Или используя скрипты из package.json (из директории examples)
+cd packages/examples
+bun run 01
+bun run 13  # Новый пример с воркером
+bun run 16  # Комплексный пример
 ```
 
-Или используйте TypeScript напрямую:
-
-```bash
-bunx tsx packages/examples/01-basic-commutator-methods.ts
-```
+Все примеры выводят результаты работы в консоль, демонстрируя работу библиотеки.

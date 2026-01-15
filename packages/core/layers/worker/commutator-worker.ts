@@ -488,7 +488,7 @@ export class CommutatorWorker<
 
         const pinValue = pinData[pin.name];
 
-        if (pinValue !== undefined && !this.validator.validateFieldValue(pin.dataType, pinValue)) {
+        if (pinValue !== undefined && this.validator.validateFieldValue(pin.dataType, pinValue)) {
           runtimePinCache.set(pin.uuid, pinValue);
           continue;
         }
