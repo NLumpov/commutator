@@ -31,9 +31,6 @@
     "@commutator/boolean": "workspace:*",
     "@commutator/variables": "workspace:*"
   },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
   "devDependencies": {
     "@types/bun": "latest"
   }
