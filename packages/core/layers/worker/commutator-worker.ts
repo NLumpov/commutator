@@ -124,7 +124,7 @@ export class CommutatorWorker<
       new Queue();
 
     for (const event of events) {
-      this.saveToPinCache(this.pinCache, event, payload);
+      this.saveToPinCache([this.pinCache], event, payload);
 
       // Берём все exec пины на выход из ивента
       const eventExecPinsOut = this.pinsRegistry.getNodeOutExecPinsIndex().get(event.uuid);
@@ -271,21 +271,20 @@ export class CommutatorWorker<
     }
 
     // Собираем все промисы от вызовов exec для ожидания в конце
-    const pendingExecPromises: Promise<AbstractNodeInstance<string>[]>[] = [];
+    const pendingExecPromises: Promise<void>[] = [];
 
-    const exec = async (args: {
+    const runExec = async (args: {
       meta: unknown;
       pinsOut: Record<string, unknown>;
       execPinOut: string | null;
     }): Promise<void> => {
-      if (args.meta !== undefined) {
-        this.metaCache.set(node.uuid, args.meta);
+      if (args.pinsOut) {
+        this.saveToPinCache([runtimePinCache, this.pinCache], node, args.pinsOut);
       }
 
-      if (args.pinsOut) {
-        this.saveToPinCache(runtimePinCache, node, args.pinsOut);
-        // Также сохраняем в persistent cache для последующих вызовов
-        this.saveToPinCache(this.pinCache, node, args.pinsOut);
+      // Publish meta only after every supplied output has passed validation.
+      if (args.meta !== undefined) {
+        this.metaCache.set(node.uuid, args.meta);
       }
 
       // Если вызывается execPinOut – находим подключенные ноды и вызываем processFunction для них
@@ -320,10 +319,18 @@ export class CommutatorWorker<
         }
 
         // Вызываем processFunction для подключенной ноды и ждём завершения
-        const promise = this.processFunction(runtimePinCache, targetNode, targetExecPinIn.name);
-        pendingExecPromises.push(promise);
-        await promise;
+        await this.processFunction(runtimePinCache, targetNode, targetExecPinIn.name);
       }
+    };
+
+    const exec = (args: Parameters<typeof runExec>[0]): Promise<void> => {
+      // Start immediately, preserving continuation input reads and await exec ordering.
+      const promise = runExec(args);
+      pendingExecPromises.push(promise);
+      // Observe failures immediately, even while the author's async body is still running.
+      // The original promise still rejects for callers and the final join below.
+      void promise.catch(() => {});
+      return promise;
     };
 
     await functionConfig.exec({
@@ -336,7 +343,7 @@ export class CommutatorWorker<
       exec,
     });
 
-    // Дожидаемся завершения всех вложенных processFunction
+    // Дожидаемся завершения всех вызовов exec, включая валидацию выходов
     // Это нужно на случай, если пользователь вызвал exec() без await
     if (pendingExecPromises.length > 0) {
       await Promise.all(pendingExecPromises);
@@ -436,7 +443,7 @@ export class CommutatorWorker<
       config: node.config,
     });
 
-    this.saveToPinCache(runtimePinCache, node, result);
+    this.saveToPinCache([runtimePinCache], node, result);
   }
 
   private async processRef(
@@ -500,11 +507,12 @@ export class CommutatorWorker<
   }
 
   private saveToPinCache(
-    pinCache: Map<string, unknown>,
+    pinCaches: readonly Map<string, unknown>[],
     node: AbstractNodeInstance<string>,
     value: Record<string, unknown>,
   ): void {
     const pins = this.pinsRegistry.getPinsByNodeUuid(node.uuid);
+    const outputs: [string, unknown][] = [];
 
     for (const pin of pins) {
       if (pin.type !== PinInstanceType.Output || pin.dataType === null) {
@@ -513,11 +521,24 @@ export class CommutatorWorker<
 
       const pinData = value[pin.name];
 
-      if (pinData === undefined || !this.validator.validateFieldValue(pin.dataType, pinData)) {
+      if (pinData === undefined) {
         continue;
       }
 
-      pinCache.set(pin.uuid, pinData);
+      if (!this.validator.validateFieldValue(pin.dataType, pinData)) {
+        throw new CommutatorError(
+          `Invalid value for output pin "${pin.name}" of node "${node.name}"`,
+        );
+      }
+
+      outputs.push([pin.uuid, pinData]);
+    }
+
+    // One rejected output batch must not publish any of its values to either cache.
+    for (const [uuid, pinData] of outputs) {
+      for (const pinCache of pinCaches) {
+        pinCache.set(uuid, pinData);
+      }
     }
   }
 
