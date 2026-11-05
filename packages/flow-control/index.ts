@@ -156,9 +156,8 @@ export const flowControlExtension = Commutator.initialize()
     meta: { type: CommonDataType.Boolean },
     exec: async ({ meta, exec, triggeredExecPinKey }) => {
       if (triggeredExecPinKey === "") {
-        const isOpen = meta || true;
-
-        if (isOpen) {
+        // Boolean meta defaults to false, so a new Gate starts closed.
+        if (meta) {
           return exec({
             execPinOut: "",
             pinsOut: {},

@@ -63,6 +63,31 @@ function createGateGraph(onTail: () => Promise<void> = async () => {}) {
 }
 
 describe("Gate", () => {
+  test("a new Gate starts closed and the first Toggle opens it", async () => {
+    const { schema, hits } = createGateGraph();
+    const worker = schema.createWorker();
+
+    await worker.triggerEvent("Tick", {});
+    expect(hits).toEqual([]);
+
+    await worker.triggerEvent("Toggle", {});
+    expect(hits).toEqual([]);
+    await worker.triggerEvent("Tick", {});
+    expect(hits).toEqual(["capture"]);
+  });
+
+  test("Close blocks subsequent ticks", async () => {
+    const { schema, gate, hits } = createGateGraph();
+    const worker = schema.createWorker();
+
+    await worker.triggerEvent("Close", {});
+    await worker.triggerEvent("Tick", {});
+    await worker.triggerEvent("Tick", {});
+
+    expect(hits).toEqual([]);
+    expect(worker.extract().metaCache).toEqual([{ uuid: gate.uuid, cache: false }]);
+  });
+
   test("an open Gate forwards each sequential tick exactly once", async () => {
     const { schema, hits } = createGateGraph();
     const worker = schema.createWorker();
@@ -75,6 +100,35 @@ describe("Gate", () => {
 
     await worker.triggerEvent("Tick", {});
     expect(hits).toEqual(["capture", "capture"]);
+  });
+
+  test("Close stops forwarding after an open tick", async () => {
+    const { schema, hits } = createGateGraph();
+    const worker = schema.createWorker();
+
+    await worker.triggerEvent("Open", {});
+    await worker.triggerEvent("Tick", {});
+    expect(hits).toEqual(["capture"]);
+
+    await worker.triggerEvent("Close", {});
+    await worker.triggerEvent("Tick", {});
+    expect(hits).toEqual(["capture"]);
+  });
+
+  test("Toggle opens a closed Gate and closes an open Gate", async () => {
+    const { schema, hits } = createGateGraph();
+    const worker = schema.createWorker();
+
+    await worker.triggerEvent("Close", {});
+    await worker.triggerEvent("Toggle", {});
+    expect(hits).toEqual([]);
+    await worker.triggerEvent("Tick", {});
+    expect(hits).toEqual(["capture"]);
+
+    await worker.triggerEvent("Toggle", {});
+    expect(hits).toEqual(["capture"]);
+    await worker.triggerEvent("Tick", {});
+    expect(hits).toEqual(["capture"]);
   });
 
   test("Open, Close and Toggle update state without executing downstream", async () => {
@@ -96,21 +150,26 @@ describe("Gate", () => {
     }
   });
 
-  test("restoring an open Gate forwards the next tick", async () => {
-    const { commutator, schema, gate, hits } = createGateGraph();
-    const worker = schema.createWorker();
+  for (const isOpen of [true, false]) {
+    test(`restoring a Gate preserves its ${isOpen ? "open" : "closed"} state`, async () => {
+      const { commutator, schema, gate, hits } = createGateGraph();
+      const worker = schema.createWorker();
 
-    await worker.triggerEvent("Open", {});
-    const snapshot = worker.extract();
-    expect(snapshot.metaCache).toEqual([{ uuid: gate.uuid, cache: true }]);
+      await worker.triggerEvent(isOpen ? "Open" : "Close", {});
+      const snapshot = worker.extract();
+      expect(snapshot.metaCache).toEqual([{ uuid: gate.uuid, cache: isOpen }]);
 
-    const restoredSchema = commutator.createSchema(schema.extract());
-    const restored = restoredSchema.createWorker(snapshot);
-    expect(restored.extract()).toEqual(snapshot);
-    await restored.triggerEvent("Tick", {});
+      const restoredSchema = commutator.createSchema(schema.extract());
+      const restored = restoredSchema.createWorker(snapshot);
+      expect(restored.extract()).toEqual(snapshot);
+      await restored.triggerEvent("Tick", {});
 
-    expect(hits).toEqual(["capture"]);
-  });
+      expect(hits).toEqual(isOpen ? ["capture"] : []);
+      expect(restored.extract().metaCache.find((entry) => entry.uuid === gate.uuid)?.cache).toBe(
+        isOpen,
+      );
+    });
+  }
 
   test("awaited tick waits for the nested asynchronous child chain", async () => {
     const enteredTail = Promise.withResolvers<void>();
