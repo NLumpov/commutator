@@ -1,85 +1,98 @@
-import { describe, expect, test } from "bun:test";
-import { ulid } from "./ulid";
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
+
+const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+const CANONICAL_ULID = /^[0-7][0-9A-HJKMNP-TV-Z]{25}$/;
+const TIMESTAMP = 1_783_483_200_123;
+
+function decodeTimestamp(id: string): number {
+  return [...id.slice(0, 10)].reduce((time, char) => time * 32 + ALPHABET.indexOf(char), 0);
+}
 
 describe("ulid", () => {
-  test("should generate unique IDs", () => {
-    const ids = new Set<string>();
-    const count = 1000;
+  let generateId: typeof import("./ulid").ulid;
+  let moduleIndex = 0;
 
-    for (let i = 0; i < count; i++) {
-      const id = ulid();
-      expect(id).toBeDefined();
-      expect(typeof id).toBe("string");
-      expect(id.length).toBeGreaterThan(0);
-      ids.add(id);
+  beforeEach(async () => {
+    // Isolate generator state without adding a reset API or leaking mock time to other suites.
+    ({ ulid: generateId } = await import(`./ulid.ts?test=${moduleIndex++}`));
+  });
+
+  afterEach(() => {
+    mock.restore();
+  });
+
+  test.each([
+    0,
+    1,
+    2 ** 31 - 1,
+    2 ** 31,
+    2 ** 32 - 1,
+    2 ** 32,
+    2 ** 32 + 1,
+    TIMESTAMP,
+    2 ** 48 - 1,
+  ])("encodes the complete timestamp %i in canonical form", (timestamp) => {
+    spyOn(Date, "now").mockReturnValue(timestamp);
+
+    const id = generateId();
+
+    expect(id).toMatch(CANONICAL_ULID);
+    expect(decodeTimestamp(id)).toBe(timestamp);
+  });
+
+  test("generates unique, increasing IDs in one fixed millisecond", () => {
+    spyOn(Date, "now").mockReturnValue(TIMESTAMP);
+    // Start at zero so crossing Base32 digit boundaries is deterministic.
+    spyOn(crypto, "getRandomValues").mockImplementation(
+      <T extends ArrayBufferView | null>(array: T) => {
+        if (array instanceof Uint8Array) array.fill(0);
+        return array;
+      },
+    );
+
+    const ids = Array.from({ length: 1025 }, () => generateId());
+
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toEqual([...ids].sort());
+    expect(ids[0]?.slice(10)).toBe("0000000000000000");
+    expect(ids[32]?.slice(10)).toBe("0000000000000010");
+    expect(ids[1024]?.slice(10)).toBe("0000000000000100");
+    for (const id of ids) {
+      expect(id).toMatch(CANONICAL_ULID);
+      expect(decodeTimestamp(id)).toBe(TIMESTAMP);
     }
-
-    // Все ID должны быть уникальными
-    expect(ids.size).toBe(count);
   });
 
-  test("should generate IDs with consistent format", () => {
-    const id = ulid();
-    expect(id).toMatch(/^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]+$/);
+  test("reads the current clock on every call", () => {
+    const now = spyOn(Date, "now").mockReturnValue(TIMESTAMP);
+    const first = generateId();
+    now.mockReturnValue(TIMESTAMP + 1);
+    const next = generateId();
+    now.mockReturnValue(TIMESTAMP - 1);
+    const earlier = generateId();
+
+    expect(decodeTimestamp(first)).toBe(TIMESTAMP);
+    expect(decodeTimestamp(next)).toBe(TIMESTAMP + 1);
+    expect(decodeTimestamp(earlier)).toBe(TIMESTAMP - 1);
+    expect(first < next).toBe(true);
   });
 
-  test("should handle rapid generation with same timestamp", () => {
-    // Генерируем много ID подряд, чтобы покрыть случай инкремента random
-    // при одинаковом времени (строки 10-18 в ulid.ts)
-    const ids = new Set<string>();
-    const count = 10000;
+  test("throws on random overflow instead of wrapping and recovers in the next millisecond", () => {
+    const now = spyOn(Date, "now").mockReturnValue(0);
+    spyOn(crypto, "getRandomValues").mockImplementation(
+      <T extends ArrayBufferView | null>(array: T) => {
+        if (array instanceof Uint8Array) array.fill(255);
+        return array;
+      },
+    );
 
-    // Используем Promise.all для максимально быстрой генерации
-    const promises = Array.from({ length: count }, () => {
-      return Promise.resolve(ulid());
-    });
+    expect(generateId()).toBe("0000000000ZZZZZZZZZZZZZZZZ");
+    expect(() => generateId()).toThrow();
+    expect(() => generateId()).toThrow();
 
-    return Promise.all(promises).then((generatedIds) => {
-      generatedIds.forEach((id) => {
-        expect(id).toBeDefined();
-        expect(typeof id).toBe("string");
-        ids.add(id);
-      });
-
-      // Все ID должны быть уникальными, даже при быстрой генерации
-      expect(ids.size).toBe(count);
-    });
-  });
-
-  test("should increment random part when timestamp is the same", () => {
-    // Этот тест проверяет логику инкремента random при одинаковом времени
-    // Особенно случай, когда random[i] достигает 0xff (строки 16-17)
-    const ids: string[] = [];
-    const count = 300; // Достаточно, чтобы покрыть инкремент через несколько байтов
-
-    // Генерируем ID синхронно, чтобы максимизировать шанс одинакового времени
-    for (let i = 0; i < count; i++) {
-      ids.push(ulid());
-    }
-
-    // Все ID должны быть уникальными
-    const uniqueIds = new Set(ids);
-    expect(uniqueIds.size).toBe(count);
-
-    // Проверяем, что ID имеют правильный формат
-    ids.forEach((id) => {
-      expect(id.length).toBeGreaterThan(0);
-      expect(id).toMatch(/^[0123456789ABCDEFGHJKMNPQRSTVWXYZ]+$/);
-    });
-  });
-
-  test("should handle overflow in random part", () => {
-    // Генерируем много ID подряд, чтобы покрыть случай,
-    // когда random[i] достигает 0xff и обнуляется (строка 17)
-    const ids = new Set<string>();
-    const count = 5000; // Достаточно для покрытия overflow
-
-    for (let i = 0; i < count; i++) {
-      const id = ulid();
-      ids.add(id);
-    }
-
-    // Все ID должны быть уникальными, даже при overflow
-    expect(ids.size).toBe(count);
+    now.mockReturnValue(1);
+    const next = generateId();
+    expect(next).toMatch(CANONICAL_ULID);
+    expect(decodeTimestamp(next)).toBe(1);
   });
 });
