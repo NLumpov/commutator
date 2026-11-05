@@ -271,21 +271,20 @@ export class CommutatorWorker<
     }
 
     // Собираем все промисы от вызовов exec для ожидания в конце
-    const pendingExecPromises: Promise<AbstractNodeInstance<string>[]>[] = [];
+    const pendingExecPromises: Promise<void>[] = [];
 
-    const exec = async (args: {
+    const runExec = async (args: {
       meta: unknown;
       pinsOut: Record<string, unknown>;
       execPinOut: string | null;
     }): Promise<void> => {
-      if (args.meta !== undefined) {
-        this.metaCache.set(node.uuid, args.meta);
+      if (args.pinsOut) {
+        this.saveToPinCache(runtimePinCache, node, args.pinsOut, this.pinCache);
       }
 
-      if (args.pinsOut) {
-        this.saveToPinCache(runtimePinCache, node, args.pinsOut);
-        // Также сохраняем в persistent cache для последующих вызовов
-        this.saveToPinCache(this.pinCache, node, args.pinsOut);
+      // Publish meta only after every supplied output has passed validation.
+      if (args.meta !== undefined) {
+        this.metaCache.set(node.uuid, args.meta);
       }
 
       // Если вызывается execPinOut – находим подключенные ноды и вызываем processFunction для них
@@ -320,10 +319,18 @@ export class CommutatorWorker<
         }
 
         // Вызываем processFunction для подключенной ноды и ждём завершения
-        const promise = this.processFunction(runtimePinCache, targetNode, targetExecPinIn.name);
-        pendingExecPromises.push(promise);
-        await promise;
+        await this.processFunction(runtimePinCache, targetNode, targetExecPinIn.name);
       }
+    };
+
+    const exec = (args: Parameters<typeof runExec>[0]): Promise<void> => {
+      // Start immediately, preserving continuation input reads and await exec ordering.
+      const promise = runExec(args);
+      pendingExecPromises.push(promise);
+      // Observe failures immediately, even while the author's async body is still running.
+      // The original promise still rejects for callers and the final join below.
+      void promise.catch(() => {});
+      return promise;
     };
 
     await functionConfig.exec({
@@ -336,7 +343,7 @@ export class CommutatorWorker<
       exec,
     });
 
-    // Дожидаемся завершения всех вложенных processFunction
+    // Дожидаемся завершения всех вызовов exec, включая валидацию выходов
     // Это нужно на случай, если пользователь вызвал exec() без await
     if (pendingExecPromises.length > 0) {
       await Promise.all(pendingExecPromises);
@@ -503,21 +510,55 @@ export class CommutatorWorker<
     pinCache: Map<string, unknown>,
     node: AbstractNodeInstance<string>,
     value: Record<string, unknown>,
+    persistentPinCache?: Map<string, unknown>,
   ): void {
     const pins = this.pinsRegistry.getPinsByNodeUuid(node.uuid);
+    let firstUuid: string | undefined;
+    let firstValue: unknown;
+    let remainingValues: unknown[] | undefined;
 
-    for (const pin of pins) {
-      if (pin.type !== PinInstanceType.Output || pin.dataType === null) {
+    for (let index = 0; index < pins.length; index++) {
+      const pin = pins[index];
+      if (!pin || pin.type !== PinInstanceType.Output || pin.dataType === null) {
         continue;
       }
 
       const pinData = value[pin.name];
 
-      if (pinData === undefined || !this.validator.validateFieldValue(pin.dataType, pinData)) {
+      if (pinData === undefined) {
         continue;
       }
 
-      pinCache.set(pin.uuid, pinData);
+      if (!this.validator.validateFieldValue(pin.dataType, pinData)) {
+        throw new CommutatorError(
+          `Invalid value for output pin "${pin.name}" of node "${node.name}"`,
+        );
+      }
+
+      if (firstUuid === undefined) {
+        firstUuid = pin.uuid;
+        firstValue = pinData;
+      } else {
+        // Read outputs once; getters may change their value on a second read.
+        remainingValues ??= [];
+        remainingValues[index] = pinData;
+      }
+    }
+
+    // No staging array for empty/single outputs. Publish only after full validation.
+    if (firstUuid !== undefined) {
+      pinCache.set(firstUuid, firstValue);
+      persistentPinCache?.set(firstUuid, firstValue);
+    }
+    if (remainingValues) {
+      for (let index = 0; index < remainingValues.length; index++) {
+        const pinData = remainingValues[index];
+        const pin = pins[index];
+        if (pinData !== undefined && pin) {
+          pinCache.set(pin.uuid, pinData);
+          persistentPinCache?.set(pin.uuid, pinData);
+        }
+      }
     }
   }
 

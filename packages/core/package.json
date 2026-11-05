@@ -10,5 +10,8 @@
     ".": "./index.ts"
   },
   "type": "module",
-  "types": "./index.ts"
+  "types": "./index.ts",
+  "scripts": {
+    "test": "bun test"
+  }
 }
