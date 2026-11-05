@@ -5,6 +5,9 @@
   "main": "./index.ts",
   "module": "./index.ts",
   "types": "./index.ts",
+  "scripts": {
+    "test": "bun test"
+  },
   "dependencies": {
     "@commutator/core": "workspace:*"
   },
