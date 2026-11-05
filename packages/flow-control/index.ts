@@ -139,11 +139,12 @@ export const flowControlExtension = Commutator.initialize()
     execPinsOut: { Flip: null, Flop: null },
     meta: { type: CommonDataType.Boolean },
     exec: ({ meta, exec }) => {
-      const isFlip = meta || true;
+      // Boolean meta defaults to false and records whether the previous branch was Flip.
+      const isFlip = !meta;
       return exec({
         execPinOut: isFlip ? "Flip" : "Flop",
         pinsOut: {},
-        meta: !isFlip,
+        meta: isFlip,
       });
     },
   })
