@@ -99,7 +99,7 @@ export const flowControlExtension = Commutator.initialize()
 
       if (meta < pinsIn.n) {
         return exec({
-          execPinOut: "Counter",
+          execPinOut: "",
           pinsOut: { Counter: meta + 1 },
           meta: meta + 1,
         });
