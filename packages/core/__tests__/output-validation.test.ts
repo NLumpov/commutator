@@ -170,6 +170,97 @@ describe("Worker output validation", () => {
     });
   });
 
+  test("output getters are read once before either cache publishes the batch", async () => {
+    const { schema, seen, setOutput } = createFunctionGraph();
+    const worker = schema.createWorker();
+    await worker.triggerEvent("Tick", {});
+    const before = worker.extract();
+    let firstReads = 0;
+    let valueReads = 0;
+    setOutput({
+      get first() {
+        firstReads++;
+        return firstReads === 1 ? 2 : "invalid";
+      },
+      get value() {
+        valueReads++;
+        expect(worker.extract()).toEqual(before);
+        return valueReads === 1 ? 8 : "invalid";
+      },
+    });
+    await worker.triggerEvent("Tick", {});
+    expect(firstReads).toBe(1);
+    expect(valueReads).toBe(1);
+    expect(seen).toEqual([
+      { first: 1, value: 7 },
+      { first: 2, value: 8 },
+    ]);
+  });
+
+  test("a later output getter failure does not publish earlier values or meta", async () => {
+    const { schema, seen, setOutput } = createFunctionGraph();
+    const worker = schema.createWorker();
+    await worker.triggerEvent("Tick", {});
+    const before = worker.extract();
+    const failure = new Error("Output getter failed");
+    setOutput({
+      first: 2,
+      get value() {
+        throw failure;
+      },
+    });
+    await expect(worker.triggerEvent("Tick", {})).rejects.toBe(failure);
+    expect(worker.extract()).toEqual(before);
+    expect(seen).toEqual([{ first: 1, value: 7 }]);
+  });
+
+  test("sparse multi-output batches stay atomic after staging several values", async () => {
+    const fields = {
+      first: { type: CommonDataType.Number },
+      missing: { type: CommonDataType.Number },
+      third: { type: CommonDataType.Number },
+      last: { type: CommonDataType.Number },
+    } satisfies Record<string, Field<{}>>;
+    let output: any = { first: 1, third: 3, last: 4 };
+    const seen: unknown[] = [];
+    const commutator = Commutator.initialize()
+      .defineEvent("Tick", { pinsOut: {}, execPinsOut: { next: null } })
+      .defineFunction("Source", {
+        pinsIn: {},
+        pinsOut: fields,
+        execPinsIn: { start: null },
+        execPinsOut: { next: null },
+        exec: async ({ exec }) => exec({ pinsOut: output, execPinOut: "next", meta: null }),
+      })
+      .defineFunction("Sink", {
+        pinsIn: fields,
+        pinsOut: {},
+        execPinsIn: { start: null },
+        execPinsOut: {},
+        exec: async ({ pinsIn }) => {
+          seen.push({ ...pinsIn });
+        },
+      });
+    const schema = commutator.createSchema();
+    const source = schema.createFunction("Source");
+    const sink = schema.createFunction("Sink");
+    schema.createEvent("Tick").wire("next", source, "start");
+    source.wire("next", sink, "start");
+    for (const key of ["first", "missing", "third", "last"] as const) {
+      source.wire(key, sink, key);
+    }
+    const worker = schema.createWorker();
+    await worker.triggerEvent("Tick", {});
+    const before = worker.extract();
+    output = { first: 2, third: 30, last: "invalid" };
+    await expect(worker.triggerEvent("Tick", {})).rejects.toThrow(CommutatorError);
+    expect(worker.extract()).toEqual(before);
+    expect(seen).toEqual([{ first: 1, missing: null, third: 3, last: 4 }]);
+    output = { first: undefined, third: null, last: 9 };
+    await worker.triggerEvent("Tick", {});
+    expect(seen.at(-1)).toEqual({ first: 1, missing: null, third: null, last: 9 });
+  });
+
   test("an invalid Event batch preserves all prior payload pins and stops its consumers", async () => {
     const seen: unknown[] = [];
     const commutator = Commutator.initialize()

@@ -124,7 +124,7 @@ export class CommutatorWorker<
       new Queue();
 
     for (const event of events) {
-      this.saveToPinCache([this.pinCache], event, payload);
+      this.saveToPinCache(this.pinCache, event, payload);
 
       // Берём все exec пины на выход из ивента
       const eventExecPinsOut = this.pinsRegistry.getNodeOutExecPinsIndex().get(event.uuid);
@@ -279,7 +279,7 @@ export class CommutatorWorker<
       execPinOut: string | null;
     }): Promise<void> => {
       if (args.pinsOut) {
-        this.saveToPinCache([runtimePinCache, this.pinCache], node, args.pinsOut);
+        this.saveToPinCache(runtimePinCache, node, args.pinsOut, this.pinCache);
       }
 
       // Publish meta only after every supplied output has passed validation.
@@ -443,7 +443,7 @@ export class CommutatorWorker<
       config: node.config,
     });
 
-    this.saveToPinCache([runtimePinCache], node, result);
+    this.saveToPinCache(runtimePinCache, node, result);
   }
 
   private async processRef(
@@ -507,15 +507,19 @@ export class CommutatorWorker<
   }
 
   private saveToPinCache(
-    pinCaches: readonly Map<string, unknown>[],
+    pinCache: Map<string, unknown>,
     node: AbstractNodeInstance<string>,
     value: Record<string, unknown>,
+    persistentPinCache?: Map<string, unknown>,
   ): void {
     const pins = this.pinsRegistry.getPinsByNodeUuid(node.uuid);
-    const outputs: [string, unknown][] = [];
+    let firstUuid: string | undefined;
+    let firstValue: unknown;
+    let remainingValues: unknown[] | undefined;
 
-    for (const pin of pins) {
-      if (pin.type !== PinInstanceType.Output || pin.dataType === null) {
+    for (let index = 0; index < pins.length; index++) {
+      const pin = pins[index];
+      if (!pin || pin.type !== PinInstanceType.Output || pin.dataType === null) {
         continue;
       }
 
@@ -531,13 +535,29 @@ export class CommutatorWorker<
         );
       }
 
-      outputs.push([pin.uuid, pinData]);
+      if (firstUuid === undefined) {
+        firstUuid = pin.uuid;
+        firstValue = pinData;
+      } else {
+        // Read outputs once; getters may change their value on a second read.
+        remainingValues ??= [];
+        remainingValues[index] = pinData;
+      }
     }
 
-    // One rejected output batch must not publish any of its values to either cache.
-    for (const [uuid, pinData] of outputs) {
-      for (const pinCache of pinCaches) {
-        pinCache.set(uuid, pinData);
+    // No staging array for empty/single outputs. Publish only after full validation.
+    if (firstUuid !== undefined) {
+      pinCache.set(firstUuid, firstValue);
+      persistentPinCache?.set(firstUuid, firstValue);
+    }
+    if (remainingValues) {
+      for (let index = 0; index < remainingValues.length; index++) {
+        const pinData = remainingValues[index];
+        const pin = pins[index];
+        if (pinData !== undefined && pin) {
+          pinCache.set(pin.uuid, pinData);
+          persistentPinCache?.set(pin.uuid, pinData);
+        }
       }
     }
   }
