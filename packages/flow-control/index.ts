@@ -160,7 +160,7 @@ export const flowControlExtension = Commutator.initialize()
 
         if (isOpen) {
           return exec({
-            execPinOut: null,
+            execPinOut: "",
             pinsOut: {},
             meta,
           });
