@@ -98,9 +98,6 @@ export class CommutatorSchema<
     if (this.wiresRegistry.hasCycle("data")) {
       throw new CommutatorError("Cyclic connection detected in data wires");
     }
-    if (this.wiresRegistry.hasCycle("exec")) {
-      throw new CommutatorError("Cyclic connection detected in exec wires");
-    }
 
     // После восстановления всех пинов, вызываем onConfigChange для всех нод (если есть callback'и)
     // Используем итератор напрямую - O(n) но без создания промежуточного массива
@@ -621,7 +618,10 @@ export class CommutatorSchema<
       this.nodesRegistry,
     );
 
-    if (this.wiresRegistry.willCreateCycle(updatedOutputPin, updatedInputPin)) {
+    if (
+      updatedOutputPin.type === PinInstanceType.Output &&
+      this.wiresRegistry.willCreateCycle(updatedOutputPin, updatedInputPin)
+    ) {
       throw new CommutatorError("Cyclic connection detected in pins");
     }
 

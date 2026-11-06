@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { CommonDataType, Commutator, NodeType } from ".";
-import { CommutatorError } from "./commutator-error";
 import { ulid } from "../../util/ulid";
 import { PinInstanceType } from "../schema/enums";
 import { NodesRegistry } from "../schema/nodes-registry";
-import { WiresRegistry } from "../schema/wires-registry";
 import { PinsRegistry } from "../schema/pins-registry";
 import type { SchemaSnapshot } from "../schema/types";
+import { WiresRegistry } from "../schema/wires-registry";
+import { CommonDataType, Commutator, NodeType } from ".";
+import { CommutatorError } from "./commutator-error";
 import type { Field } from "./types";
 
 describe("CommutatorValidator", () => {
@@ -599,7 +599,7 @@ describe("CommutatorValidator", () => {
       }).toThrow(CommutatorError);
     });
 
-    test("should throw error on cyclic connection", () => {
+    test("should restore an exec cycle", () => {
       const commutator = Commutator.initialize()
         .defineFunction("A", {
           pinsIn: {},
@@ -644,7 +644,7 @@ describe("CommutatorValidator", () => {
 
       expect(() => {
         commutator.createSchema(snapshot);
-      }).toThrow(CommutatorError);
+      }).not.toThrow();
     });
 
     test("should throw error when dataType does not exist in DataTypes", () => {

@@ -1,5 +1,5 @@
-import { describe, test, expect } from "bun:test";
-import { Commutator, CommonDataType, CommutatorError } from "../commutator";
+import { describe, expect, test } from "bun:test";
+import { CommonDataType, Commutator, CommutatorError } from "../commutator";
 import { PinInstanceType } from "../schema/enums";
 import type { WorkerSnapshot } from "./types";
 
@@ -254,7 +254,7 @@ describe("CommutatorWorker", () => {
   });
 
   describe("Infinite loops - exec chains", () => {
-    test("should detect infinite loop when function calls itself through exec", async () => {
+    test("should require a budget for an exec cycle when function calls itself through exec", async () => {
       const commutator = Commutator.initialize()
         .defineEvent("onClick", {
           pinsOut: { x: { type: CommonDataType.Number } },
@@ -280,13 +280,14 @@ describe("CommutatorWorker", () => {
         .getNodePins(func.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
-      // Попытка создать цикл должна быть обнаружена при создании связи
+      // Exec cycles are valid graphs, but require a configured execution budget.
       expect(() => {
         schema.wire({ fromPinUuid: execOut!.uuid, toPinUuid: execIn!.uuid });
-      }).toThrow(CommutatorError);
+      }).not.toThrow();
+      await expect(schema.createWorker().triggerEvent("onClick", { x: 1 })).rejects.toThrow("MAX_STEPS_REQUIRED");
     });
 
-    test("should detect infinite loop in exec chain (A -> B -> A)", async () => {
+    test("should require a budget for an exec cycle in exec chain (A -> B -> A)", async () => {
       const commutator = Commutator.initialize()
         .defineEvent("onClick", {
           pinsOut: { x: { type: CommonDataType.Number } },
@@ -329,13 +330,14 @@ describe("CommutatorWorker", () => {
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: aExecOut!.uuid, toPinUuid: bExecIn!.uuid });
-      // Попытка создать цикл должна быть обнаружена при создании связи
+      // Exec cycles are valid graphs, but require a configured execution budget.
       expect(() => {
         schema.wire({ fromPinUuid: bExecOut!.uuid, toPinUuid: aExecIn!.uuid });
-      }).toThrow(CommutatorError);
+      }).not.toThrow();
+      await expect(schema.createWorker().triggerEvent("onClick", { x: 1 })).rejects.toThrow("MAX_STEPS_REQUIRED");
     });
 
-    test("should detect infinite loop with multiple exec calls", async () => {
+    test("should require a budget for an exec cycle with multiple exec calls", async () => {
       let callCount = 0;
       const commutator = Commutator.initialize()
         .defineEvent("onClick", {
@@ -367,10 +369,11 @@ describe("CommutatorWorker", () => {
         .getNodePins(func.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
-      // Попытка создать цикл должна быть обнаружена при создании связи
+      // Exec cycles are valid graphs, but require a configured execution budget.
       expect(() => {
         schema.wire({ fromPinUuid: execOut!.uuid, toPinUuid: execIn!.uuid });
-      }).toThrow(CommutatorError);
+      }).not.toThrow();
+      await expect(schema.createWorker().triggerEvent("onClick", { x: 1 })).rejects.toThrow("MAX_STEPS_REQUIRED");
     });
   });
 

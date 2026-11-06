@@ -1,5 +1,6 @@
 import { CommutatorSchema, type SchemaSnapshot } from "../schema";
 import { CommutatorConfig } from "./commutator-config";
+import { CommutatorExecutionError } from "./commutator-error";
 import { CommutatorValidator } from "./commutator-validator";
 import type { CommonDataType } from "./enums";
 import type { EventNode, Field, FunctionNode, PureFunctionNode, RefNode } from "./types";
@@ -49,6 +50,25 @@ export class Commutator<
     );
   }
 
+  configure(options: {
+    readonly maxSteps: number;
+  }): Commutator<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
+    if (options.maxSteps === undefined) {
+      throw new CommutatorExecutionError("INVALID_MAX_STEPS");
+    }
+    return new Commutator(
+      new CommutatorConfig(
+        this.config.dataTypes,
+        this.config.events,
+        this.config.refs,
+        this.config.pureFunctions,
+        this.config.functions,
+        this.config.apis,
+        options.maxSteps,
+      ),
+    );
+  }
+
   defineDataType<const Name extends string, const DataType extends Field<DataTypes>>(
     name: Name extends keyof DataTypes | keyof typeof CommonDataType ? never : Name,
     dataType: DataType,
@@ -75,6 +95,7 @@ export class Commutator<
         this.config.pureFunctions,
         this.config.functions,
         this.config.apis,
+        this.config.maxSteps,
       ),
     );
   }
@@ -122,6 +143,7 @@ export class Commutator<
         this.config.pureFunctions,
         this.config.functions,
         this.config.apis,
+        this.config.maxSteps,
       ),
     );
   }
@@ -163,6 +185,7 @@ export class Commutator<
         this.config.pureFunctions,
         this.config.functions,
         this.config.apis,
+        this.config.maxSteps,
       ),
     );
   }
@@ -213,6 +236,7 @@ export class Commutator<
         },
         this.config.functions,
         this.config.apis,
+        this.config.maxSteps,
       ),
     );
   }
@@ -274,6 +298,7 @@ export class Commutator<
           [name]: functionNode,
         },
         this.config.apis,
+        this.config.maxSteps,
       ),
     );
   }
@@ -290,6 +315,7 @@ export class Commutator<
         this.config.pureFunctions,
         this.config.functions,
         { ...this.config.apis, [name]: api },
+        this.config.maxSteps,
       ),
     );
   }
@@ -338,6 +364,7 @@ export class Commutator<
         { ...this.config.pureFunctions, ...other.config.pureFunctions },
         { ...this.config.functions, ...other.config.functions },
         { ...this.config.apis, ...other.config.apis },
+        this.config.maxSteps,
       ),
     );
   }

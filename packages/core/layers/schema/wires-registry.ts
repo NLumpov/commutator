@@ -162,7 +162,10 @@ export class WiresRegistry<DataTypes extends Record<string, Field<DataTypes>>> {
       return;
     }
 
-    const wire: Wire = { from, to };
+    // Both indexes store the same Wire object. Deleting a fresh { from, to }
+    // would leave traversal edges behind after updating the topology index.
+    const wire = this.getWiresByFromPin(from).find((candidate) => candidate.to === to);
+    if (!wire) return;
 
     const fromPin = pinsRegistry.getPinByUuid(from);
     const toPin = pinsRegistry.getPinByUuid(to);

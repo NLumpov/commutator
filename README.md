@@ -124,6 +124,67 @@ const add = schema.createPureFunction("Add");
 
 ## Документация
 
+### Exec cycles and execution limits
+
+Configure the budget once on a Commutator instance:
+
+```typescript
+const commutator = Commutator.initialize().configure({ maxSteps: 10_000 });
+// Define nodes, then create schemas and workers as usual.
+await worker.triggerEvent("start", payload);
+```
+
+`initialize(dataTypes, events, refs, pureFunctions, functions, apis)` keeps its
+existing positional arguments and type inference; `initialize()` remains valid.
+`configure({ maxSteps })` returns a new instance with the same registry types.
+It can be used before or after definitions without changing the original instance
+or existing schemas/workers. Definitions retain the limit;
+`host.inject(extension)` retains the host's limit, not the extension's.
+Options are read at configuration; mutating the supplied options object does not
+reconfigure existing schemas or workers. There is no per-trigger override or
+process-wide setting.
+
+Exec back edges and exec self-loops are supported by `wire`, `extract`, and schema
+restoration. Data cycles and data self-loops remain invalid. With no `maxSteps`,
+acyclic graphs retain their existing behavior; attempting to run a graph containing
+an exec cycle rejects with `MAX_STEPS_REQUIRED` before changing event caches.
+`maxSteps` must be a positive safe integer; invalid configuration throws
+`CommutatorExecutionError` with `code: "INVALID_MAX_STEPS"`.
+
+One `triggerEvent` call is one run. Every Function admission, including repeated
+visits, reserves one step before reading inputs or invoking a Ref. All matching
+Event instances and parallel branches share this counter. Concurrent or subsequent
+trigger calls get independent counters under the same configured limit; their
+pin/meta caches retain the existing shared behavior. Events, PureFunctions and
+Refs do not consume separate steps. Exactly `maxSteps` admissions are allowed;
+the next attempt latches `CommutatorExecutionError` with `code: "STEP_LIMIT"`.
+Catching that error does not reset the budget. No further Function is admitted.
+An admitted input read or yield may still be pending when another branch exhausts
+the budget; its user callback is not started after that failure.
+
+`exec` starts traversal immediately and `await exec(...)` waits for the child
+branch, including code after its nested awaits. Cyclic graphs periodically yield
+to the event loop after capturing direct inputs and meta, before invoking the next
+callback. This bounds the synchronous stack and allows timers/process termination;
+parallel work may progress during that yield. DAG execution gains no scheduling
+queue or yield. Outputs remain one current value per pin UUID, and meta remains
+one value per node UUID.
+
+The budget does not limit time inside an arbitrary callback. Already admitted
+callbacks and issued `exec` calls are awaited before the trigger settles, including
+on failure. Their committed outputs remain; arbitrary JavaScript and external
+effects cannot be forcibly stopped or rolled back. Callbacks must await their own
+asynchronous work. Awaited callback chains retain O(maxSteps) continuations until
+completion; this is not constant-memory tail-call execution.
+
+`WorkerSnapshot` still contains only `pinCache` and `metaCache`. Restoring it and
+triggering an event starts a new run. Durable budgets/checkpoints, crash recovery,
+human waits, completion deduplication, stop/reconciliation, and repeated Join
+generations require a separate runtime contract; they are not implemented here.
+Ordinary fan-in still executes once per incoming branch, not as a Join barrier.
+
+See [the development/review cycle example](packages/examples/17-exec-cycles.ts).
+
 Подробная документация для разработчиков и AI агентов находится в файле [AGENTS.MD](./AGENTS.MD).
 
 ## Разработка

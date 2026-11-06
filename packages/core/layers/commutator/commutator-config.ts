@@ -1,3 +1,4 @@
+import { CommutatorExecutionError } from "./commutator-error";
 import type { EventNode, Field, FunctionNode, PureFunctionNode, RefNode } from "./types";
 
 export class CommutatorConfig<
@@ -18,7 +19,12 @@ export class CommutatorConfig<
     public readonly pureFunctions: PureFunctions,
     public readonly functions: Functions,
     public readonly apis: Apis,
-  ) {}
+    public readonly maxSteps?: number,
+  ) {
+    if (maxSteps !== undefined && (!Number.isSafeInteger(maxSteps) || maxSteps <= 0)) {
+      throw new CommutatorExecutionError("INVALID_MAX_STEPS");
+    }
+  }
 
   public getNodeConfigByName(name: string) {
     return this.events[name] || this.refs[name] || this.pureFunctions[name] || this.functions[name];
