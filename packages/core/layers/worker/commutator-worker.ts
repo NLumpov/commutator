@@ -307,8 +307,8 @@ export class CommutatorWorker<
       meta = this.validator.buildDefaultValueFromField(functionConfig.meta);
     }
 
-    // Собираем все промисы от вызовов exec для ожидания в конце
-    const pendingExecPromises = new Set<Promise<void>>();
+    let pendingExecCount = 0;
+    let resolveDrain: (() => void) | undefined;
     let failed = false;
     let failure: unknown;
     const recordFailure = (error: unknown): void => {
@@ -316,6 +316,17 @@ export class CommutatorWorker<
         failed = true;
         failure = error;
       }
+    };
+    const settleExec = (): void => {
+      if (--pendingExecCount === 0) {
+        const resolve = resolveDrain;
+        resolveDrain = undefined;
+        resolve?.();
+      }
+    };
+    const rejectExec = (error: unknown): void => {
+      recordFailure(error);
+      settleExec();
     };
 
     const runExec = async (args: {
@@ -371,16 +382,10 @@ export class CommutatorWorker<
     const exec = (args: Parameters<typeof runExec>[0]): Promise<void> => {
       // Start immediately, preserving continuation input reads and await exec ordering.
       const promise = runExec(args);
-      pendingExecPromises.add(promise);
+      pendingExecCount++;
       // Observe failures immediately, even while the author's async body is still running.
       // The original promise still rejects for callers and the final join below.
-      void promise.then(
-        () => pendingExecPromises.delete(promise),
-        (error: unknown) => {
-          pendingExecPromises.delete(promise);
-          recordFailure(error);
-        },
-      );
+      void promise.then(settleExec, rejectExec);
       return promise;
     };
 
@@ -414,8 +419,11 @@ export class CommutatorWorker<
 
     // Дожидаемся завершения всех вызовов exec, включая валидацию выходов
     // Это нужно на случай, если пользователь вызвал exec() без await
-    while (pendingExecPromises.size > 0) {
-      await Promise.allSettled(pendingExecPromises);
+    // Completion handlers may issue another exec before a drained wave resumes.
+    while (pendingExecCount > 0) {
+      await new Promise<void>((resolve) => {
+        resolveDrain = resolve;
+      });
     }
 
     if (run.limitError) throw run.limitError;
