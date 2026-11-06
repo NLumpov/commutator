@@ -126,21 +126,21 @@ const add = schema.createPureFunction("Add");
 
 ### Exec cycles and execution limits
 
-Configure the budget once, when creating the Commutator:
+Configure the budget once on a Commutator instance:
 
 ```typescript
-const commutator = Commutator.initialize({ maxSteps: 10_000 });
+const commutator = Commutator.initialize().configure({ maxSteps: 10_000 });
 // Define nodes, then create schemas and workers as usual.
 await worker.triggerEvent("start", payload);
 ```
 
-`initialize` accepts one options object. Its optional fields are `maxSteps`,
-`dataTypes`, `events`, `refs`, `pureFunctions`, `functions`, and `apis`.
-Direct registry initialization uses named fields instead of the former positional
-arguments, for example `Commutator.initialize({ apis: { client } })`. Normal
-`initialize().define...` chains remain valid. Definitions retain the limit;
+`initialize(dataTypes, events, refs, pureFunctions, functions, apis)` keeps its
+existing positional arguments and type inference; `initialize()` remains valid.
+`configure({ maxSteps })` returns a new instance with the same registry types.
+It can be used before or after definitions without changing the original instance
+or existing schemas/workers. Definitions retain the limit;
 `host.inject(extension)` retains the host's limit, not the extension's.
-Options are read at initialization; mutating the supplied options object does not
+Options are read at configuration; mutating the supplied options object does not
 reconfigure existing schemas or workers. There is no per-trigger override or
 process-wide setting.
 

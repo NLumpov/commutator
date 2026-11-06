@@ -4,7 +4,9 @@ import { CommonDataType, Commutator, CommutatorExecutionError, NodeType } from "
 function loopFixture(maxSteps?: number, stopAt?: number, twoNodes = false) {
   let visits = 0;
   const trace: string[] = [];
-  const commutator = Commutator.initialize({ maxSteps })
+  const base = Commutator.initialize();
+  const configured = maxSteps === undefined ? base : base.configure({ maxSteps });
+  const commutator = configured
     .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
     .defineFunction("Loop", {
       pinsIn: {},
@@ -46,14 +48,21 @@ describe("execution budgets", () => {
     Number.POSITIVE_INFINITY,
     Number.NEGATIVE_INFINITY,
     Number.MAX_SAFE_INTEGER + 1,
-  ])("rejects invalid maxSteps %s at initialization", (maxSteps) => {
+  ])("rejects invalid maxSteps %s at configuration", (maxSteps) => {
     try {
-      Commutator.initialize({ maxSteps });
+      Commutator.initialize().configure({ maxSteps });
       throw new Error("Expected invalid configuration to throw");
     } catch (error) {
       expect(error).toBeInstanceOf(CommutatorExecutionError);
       expect(error).toHaveProperty("code", "INVALID_MAX_STEPS");
     }
+  });
+
+  test("rejects a missing configure budget from an untyped caller", () => {
+    const commutator = Commutator.initialize();
+    expect(() => Reflect.apply(commutator.configure, commutator, [{}])).toThrow(
+      "INVALID_MAX_STEPS",
+    );
   });
 
   test("accepts the largest safe integer as a budget", async () => {
@@ -155,7 +164,7 @@ describe("execution budgets", () => {
   test("inherits the receiving instance's limit through every fluent operation and inject", async () => {
     let visits = 0;
     const options = { maxSteps: 2 };
-    const base = Commutator.initialize(options);
+    const base = Commutator.initialize().configure(options);
     options.maxSteps = 100;
     const commutator = base
       .defineDataType("Text", { type: CommonDataType.String })
@@ -173,7 +182,7 @@ describe("execution budgets", () => {
           return exec({ execPinOut: "next", pinsOut: {}, meta: null });
         },
       })
-      .inject(Commutator.initialize({ maxSteps: 1000 }));
+      .inject(Commutator.initialize().configure({ maxSteps: 1000 }));
     const schema = commutator.createSchema();
     const loop = schema.createFunction("Loop");
     schema.createEvent("start").wire("next", loop, "enter");
@@ -190,12 +199,11 @@ describe("execution budgets", () => {
     );
   });
 
-  test("initializes named registries with inferred node names and data types", async () => {
+  test("preserves positional initialization and inferred types through configure", async () => {
     let value: unknown;
-    const commutator = Commutator.initialize({
-      maxSteps: 1,
-      dataTypes: { Text: { type: CommonDataType.String } },
-      events: {
+    const original = Commutator.initialize(
+      { Text: { type: CommonDataType.String } },
+      {
         start: {
           type: NodeType.Event,
           pinsIn: {},
@@ -204,8 +212,13 @@ describe("execution budgets", () => {
           execPinsOut: { next: null },
         },
       },
-      apis: { example: { value: "named" } },
-    }).defineFunction("Read", {
+      {},
+      {},
+      {},
+      { example: { value: "positional" } },
+    );
+    const configured: typeof original = original.configure({ maxSteps: 1 });
+    const commutator = configured.defineFunction("Read", {
       pinsIn: { value: { type: "Text" } },
       pinsOut: {},
       execPinsIn: { enter: null },
@@ -217,14 +230,29 @@ describe("execution budgets", () => {
     const schema = commutator.createSchema();
     const read = schema.createFunction("Read");
     schema.createEvent("start").wire("next", read, "enter").wire("value", read, "value");
-    await schema.createWorker().triggerEvent("start", { value: "named" });
-    expect(value).toBe("named");
+    await schema.createWorker().triggerEvent("start", { value: "positional" });
+    expect(value).toBe("positional");
+  });
+
+  test("configure returns a new instance without changing existing schemas or workers", async () => {
+    const fixture = loopFixture(3);
+    const worker = fixture.schema.createWorker();
+    const configured = fixture.commutator.configure({ maxSteps: 1 });
+    const other = configured.createSchema(fixture.schema.extract()).createWorker();
+    expect(configured).not.toBe(fixture.commutator);
+    await expect(worker.triggerEvent("start", {})).rejects.toHaveProperty("code", "STEP_LIMIT");
+    expect(fixture.visits()).toBe(3);
+    await expect(other.triggerEvent("start", {})).rejects.toHaveProperty("code", "STEP_LIMIT");
+    expect(fixture.visits()).toBe(4);
+    await expect(worker.triggerEvent("start", {})).rejects.toHaveProperty("code", "STEP_LIMIT");
+    expect(fixture.visits()).toBe(7);
   });
 
   test("counts all parallel branches in one run and latches the same failure", async () => {
     const calls = { left: 0, right: 0 };
     const failures: unknown[] = [];
-    const commutator = Commutator.initialize({ maxSteps: 5 })
+    const commutator = Commutator.initialize()
+      .configure({ maxSteps: 5 })
       .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
       .defineFunction("Fork", {
         pinsIn: {},
@@ -279,7 +307,8 @@ describe("execution budgets", () => {
 
   test("concurrent triggers have independent counters, including multiple event instances", async () => {
     let visits = 0;
-    const commutator = Commutator.initialize({ maxSteps: 2 })
+    const commutator = Commutator.initialize()
+      .configure({ maxSteps: 2 })
       .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
       .defineFunction("Read", {
         pinsIn: {},
@@ -305,7 +334,8 @@ describe("execution budgets", () => {
 
   test("checks admission before pulling external Ref inputs", async () => {
     let reads = 0;
-    const commutator = Commutator.initialize({ maxSteps: 1 })
+    const commutator = Commutator.initialize()
+      .configure({ maxSteps: 1 })
       .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
       .defineRef("External", {
         pinsOut: { value: { type: CommonDataType.Number } },
@@ -347,7 +377,8 @@ describe("execution budgets", () => {
       release = resolve;
     });
     let siblingFinished = false;
-    const commutator = Commutator.initialize({ maxSteps: 2 })
+    const commutator = Commutator.initialize()
+      .configure({ maxSteps: 2 })
       .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
       .defineFunction("Fork", {
         pinsIn: {},
@@ -401,7 +432,8 @@ describe("execution budgets", () => {
     let firstDelayedInput: unknown;
     let captured = false;
     let remainingTails = 200;
-    const commutator = Commutator.initialize({ maxSteps: 201 })
+    const commutator = Commutator.initialize()
+      .configure({ maxSteps: 201 })
       .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
       .defineFunction("Write", {
         pinsIn: {},

@@ -11,7 +11,8 @@ let expectedTail = 0;
 let pause!: () => void;
 let release!: () => void;
 let gate: Promise<void>;
-const commutator = Commutator.initialize({ maxSteps })
+const commutator = Commutator.initialize()
+  .configure({ maxSteps })
   .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
   .defineFunction("Loop", {
     pinsIn: {},

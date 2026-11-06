@@ -1,5 +1,6 @@
 import { CommutatorSchema, type SchemaSnapshot } from "../schema";
 import { CommutatorConfig } from "./commutator-config";
+import { CommutatorExecutionError } from "./commutator-error";
 import { CommutatorValidator } from "./commutator-validator";
 import type { CommonDataType } from "./enums";
 import type { EventNode, Field, FunctionNode, PureFunctionNode, RefNode } from "./types";
@@ -37,24 +38,32 @@ export class Commutator<
     > = {},
     const Apis extends Record<string, any> = {},
   >(
-    options: {
-      readonly maxSteps?: number;
-      readonly dataTypes?: DataTypes;
-      readonly events?: Events;
-      readonly refs?: Refs;
-      readonly pureFunctions?: PureFunctions;
-      readonly functions?: Functions;
-      readonly apis?: Apis;
-    } = {},
+    dataTypes: DataTypes = {} as DataTypes,
+    events: Events = {} as Events,
+    refs: Refs = {} as Refs,
+    pureFunctions: PureFunctions = {} as PureFunctions,
+    functions: Functions = {} as Functions,
+    apis: Apis = {} as Apis,
   ): Commutator<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
     return new Commutator(
+      new CommutatorConfig(dataTypes, events, refs, pureFunctions, functions, apis),
+    );
+  }
+
+  configure(options: {
+    readonly maxSteps: number;
+  }): Commutator<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
+    if (options.maxSteps === undefined) {
+      throw new CommutatorExecutionError("INVALID_MAX_STEPS");
+    }
+    return new Commutator(
       new CommutatorConfig(
-        options.dataTypes ?? ({} as DataTypes),
-        options.events ?? ({} as Events),
-        options.refs ?? ({} as Refs),
-        options.pureFunctions ?? ({} as PureFunctions),
-        options.functions ?? ({} as Functions),
-        options.apis ?? ({} as Apis),
+        this.config.dataTypes,
+        this.config.events,
+        this.config.refs,
+        this.config.pureFunctions,
+        this.config.functions,
+        this.config.apis,
         options.maxSteps,
       ),
     );

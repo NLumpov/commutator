@@ -1,7 +1,8 @@
 import { CommonDataType, Commutator } from "@commutator/core";
 
 // One configuration inherited by every schema/worker from this instance.
-const commutator = Commutator.initialize({ maxSteps: 20 })
+const commutator = Commutator.initialize()
+  .configure({ maxSteps: 20 })
   .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
   .defineFunction("Develop", {
     pinsIn: {},

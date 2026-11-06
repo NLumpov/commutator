@@ -28,7 +28,8 @@
 **Ключевые методы:**
 
 ```typescript
-Commutator.initialize({ maxSteps: 10_000 }) // Общий лимит каждого запуска; для DAG настройка необязательна
+Commutator.initialize() // Прежние позиционные аргументы dataTypes/events/refs/pureFunctions/functions/apis
+.configure({ maxSteps: 10_000 }) // Общий лимит каждого запуска; для DAG настройка необязательна
 .defineDataType(name, field) // Определение пользовательского типа данных
 .defineEvent(name, config) // Определение типа события
 .defineRef(name, config) // Определение типа референса
@@ -194,9 +195,10 @@ await worker.triggerEvent("onClick", { x: 10, y: 20 });
    - Выполняет функцию и кеширует результаты
    - `exec` немедленно начинает дочернюю ветку; `await exec` ждёт её завершения
 
-`initialize` принимает один объект с необязательными полями `maxSteps`, `dataTypes`,
-`events`, `refs`, `pureFunctions`, `functions`, `apis`. Позиционные реестры больше
-не принимаются. Все `define` сохраняют настройку; `host.inject(extension)` сохраняет
+`initialize(dataTypes, events, refs, pureFunctions, functions, apis)` сохраняет
+прежние позиционные аргументы и типовывод. `.configure({ maxSteps })` возвращает
+новый экземпляр того же generic-типа, не меняя исходный экземпляр или уже созданные
+schemas/workers. Все `define` сохраняют настройку; `host.inject(extension)` сохраняет
 лимит host. `triggerEvent(name, payload)` не принимает переопределение лимита.
 
 Один trigger — один счётчик для всех его Event instances и параллельных ветвей.
@@ -204,7 +206,7 @@ await worker.triggerEvent("onClick", { x: 10, y: 20 });
 допустимы, следующий фиксирует `STEP_LIMIT`; перехват ошибки не сбрасывает бюджет.
 Конкурентные trigger имеют независимые счётчики и прежние общие pin/meta cache.
 Без настроенного положительного safe integer цикл отклоняется с `MAX_STEPS_REQUIRED`;
-невалидный заданный лимит — `INVALID_MAX_STEPS` при инициализации.
+невалидный заданный лимит — `INVALID_MAX_STEPS` при конфигурации.
 
 В циклическом графе Worker периодически уступает event loop после чтения прямых
 входов/meta, до callback, чтобы ограничить JS stack. У DAG дополнительной очереди
