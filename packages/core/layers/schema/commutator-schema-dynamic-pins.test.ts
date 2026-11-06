@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Commutator, CommonDataType } from "../commutator";
+import { CommonDataType, Commutator } from "../commutator";
 import { CommutatorError } from "../commutator/commutator-error";
 import { PinInstanceType } from "./enums";
 
@@ -106,14 +106,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const testApi = { test: () => "test" };
       let receivedApis: unknown = null;
 
-      const commutator = Commutator.initialize(
-        {},
-        {},
-        {},
-        {},
-        {},
-        { testApi },
-      ).defineFunction("test", {
+      const commutator = Commutator.initialize({ apis: { testApi } }).defineFunction("test", {
         pinsIn: {},
         pinsOut: {},
         execPinsIn: { start: null },

@@ -519,7 +519,10 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
       throw new CommutatorError(`Self-loop detected: pin ${fromPin.uuid} connected to itself`);
     }
 
-    if (fromPin.nodeUuid === toPin.nodeUuid) {
+    if (
+      fromPin.nodeUuid === toPin.nodeUuid &&
+      !(fromPin.type === PinInstanceType.OutputExec && toPin.type === PinInstanceType.InputExec)
+    ) {
       throw new CommutatorError(
         `Cannot connect pin "${fromPin.uuid}" to pin "${toPin.uuid}" from the same node "${fromPin.nodeUuid}"`,
       );

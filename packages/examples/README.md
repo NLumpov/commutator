@@ -248,6 +248,11 @@ import * as examples from "@commutator/examples";
 - ✅ Кеширование (Persistent и Runtime cache)
 - ✅ Метаданные нод
 
+### 17-exec-cycles.ts
+
+Development/review exec cycle with an instance-wide `maxSteps` budget, conditional
+exit, shared node meta, and a real cyclic SchemaSnapshot round-trip.
+
 ## Запуск примеров
 
 Каждый пример можно запустить через `bun run`:

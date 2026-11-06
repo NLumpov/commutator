@@ -766,7 +766,7 @@ describe("CommutatorSchema", () => {
 
     describe("cyclic connection detection", () => {
       describe("exec pins cycles", () => {
-        test("should detect direct exec cycle (A -> B -> A)", () => {
+        test("should allow direct exec cycle (A -> B -> A)", () => {
           const commutator = Commutator.initialize()
             .defineFunction("func1", {
               pinsIn: {},
@@ -808,10 +808,10 @@ describe("CommutatorSchema", () => {
           // Создаем второе соединение (func2 -> func1), это должно создать цикл
           expect(() => {
             instance.wire({ fromPinUuid: func2ExecOut!, toPinUuid: func1ExecIn! });
-          }).toThrow(CommutatorError);
+          }).not.toThrow();
         });
 
-        test("should detect indirect exec cycle (A -> B -> C -> A)", () => {
+        test("should allow indirect exec cycle (A -> B -> C -> A)", () => {
           const commutator = Commutator.initialize()
             .defineFunction("func1", {
               pinsIn: {},
@@ -868,7 +868,7 @@ describe("CommutatorSchema", () => {
           // Попытка создать соединение func3 -> func1 должна создать цикл
           expect(() => {
             instance.wire({ fromPinUuid: func3ExecOut!, toPinUuid: func1ExecIn! });
-          }).toThrow(CommutatorError);
+          }).not.toThrow();
         });
 
         test("should allow non-cyclic exec connections", () => {

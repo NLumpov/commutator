@@ -2,6 +2,7 @@ import { Queue } from "../../util/queue";
 import {
   type CommutatorConfig,
   CommutatorError,
+  CommutatorExecutionError,
   type CommutatorValidator,
   type EventNode,
   type Field,
@@ -18,6 +19,18 @@ import {
   type WiresRegistry,
 } from "../schema";
 import type { WorkerSnapshot } from "./types";
+
+interface ExecutionRun {
+  readonly maxSteps: number | undefined;
+  cyclic: boolean;
+  steps: number;
+  synchronousDepth: number;
+  limitError?: CommutatorExecutionError;
+}
+
+// Cyclic graphs yield before the native callback stack becomes deep. Direct
+// input reads still happen on entry; DAG traversal does not acquire a yield.
+const MAX_SYNCHRONOUS_CYCLIC_DEPTH = 64;
 
 export class CommutatorWorker<
   DataTypes extends Record<string, Field<DataTypes>>,
@@ -116,6 +129,16 @@ export class CommutatorWorker<
     event: Name,
     payload: Record<string, unknown>,
   ): Promise<void> {
+    const cyclic = this.wiresRegistry.hasCycle("exec");
+    if (cyclic && this.config.maxSteps === undefined) {
+      throw new CommutatorExecutionError("MAX_STEPS_REQUIRED");
+    }
+    const run: ExecutionRun = {
+      maxSteps: this.config.maxSteps,
+      cyclic,
+      steps: 0,
+      synchronousDepth: 0,
+    };
     const runtimePinCache: Map<string, unknown> = new Map();
 
     const events = this.nodesRegistry.getNodesByName(String(event));
@@ -166,15 +189,29 @@ export class CommutatorWorker<
         continue;
       }
 
-      await this.processFunction(runtimePinCache, node, execPinIn);
+      await this.processFunction(run, runtimePinCache, node, execPinIn);
     }
   }
 
   private async processFunction(
+    run: ExecutionRun,
     runtimePinCache: Map<string, unknown>,
     node: AbstractNodeInstance<string>,
     execPinIn: string,
   ): Promise<AbstractNodeInstance<string>[]> {
+    // Schemas are editable after a Worker is created. Recheck a newly introduced
+    // cycle before admitting its first step (the topology check is cached).
+    if (!run.cyclic && this.wiresRegistry.hasCycle("exec")) {
+      if (run.maxSteps === undefined) throw new CommutatorExecutionError("MAX_STEPS_REQUIRED");
+      run.cyclic = true;
+    }
+    if (run.limitError) throw run.limitError;
+    if (run.maxSteps !== undefined && run.steps >= run.maxSteps) {
+      run.limitError = new CommutatorExecutionError("STEP_LIMIT");
+      throw run.limitError;
+    }
+    run.steps++;
+
     const functionConfig = this.config.functions[node.name];
 
     if (!functionConfig) {
@@ -271,7 +308,15 @@ export class CommutatorWorker<
     }
 
     // Собираем все промисы от вызовов exec для ожидания в конце
-    const pendingExecPromises: Promise<void>[] = [];
+    const pendingExecPromises = new Set<Promise<void>>();
+    let failed = false;
+    let failure: unknown;
+    const recordFailure = (error: unknown): void => {
+      if (!failed) {
+        failed = true;
+        failure = error;
+      }
+    };
 
     const runExec = async (args: {
       meta: unknown;
@@ -319,35 +364,62 @@ export class CommutatorWorker<
         }
 
         // Вызываем processFunction для подключенной ноды и ждём завершения
-        await this.processFunction(runtimePinCache, targetNode, targetExecPinIn.name);
+        await this.processFunction(run, runtimePinCache, targetNode, targetExecPinIn.name);
       }
     };
 
     const exec = (args: Parameters<typeof runExec>[0]): Promise<void> => {
       // Start immediately, preserving continuation input reads and await exec ordering.
       const promise = runExec(args);
-      pendingExecPromises.push(promise);
+      pendingExecPromises.add(promise);
       // Observe failures immediately, even while the author's async body is still running.
       // The original promise still rejects for callers and the final join below.
-      void promise.catch(() => {});
+      void promise.then(
+        () => pendingExecPromises.delete(promise),
+        (error: unknown) => {
+          pendingExecPromises.delete(promise);
+          recordFailure(error);
+        },
+      );
       return promise;
     };
 
-    await functionConfig.exec({
-      pinsIn,
-      execPinsIn,
-      execPinsOut,
-      meta,
-      config: node.config,
-      triggeredExecPinKey: execPinIn,
-      exec,
-    });
+    if (run.cyclic && run.synchronousDepth >= MAX_SYNCHRONOUS_CYCLIC_DEPTH) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
+
+    try {
+      // Another branch may have exhausted the run while inputs or the yield
+      // were pending. In that case do not start another user callback.
+      if (run.limitError) throw run.limitError;
+      let execution: Promise<void>;
+      run.synchronousDepth++;
+      try {
+        execution = functionConfig.exec({
+          pinsIn,
+          execPinsIn,
+          execPinsOut,
+          meta,
+          config: node.config,
+          triggeredExecPinKey: execPinIn,
+          exec,
+        });
+      } finally {
+        run.synchronousDepth--;
+      }
+      await execution;
+    } catch (error) {
+      recordFailure(error);
+    }
 
     // Дожидаемся завершения всех вызовов exec, включая валидацию выходов
     // Это нужно на случай, если пользователь вызвал exec() без await
-    if (pendingExecPromises.length > 0) {
-      await Promise.all(pendingExecPromises);
+    while (pendingExecPromises.size > 0) {
+      await Promise.allSettled(pendingExecPromises);
     }
+
+    if (run.limitError) throw run.limitError;
+    if (failed) throw failure;
 
     return [];
   }
