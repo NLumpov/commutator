@@ -330,6 +330,19 @@ describe("independent finite JSON snapshots", () => {
     expect(() => worker.extract()).toThrow("INVALID_JSON");
   });
 
+  test("optional metadata never skips validation of a known getter", () => {
+    const { schema } = fixture();
+    const worker = schema.createWorker();
+    const node = schema.extract().nodes[0]!;
+    const baseline = worker.extract();
+    Object.defineProperty(node, "unused", { value: undefined, enumerable: true, configurable: true });
+    expect(worker.extract()).toEqual(baseline);
+    let called = false;
+    Object.defineProperty(node, "x", { enumerable: true, get() { called = true; return 0; } });
+    expect(() => worker.extract()).toThrow("INVALID_JSON");
+    expect(called).toBe(false);
+  });
+
   test("node config nested undefined is rejected while optional config absence stays valid", () => {
     const { schema } = fixture();
     const worker = schema.createWorker();

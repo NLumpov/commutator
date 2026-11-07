@@ -105,14 +105,20 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
   }
 
   public validateFieldValue(field: Field<DataTypes>, value: unknown): boolean {
-    const stack: { field: Field<DataTypes>; value: unknown }[] = [{ field, value }];
+    let currentField = field;
+    let currentValue = value;
+    let first = true;
+    let stack: { field: Field<DataTypes>; value: unknown }[] | undefined;
 
-    while (stack.length > 0) {
-      const item = stack.pop();
-      if (!item) {
-        break;
+    while (first || (stack !== undefined && stack.length > 0)) {
+      if (first) {
+        first = false;
+      } else {
+        const item = stack?.pop();
+        if (!item) break;
+        currentField = item.field;
+        currentValue = item.value;
       }
-      const { field: currentField, value: currentValue } = item;
 
       // null допустим для всех типов
       if (currentValue === null) {
@@ -136,6 +142,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
           if (!(key in obj)) {
             return false;
           }
+          stack ??= [];
           stack.push({ field: propertyField, value: obj[key] });
         }
         continue;
@@ -150,6 +157,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
           return false;
         }
         for (const item of currentValue) {
+          stack ??= [];
           stack.push({ field: currentField.itemType, value: item });
         }
         continue;
@@ -220,6 +228,7 @@ export class CommutatorValidator<const DataTypes extends Record<string, Field<Da
         if (!customField) {
           return false;
         }
+        stack ??= [];
         stack.push({ field: customField, value: currentValue });
         continue;
       }

@@ -180,10 +180,17 @@ function matchesSchema(schema: SchemaSnapshot, previous: SchemaSnapshot): boolea
     let count = keys.length;
     if (count !== baselineKeys.length) {
       for (const key of keys) {
+        if (typeof key !== "string") return false;
+        if (Object.hasOwn(baseline, key)) continue;
         const descriptor = Object.getOwnPropertyDescriptor(value, key);
-        if (typeof key !== "string" || !descriptor?.enumerable || !("value" in descriptor))
+        if (
+          !descriptor?.enumerable ||
+          !("value" in descriptor) ||
+          descriptor.value !== undefined ||
+          strictValue
+        )
           return false;
-        if (descriptor.value === undefined && !strictValue) count--;
+        count--;
       }
       if (count !== baselineKeys.length) return false;
     }
