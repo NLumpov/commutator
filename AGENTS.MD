@@ -579,7 +579,15 @@ Snapshot содержит независимый конечный JSON; стар
 дубликаты, чужой граф и не-JSON значения отклоняются целиком. Restore не запускает
 callbacks. Fingerprint учитывает живой граф, но не идентичность JS callbacks.
 Версии definitions закрепляет внешний consumer. Schema остаётся изменяемой.
-Input trigger копируется на API-границе; baseline и extract не раскрывают кеши.
+Input trigger проверяется как конечный JSON и копируется на API-границе до callbacks;
+общие ссылки и порядок ключей внутри прохода сохраняются. baseline и extract не
+раскрывают кеши. Явный undefined в outputs/meta отклоняется; отсутствие свойства
+сохраняет прежнее значение, null — значение. Array subclasses, как и custom objects,
+отклоняются, обычные массивы и plain/null-prototype objects поддерживаются.
+Optional Field.name: undefined нормализуется только в библиотечных descriptors,
+включая вложенные; пользовательские config/default остаются строгим JSON.
+Fingerprint содержит канонический текст графа O(graph-size), вычисляется один раз
+за extract и заново при restore, без кеширования поверх живой Schema.
 
 Snapshot сохраняется только после успешного полного trigger. Во время trigger
 extract и второй trigger отклоняются с WORKER_BUSY. После ошибки и drain детей

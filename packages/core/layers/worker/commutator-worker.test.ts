@@ -600,7 +600,7 @@ describe("CommutatorWorker", () => {
       await expect(worker.triggerEvent("onClick", { value: null })).resolves.toBeUndefined();
     });
 
-    test("should handle undefined values in pins", async () => {
+    test("should reject explicit undefined event values", async () => {
       const commutator = Commutator.initialize()
         .defineEvent("onClick", {
           pinsOut: { value: { type: CommonDataType.Number } },
@@ -642,7 +642,8 @@ describe("CommutatorWorker", () => {
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: processExecIn!.uuid });
 
       const worker = schema.createWorker();
-      await expect(worker.triggerEvent("onClick", { value: undefined })).resolves.toBeUndefined();
+      await expect(worker.triggerEvent("onClick", { value: undefined })).rejects.toThrow("non-JSON");
+      expect(() => worker.extract()).toThrow("WORKER_FAILED");
     });
 
     test("should handle missing values in payload", async () => {

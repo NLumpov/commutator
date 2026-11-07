@@ -5,6 +5,7 @@
  * - extract() - экспорт схемы в снапшот
  * - createSchema(snapshot) - создание схемы из снапшота
  * - Сериализация и десериализация схем
+ * - Worker baseline после полного trigger и продолжение в новом Worker
  */
 
 import { CommonDataType, Commutator } from "@commutator/core";
@@ -116,6 +117,18 @@ const restoredUserRef = schema2Nodes.find((n) => n.name === "userRef");
 if (restoredUserRef) {
   console.log(`  - Конфигурация userRef:`, restoredUserRef.config);
 }
+
+// WorkerSnapshot сохраняется отдельно от схемы, только после полного успешного trigger.
+const worker = schema1.createWorker();
+await worker.triggerEvent("onClick", { x: 10, y: 20 });
+const baseline = worker.extract();
+const restoredWorker = schema2.createWorker(JSON.parse(JSON.stringify(baseline)));
+if (JSON.stringify(restoredWorker.extract()) !== JSON.stringify(baseline)) {
+  throw new Error("Worker baseline did not roundtrip");
+}
+// Уже завершённый trigger не повторяется; новый запускается с сохранёнными кешами.
+await restoredWorker.triggerEvent("onClick", { x: 30, y: 12 });
+console.log("Worker baseline восстановлен; новый trigger завершён.");
 
 console.log("✅ Снапшот успешно сохранён и восстановлен!");
 

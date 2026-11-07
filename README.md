@@ -183,6 +183,10 @@ snapshot, duplicates, cache ownership, types, and graph identity without executi
 callbacks. The fingerprint preserves graph array order and observes the live
 Schema; it does not identify JavaScript callback implementations. The consumer
 must pin definition versions externally. Schema remains mutable through its existing APIs.
+Optional library `Field.name: undefined` is treated as an absent name, including
+nested descriptors. This exception never strips undefined from user config/default data.
+The fingerprint stores canonical graph text, so its size is proportional to the graph.
+It is recomputed once per extract and on restore; there is no cache across live Schema changes.
 
 ```ts
 const baseline = schema.createWorker().extract();
@@ -192,9 +196,14 @@ const next = worker.extract(); // persist only after the entire trigger succeeds
 ```
 
 Restore, trigger input, and extraction separate nested caller data from Worker
-caches. Non-JSON snapshot values (including undefined, non-finite numbers,
-functions, promises, cycles, accessors, and custom objects) are rejected rather
-than silently converted. `extract()` during execution rejects with `WORKER_BUSY`.
+caches. Trigger input is checked before callbacks, while shared values and object
+key order are preserved inside a run. Non-JSON input/snapshot values (including
+undefined, non-finite numbers, functions, promises, cycles, accessors, custom
+objects and Array subclasses) are rejected rather than silently converted.
+Ordinary arrays and plain or null-prototype records are supported. Explicit
+undefined Function outputs or metadata updates are rejected; an omitted update
+retains the old value and null is a value. Invalid JSON produced internally through
+an Any field is also rejected at extract. `extract()` during execution rejects with `WORKER_BUSY`.
 After a trigger fails and all issued child exec calls drain, both trigger and
 extract reject with `WORKER_FAILED`; create a new Worker from the last baseline.
 Calling a retained exec after its callback context closes rejects with
@@ -205,7 +214,11 @@ the baseline; previously persisted triggers are retained. Snapshots do not conta
 the JS stack, spent crash-attempt steps, race schedules, or call history. The host
 owns atomic persistence, retry limits, durable operation IDs, idempotency, receipts,
 unknown-outcome reconciliation, and stale-owner protection. The test-only
-`flow-consumer.test.ts` demonstrates these boundaries; the library adds no Agents
+`flow-consumer.test.ts` and `fixtures/flow-consumer.ts` demonstrate these boundaries:
+a lost response with unavailable or inconclusive lookup enters unknown outcome
+automatically, blocking launch/commit until an authoritative receipt reconciles it.
+A reliable same-key provider dedupe permits retry without another agent.
+The library adds no Agents
 or Flow runtime. Ordinary fan-in executes once per incoming branch, not as Join.
 
 See [the development/review cycle example](packages/examples/17-exec-cycles.ts).
