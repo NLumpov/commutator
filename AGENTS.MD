@@ -28,7 +28,7 @@
 **Ключевые методы:**
 
 ```typescript
-Commutator.initialize() // Прежние позиционные аргументы dataTypes/events/refs/pureFunctions/functions/apis
+Commutator.initialize({ dataTypes, events, refs, pureFunctions, functions, apis }) // Все секции опциональны
 .configure({ maxSteps: 10_000 }) // Общий лимит каждого запуска; для DAG настройка необязательна
 .defineDataType(name, field) // Определение пользовательского типа данных
 .defineEvent(name, config) // Определение типа события
@@ -195,8 +195,10 @@ await worker.triggerEvent("onClick", { x: 10, y: 20 });
    - Выполняет функцию и кеширует результаты
    - `exec` немедленно начинает дочернюю ветку; `await exec` ждёт её завершения
 
-`initialize(dataTypes, events, refs, pureFunctions, functions, apis)` сохраняет
-прежние позиционные аргументы и типовывод. `.configure({ maxSteps })` возвращает
+`initialize({ dataTypes, events, refs, pureFunctions, functions, apis })` регистрирует
+definitions одним объектом с типовыводом; все секции опциональны. `initialize()`
+создаёт пустой registry. Позиционные аргументы и неизвестные ключи отклоняются.
+`.configure({ maxSteps })` возвращает
 новый экземпляр того же generic-типа, не меняя исходный экземпляр или уже созданные
 schemas/workers. Все `define` сохраняют настройку; `host.inject(extension)` сохраняет
 лимит host. `triggerEvent(name, payload)` не принимает переопределение лимита.
@@ -204,7 +206,8 @@ schemas/workers. Все `define` сохраняют настройку; `host.in
 Один trigger — один счётчик для всех его Event instances и параллельных ветвей.
 Каждый вход в Function резервирует шаг до чтения входов. Ровно `maxSteps` входов
 допустимы, следующий фиксирует `STEP_LIMIT`; перехват ошибки не сбрасывает бюджет.
-Конкурентные trigger имеют независимые счётчики и прежние общие pin/meta cache.
+Конкурентный trigger одного Worker отклоняется с WORKER_BUSY; последовательные
+успешные trigger имеют независимые счётчики и общие pin/meta cache.
 Без настроенного положительного safe integer цикл отклоняется с `MAX_STEPS_REQUIRED`;
 невалидный заданный лимит — `INVALID_MAX_STEPS` при конфигурации.
 
@@ -573,10 +576,27 @@ interface WorkerSnapshot {
 }
 ```
 
-Это только кеш, не checkpoint запуска. Счётчик, Promise, ожидания и продолжения
-callback не сохраняются. Новый trigger после restore начинает новый запуск.
-Durable recovery, дедупликация completion, stop/reconcile и поколения Join этим
-API не реализованы. Обычный fan-in не является Join.
+Snapshot содержит только pinCache и metaCache как независимый конечный JSON.
+Неверные записи, дубликаты, неизвестные UUID, неверные типы и не-JSON значения
+отклоняются целиком. Restore не запускает callbacks. Библиотека не отслеживает
+идентичность или версии графа. При изменении графа или definitions внешний consumer
+обязан отбросить сохранённые snapshots и существующие Workers, затем создать новый
+Worker без snapshot. Schema остаётся изменяемой.
+Input trigger проверяется как конечный JSON и копируется на API-границе до callbacks;
+общие ссылки и порядок ключей внутри прохода сохраняются. baseline и extract не
+раскрывают кеши. Явный undefined в outputs/meta отклоняется; отсутствие свойства
+сохраняет прежнее значение, null — значение. Array subclasses, как и custom objects,
+отклоняются, обычные массивы и plain/null-prototype objects поддерживаются.
+
+Snapshot сохраняется только после успешного полного trigger. Во время trigger
+extract и второй trigger отклоняются с WORKER_BUSY. После ошибки и drain детей
+Worker терминален: trigger/extract дают WORKER_FAILED. Закрытый exec даёт
+EXEC_CONTEXT_CLOSED без мутаций. Для retry нужен новый Worker из baseline.
+При crash в A → await exec(B) → tail повторяется весь trigger, а ранее сохранённые
+проходы не повторяются. JS-стек, потраченные при crash шаги и гонки не сохраняются.
+Внешний Flow отвечает за версии, лимиты попыток, атомарный commit, operationId,
+дедупликацию эффектов, receipts и stale-owner/unknown-outcome. Тестовый consumer
+находится в flow-consumer.test.ts. Обычный fan-in не является Join.
 
 **Использование:**
 
@@ -600,7 +620,7 @@ const restoredWorker = restoredSchema.createWorker(workerSnapshot);
 
 Методы `createEvent`, `createRef`, `createPureFunction`, `createFunction` возвращают `FluentNodeBuilder`, который:
 
-1. Реализует интерфейс `AbstractNodeInstance` для обратной совместимости
+1. Предоставляет поля ноды напрямую: `uuid`, `type`, `name`, `config`, `x`, `y`
 2. Предоставляет метод `wire` для цепочечного подключения пинов
 
 ```typescript
@@ -615,6 +635,9 @@ const event = schema
 console.log(event.uuid); // UUID ноды
 console.log(event.name); // "onClick"
 ```
+
+Для изменения сохранённого графа используйте `schema.moveNode()` и
+`schema.updateNodeConfig()`; результат `create*` содержит поля на момент создания.
 
 ## Расширения (Extensions)
 

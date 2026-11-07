@@ -106,14 +106,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const testApi = { test: () => "test" };
       let receivedApis: unknown = null;
 
-      const commutator = Commutator.initialize(
-        {},
-        {},
-        {},
-        {},
-        {},
-        { testApi },
-      ).defineFunction("test", {
+      const commutator = Commutator.initialize({ apis: { testApi } }).defineFunction("test", {
         pinsIn: {},
         pinsOut: {},
         execPinsIn: { start: null },

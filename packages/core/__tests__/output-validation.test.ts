@@ -71,14 +71,13 @@ describe("Worker output validation", () => {
       const worker = schema.createWorker();
       await worker.triggerEvent("Tick", {});
       expect(seen).toEqual([{ first: 1, value: 7 }]);
-      const before = worker.extract();
 
       setOutput({ first: 2, value: "invalid" });
       await expect(worker.triggerEvent("Tick", {})).rejects.toThrow(
         'Invalid value for output pin "value" of node "Source"',
       );
       expect(seen).toEqual([{ first: 1, value: 7 }]);
-      expect(worker.extract()).toEqual(before);
+      expect(() => worker.extract()).toThrow("WORKER_FAILED");
       expect(trace).toEqual(
         mode === "await"
           ? ["source", "sink", "source:called", "source:tail", "source", "source:called"]
@@ -91,17 +90,88 @@ describe("Worker output validation", () => {
       setOutput({ first: 2, value: "invalid" });
       const worker = schema.createWorker();
       await expect(worker.triggerEvent("Tick", {})).rejects.toBeInstanceOf(CommutatorError);
-      expect(worker.extract()).toEqual({ pinCache: [], metaCache: [] });
+      expect(() => worker.extract()).toThrow("WORKER_FAILED");
       expect(seen).toEqual([]);
     });
   }
+
+  test("explicit undefined output rejects instead of preserving stale data", async () => {
+    const { schema, seen, setOutput } = createFunctionGraph();
+    const worker = schema.createWorker();
+    await worker.triggerEvent("Tick", {});
+    const baseline = worker.extract();
+    const before = structuredClone(baseline);
+    setOutput({ first: 2, value: undefined });
+    await expect(worker.triggerEvent("Tick", {})).rejects.toThrow("non-JSON");
+    expect(seen).toEqual([{ first: 1, value: 7 }]);
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
+    await expect(worker.triggerEvent("Read", {})).rejects.toThrow("WORKER_FAILED");
+    expect(baseline).toEqual(before);
+    expect(schema.createWorker(baseline).extract()).toEqual(before);
+  });
+
+  test("explicit undefined metadata rejects before output publication and preserves baseline", async () => {
+    let metadata: unknown = 1;
+    const seen: unknown[] = [];
+    const schema = Commutator.initialize()
+      .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
+      .defineFunction("source", {
+        pinsIn: {}, pinsOut: { value: { type: CommonDataType.Number } },
+        meta: { type: CommonDataType.Any }, execPinsIn: { in: null }, execPinsOut: { next: null },
+        exec: async ({ exec }) => { await exec({ pinsOut: { value: 1 }, meta: metadata, execPinOut: "next" }); },
+      })
+      .defineFunction("sink", {
+        pinsIn: { value: { type: CommonDataType.Number } }, pinsOut: {}, execPinsIn: { in: null }, execPinsOut: {},
+        exec: async ({ pinsIn }) => { seen.push(pinsIn.value); },
+      }).createSchema();
+    const source = schema.createFunction("source");
+    const sink = schema.createFunction("sink");
+    schema.createEvent("start").wire("next", source, "in");
+    source.wire("value", sink, "value").wire("next", sink, "in");
+    const worker = schema.createWorker();
+    await worker.triggerEvent("start", {});
+    const baseline = worker.extract();
+    const before = structuredClone(baseline);
+    metadata = undefined;
+    await expect(worker.triggerEvent("start", {})).rejects.toThrow("non-JSON");
+    expect(seen).toEqual([1]);
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
+    expect(baseline).toEqual(before);
+    expect(schema.createWorker(baseline).extract()).toEqual(before);
+  });
+
+  test("metadata omission, null and read-once getters retain their distinct meanings", async () => {
+    let args: any = { pinsOut: {}, execPinOut: null, meta: 1 };
+    let reads = 0;
+    const schema = Commutator.initialize()
+      .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
+      .defineFunction("state", {
+        pinsIn: {}, pinsOut: {}, meta: { type: CommonDataType.Any }, execPinsIn: { in: null }, execPinsOut: {},
+        exec: async ({ exec }) => exec(args),
+      }).createSchema();
+    const state = schema.createFunction("state");
+    schema.createEvent("start").wire("next", state, "in");
+    const worker = schema.createWorker();
+    await worker.triggerEvent("start", {});
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: 1 }]);
+    args = { pinsOut: {}, execPinOut: null }; // A dynamic JS caller omits the metadata update.
+    await worker.triggerEvent("start", {});
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: 1 }]);
+    args = { pinsOut: {}, execPinOut: null, get meta() { reads++; return 2; } };
+    await worker.triggerEvent("start", {});
+    expect(reads).toBe(1);
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: 2 }]);
+    args = { pinsOut: {}, execPinOut: null, meta: null };
+    await worker.triggerEvent("start", {});
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: null }]);
+  });
 
   test("valid partial, empty and null outputs preserve the shared pin cache and snapshot", async () => {
     const { commutator, schema, source, seen, trace, setOutput } = createFunctionGraph();
     const worker = schema.createWorker();
     await worker.triggerEvent("Tick", {});
-    // Unspecified/undefined outputs retain their previous values; extra keys are ignored.
-    setOutput({ first: undefined, value: 8, extra: "ignored" });
+    // Omitted outputs retain their previous values; extra keys are ignored.
+    setOutput({ value: 8, extra: "ignored" });
     await worker.triggerEvent("Tick", {});
     setOutput({});
     await worker.triggerEvent("Tick", {});
@@ -161,20 +231,13 @@ describe("Worker output validation", () => {
     const worker = schema.createWorker();
     await expect(worker.triggerEvent("Tick", {})).rejects.toThrow(CommutatorError);
     expect(seen).toEqual([{ first: 1, value: 7 }]);
-    expect(worker.extract()).toEqual({
-      pinCache: [
-        { uuid: schema.getPin(source.uuid, "first").uuid, cache: 1 },
-        { uuid: schema.getPin(source.uuid, "value").uuid, cache: 7 },
-      ],
-      metaCache: [{ uuid: source.uuid, cache: 1 }],
-    });
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
   });
 
   test("output getters are read once before either cache publishes the batch", async () => {
     const { schema, seen, setOutput } = createFunctionGraph();
     const worker = schema.createWorker();
     await worker.triggerEvent("Tick", {});
-    const before = worker.extract();
     let firstReads = 0;
     let valueReads = 0;
     setOutput({
@@ -184,7 +247,7 @@ describe("Worker output validation", () => {
       },
       get value() {
         valueReads++;
-        expect(worker.extract()).toEqual(before);
+        expect(() => worker.extract()).toThrow("WORKER_BUSY");
         return valueReads === 1 ? 8 : "invalid";
       },
     });
@@ -201,7 +264,6 @@ describe("Worker output validation", () => {
     const { schema, seen, setOutput } = createFunctionGraph();
     const worker = schema.createWorker();
     await worker.triggerEvent("Tick", {});
-    const before = worker.extract();
     const failure = new Error("Output getter failed");
     setOutput({
       first: 2,
@@ -210,7 +272,7 @@ describe("Worker output validation", () => {
       },
     });
     await expect(worker.triggerEvent("Tick", {})).rejects.toBe(failure);
-    expect(worker.extract()).toEqual(before);
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
     expect(seen).toEqual([{ first: 1, value: 7 }]);
   });
 
@@ -249,14 +311,15 @@ describe("Worker output validation", () => {
     for (const key of ["first", "missing", "third", "last"] as const) {
       source.wire(key, sink, key);
     }
-    const worker = schema.createWorker();
+    let worker = schema.createWorker();
     await worker.triggerEvent("Tick", {});
     const before = worker.extract();
     output = { first: 2, third: 30, last: "invalid" };
     await expect(worker.triggerEvent("Tick", {})).rejects.toThrow(CommutatorError);
-    expect(worker.extract()).toEqual(before);
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
     expect(seen).toEqual([{ first: 1, missing: null, third: 3, last: 4 }]);
-    output = { first: undefined, third: null, last: 9 };
+    worker = schema.createWorker(before);
+    output = { third: null, last: 9 };
     await worker.triggerEvent("Tick", {});
     expect(seen.at(-1)).toEqual({ first: 1, missing: null, third: null, last: 9 });
   });
@@ -281,14 +344,15 @@ describe("Worker output validation", () => {
       .wire("next", sink, "start")
       .wire("first", sink, "first")
       .wire("value", sink, "value");
-    const worker = schema.createWorker();
+    let worker = schema.createWorker();
     await worker.triggerEvent("Tick", { first: 1, value: 7 });
     const before = worker.extract();
     await expect(worker.triggerEvent("Tick", { first: 2, value: "invalid" })).rejects.toThrow(
       CommutatorError,
     );
-    expect(worker.extract()).toEqual(before);
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
     expect(seen).toEqual([{ first: 1, value: 7 }]);
+    worker = schema.createWorker(before);
     await worker.triggerEvent("Tick", { value: null });
     await worker.triggerEvent("Tick", {});
     expect(seen.slice(1)).toEqual([
@@ -324,19 +388,22 @@ describe("Worker output validation", () => {
     const sink = schema.createFunction("Sink");
     schema.createEvent("Tick").wire("next", sink, "start");
     schema.createPureFunction("Source").wire("first", sink, "first").wire("value", sink, "value");
-    const worker = schema.createWorker();
+    let worker = schema.createWorker();
     await worker.triggerEvent("Tick", {});
+    const baseline = worker.extract();
     expect(calls).toBe(1);
     output = { first: 2, value: "invalid" };
     await expect(worker.triggerEvent("Tick", {})).rejects.toThrow(CommutatorError);
     expect(seen).toEqual([{ first: 1, value: 7 }]);
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
+    worker = schema.createWorker(baseline);
     output = { first: null };
     await worker.triggerEvent("Tick", {});
     expect(seen.at(-1)).toEqual({ first: null, value: null });
     output = {};
     await worker.triggerEvent("Tick", {});
     expect(seen.at(-1)).toEqual({ first: null, value: null });
-    expect(worker.extract()).toEqual({ pinCache: [], metaCache: [] });
+    expect(worker.extract()).toEqual({ ...schema.createWorker().extract(), pinCache: [], metaCache: [] });
   });
 
   test("Refs retain valid values, null and missing-value behavior", async () => {
@@ -377,6 +444,6 @@ describe("Worker output validation", () => {
       { first: 2, value: null },
       { first: null, value: null },
     ]);
-    expect(worker.extract()).toEqual({ pinCache: [], metaCache: [] });
+    expect(worker.extract()).toEqual({ ...schema.createWorker().extract(), pinCache: [], metaCache: [] });
   });
 });

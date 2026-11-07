@@ -1624,8 +1624,9 @@ describe("CommutatorSchema", () => {
         expect(wires.length).toBe(2);
       });
 
-      test("should maintain backward compatibility - access instance properties", () => {
+      test("exposes flat node data with literal types and no nested instance API", () => {
         const commutator = Commutator.initialize().defineEvent("onClick", {
+          config: { type: CommonDataType.String },
           pinsOut: {
             x: { type: CommonDataType.Number },
           },
@@ -1633,14 +1634,63 @@ describe("CommutatorSchema", () => {
         });
 
         const schema = commutator.createSchema();
-        const event = schema.createEvent("onClick");
+        const event = schema.createEvent("onClick", "configured");
+        const name: "onClick" = event.name;
+        const type: NodeType.Event = event.type;
+        const data = { uuid: event.uuid, name, type, config: "configured", x: 0, y: 0 };
+        expect(typeof event.uuid).toBe("string");
+        expect({ ...event }).toEqual(data);
+        expect(JSON.parse(JSON.stringify(event))).toEqual(data);
+        expect("instance" in event).toBe(false);
+        // @ts-expect-error The flat node has no nested instance API.
+        expect(event.instance).toBeUndefined();
+      });
 
-        // FluentNodeBuilder должен делегировать свойства инстанса
-        expect(event.uuid).toBeDefined();
-        expect(event.type).toBe(NodeType.Event);
-        expect(event.name).toBe("onClick");
-        expect(event.instance).toBeDefined();
-        expect(event.instance.uuid).toBe(event.uuid);
+      test("all flat node kinds wire, execute and roundtrip as plain schema data", async () => {
+        const values: number[] = [];
+        const commutator = Commutator.initialize()
+          .defineEvent("start", {
+            pinsOut: { x: { type: CommonDataType.Number } }, execPinsOut: { next: null },
+          })
+          .defineRef("external", {
+            pinsOut: { x: { type: CommonDataType.Number } }, resolveRef: async () => ({ x: 4 }),
+          })
+          .definePureFunction("sum", {
+            pinsIn: { a: { type: CommonDataType.Number }, b: { type: CommonDataType.Number } },
+            pinsOut: { result: { type: CommonDataType.Number } },
+            exec: async ({ pinsIn }) => ({ result: (pinsIn.a ?? 0) + (pinsIn.b ?? 0) }),
+          })
+          .defineFunction("record", {
+            pinsIn: { value: { type: CommonDataType.Number } }, pinsOut: {},
+            execPinsIn: { in: null }, execPinsOut: {},
+            exec: async ({ pinsIn }) => { values.push(pinsIn.value ?? 0); },
+          });
+        const schema = commutator.createSchema();
+        const event = schema.createEvent("start");
+        const ref = schema.createRef("external");
+        const sum = schema.createPureFunction("sum");
+        const record = schema.createFunction("record");
+        const chained = event.wire("x", sum, "a").wire("next", record.uuid, "in");
+        const name: "start" = chained.name;
+        expect(name).toBe("start");
+        expect(chained).toBe(event);
+        ref.wire("x", sum.uuid, "b");
+        sum.wire("result", record, "value");
+        await schema.createWorker().triggerEvent("start", { x: 3 });
+        expect(values).toEqual([7]);
+
+        const graph = schema.extract();
+        for (const node of graph.nodes) {
+          expect(Object.getPrototypeOf(node)).toBe(Object.prototype);
+          expect("wire" in node).toBe(false);
+          expect("instance" in node).toBe(false);
+        }
+        expect(structuredClone(graph)).toEqual(graph);
+        const encodedNodes = [event, ref, sum, record].map((node) => JSON.parse(JSON.stringify(node)));
+        expect(JSON.parse(JSON.stringify(graph)).nodes).toEqual(encodedNodes);
+        const restored = commutator.createSchema(JSON.parse(JSON.stringify(graph)));
+        await restored.createWorker().triggerEvent("start", { x: 5 });
+        expect(values).toEqual([7, 9]);
       });
     });
   });

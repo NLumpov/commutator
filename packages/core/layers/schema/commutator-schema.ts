@@ -281,7 +281,7 @@ export class CommutatorSchema<
       config,
       eventConfig,
     );
-    return new FluentNodeBuilder(this, { ...eventInstance });
+    return new FluentNodeBuilder(this, eventInstance);
   }
 
   createRef<Name extends keyof Refs>(
@@ -303,7 +303,7 @@ export class CommutatorSchema<
       config,
       refConfig,
     );
-    return new FluentNodeBuilder(this, { ...refInstance });
+    return new FluentNodeBuilder(this, refInstance);
   }
 
   createPureFunction<Name extends keyof PureFunctions>(
@@ -323,7 +323,7 @@ export class CommutatorSchema<
       PureFunctionNodeInstance<Name>,
       typeof pureFunctionConfig
     >(NodeType.PureFunction, name as string, config, pureFunctionConfig);
-    return new FluentNodeBuilder(this, { ...pureFunctionInstance });
+    return new FluentNodeBuilder(this, pureFunctionInstance);
   }
 
   createFunction<Name extends keyof Functions>(
@@ -343,7 +343,7 @@ export class CommutatorSchema<
       FunctionNodeInstance<Name>,
       typeof functionConfig
     >(NodeType.Function, name as string, config, functionConfig);
-    return new FluentNodeBuilder(this, { ...functionInstance });
+    return new FluentNodeBuilder(this, functionInstance);
   }
 
   private createNodeCallbackActions(

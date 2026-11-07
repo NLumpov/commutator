@@ -4,6 +4,21 @@ import { CommonDataType } from "./enums";
 
 describe("Commutator", () => {
   describe("initialize", () => {
+    test("rejects positional arguments and invalid options instead of ignoring definitions", () => {
+      // @ts-expect-error Only one options object is accepted.
+      expect(() => Commutator.initialize({}, {}, {}, {}, {}, {})).toThrow("one options object");
+      // @ts-expect-error Data types belong in the dataTypes section.
+      expect(() => Commutator.initialize({ Text: { type: CommonDataType.String } })).toThrow("Invalid initialize option");
+      for (const options of [null, [], 1, "bad", { apis: [] }, { events: null }, { [Symbol("option")]: {} }]) {
+        expect(() => Commutator.initialize(options as never)).toThrow();
+      }
+      let reads = 0;
+      const accessor = Object.defineProperty({}, "events", { get() { reads++; return {}; } });
+      expect(() => Commutator.initialize(accessor)).toThrow("Invalid initialize option");
+      expect(reads).toBe(0);
+      expect(Commutator.initialize({}).createSchema().extract().nodes).toEqual([]);
+    });
+
     test("should create empty commutator", () => {
       const commutator = Commutator.initialize();
       expect(commutator).toBeDefined();

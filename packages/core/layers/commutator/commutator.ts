@@ -1,6 +1,6 @@
 import { CommutatorSchema, type SchemaSnapshot } from "../schema";
 import { CommutatorConfig } from "./commutator-config";
-import { CommutatorExecutionError } from "./commutator-error";
+import { CommutatorError, CommutatorExecutionError } from "./commutator-error";
 import { CommutatorValidator } from "./commutator-validator";
 import type { CommonDataType } from "./enums";
 import type { EventNode, Field, FunctionNode, PureFunctionNode, RefNode } from "./types";
@@ -38,13 +38,46 @@ export class Commutator<
     > = {},
     const Apis extends Record<string, any> = {},
   >(
-    dataTypes: DataTypes = {} as DataTypes,
-    events: Events = {} as Events,
-    refs: Refs = {} as Refs,
-    pureFunctions: PureFunctions = {} as PureFunctions,
-    functions: Functions = {} as Functions,
-    apis: Apis = {} as Apis,
+    options: {
+      dataTypes?: DataTypes;
+      events?: Events;
+      refs?: Refs;
+      pureFunctions?: PureFunctions;
+      functions?: Functions;
+      apis?: Apis;
+    } = {},
   ): Commutator<DataTypes, Events, Refs, PureFunctions, Functions, Apis> {
+    if (
+      arguments.length > 1 ||
+      options === null ||
+      typeof options !== "object" ||
+      (Object.getPrototypeOf(options) !== Object.prototype &&
+        Object.getPrototypeOf(options) !== null)
+    ) {
+      throw new CommutatorError("initialize expects one options object");
+    }
+    const keys = new Set(["dataTypes", "events", "refs", "pureFunctions", "functions", "apis"]);
+    for (const key of Reflect.ownKeys(options)) {
+      const descriptor = Object.getOwnPropertyDescriptor(options, key);
+      if (typeof key !== "string" || !keys.has(key) || !descriptor || !("value" in descriptor)) {
+        throw new CommutatorError("Invalid initialize option");
+      }
+      const value: unknown = descriptor.value;
+      if (
+        value !== undefined &&
+        (value === null || typeof value !== "object" || Array.isArray(value))
+      ) {
+        throw new CommutatorError(`initialize option ${key} must be a record`);
+      }
+    }
+    const {
+      dataTypes = {} as DataTypes,
+      events = {} as Events,
+      refs = {} as Refs,
+      pureFunctions = {} as PureFunctions,
+      functions = {} as Functions,
+      apis = {} as Apis,
+    } = options;
     return new Commutator(
       new CommutatorConfig(dataTypes, events, refs, pureFunctions, functions, apis),
     );

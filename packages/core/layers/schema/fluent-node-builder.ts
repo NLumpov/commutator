@@ -1,10 +1,7 @@
 import type { CommutatorSchema } from "./commutator-schema";
 import type { AbstractNodeInstance } from "./types/node-instances/abstract";
 
-/**
- * Builder для fluent API при создании нод
- * Делегирует все свойства инстанса ноды для обратной совместимости
- */
+/** Node fields and fluent wiring on one object; Schema owns the stored node data. */
 export class FluentNodeBuilder<
   const DataTypes extends Record<string, any> = {},
   const Events extends Record<string, any> = {},
@@ -13,44 +10,28 @@ export class FluentNodeBuilder<
   const Functions extends Record<string, any> = {},
   const Apis extends Record<string, any> = {},
   NodeInstance extends AbstractNodeInstance<any> = AbstractNodeInstance<any>,
-> implements AbstractNodeInstance<any>
+> implements AbstractNodeInstance<NodeInstance["name"]>
 {
+  readonly uuid: string;
+  readonly type: NodeInstance["type"];
+  readonly name: NodeInstance["name"];
+  readonly config: NodeInstance["config"];
+  x: number;
+  y: number;
+
+  readonly #schema: CommutatorSchema<DataTypes, Events, Refs, PureFunctions, Functions, Apis>;
+
   constructor(
-    private schema: CommutatorSchema<DataTypes, Events, Refs, PureFunctions, Functions, Apis>,
-    public readonly instance: NodeInstance,
-  ) {}
-
-  // Делегирование свойств инстанса для обратной совместимости
-  get uuid(): string {
-    return this.instance.uuid;
-  }
-
-  get type(): NodeInstance["type"] {
-    return this.instance.type;
-  }
-
-  get name(): NodeInstance["name"] {
-    return this.instance.name;
-  }
-
-  get config(): NodeInstance["config"] {
-    return this.instance.config;
-  }
-
-  get x(): number {
-    return this.instance.x;
-  }
-
-  set x(value: number) {
-    this.instance.x = value;
-  }
-
-  get y(): number {
-    return this.instance.y;
-  }
-
-  set y(value: number) {
-    this.instance.y = value;
+    schema: CommutatorSchema<DataTypes, Events, Refs, PureFunctions, Functions, Apis>,
+    node: NodeInstance,
+  ) {
+    this.#schema = schema;
+    this.uuid = node.uuid;
+    this.type = node.type;
+    this.name = node.name;
+    this.config = node.config;
+    this.x = node.x;
+    this.y = node.y;
   }
 
   /**
@@ -61,10 +42,9 @@ export class FluentNodeBuilder<
     toNodeUuid: string | FluentNodeBuilder<any, any, any, any, any, any, any>,
     toPinName: string,
   ): FluentNodeBuilder<DataTypes, Events, Refs, PureFunctions, Functions, Apis, NodeInstance> {
-    const resolvedToNodeUuid =
-      typeof toNodeUuid === "string" ? toNodeUuid : toNodeUuid.instance.uuid;
-    this.schema.wire({
-      from: { node: this.instance.uuid, pin: fromPinName },
+    const resolvedToNodeUuid = typeof toNodeUuid === "string" ? toNodeUuid : toNodeUuid.uuid;
+    this.#schema.wire({
+      from: { node: this.uuid, pin: fromPinName },
       to: { node: resolvedToNodeUuid, pin: toPinName },
     });
     return this;

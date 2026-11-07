@@ -78,11 +78,26 @@ schema.moveNode(multiply.uuid, 400, 0);
 schema.moveNode(log.uuid, 600, 0);
 
 // Создание связей
-schema.wire({ from: { node: onClick.uuid, pin: "x" }, to: { node: add.uuid, pin: "a" } });
-schema.wire({ from: { node: onClick.uuid, pin: "y" }, to: { node: add.uuid, pin: "b" } });
-schema.wire({ from: { node: add.uuid, pin: "result" }, to: { node: multiply.uuid, pin: "value" } });
-schema.wire({ from: { node: multiply.uuid, pin: "result" }, to: { node: log.uuid, pin: "value" } });
-schema.wire({ from: { node: onClick.uuid, pin: "next" }, to: { node: log.uuid, pin: "start" } });
+schema.wire({
+  from: { node: onClick.uuid, pin: "x" },
+  to: { node: add.uuid, pin: "a" },
+});
+schema.wire({
+  from: { node: onClick.uuid, pin: "y" },
+  to: { node: add.uuid, pin: "b" },
+});
+schema.wire({
+  from: { node: add.uuid, pin: "result" },
+  to: { node: multiply.uuid, pin: "value" },
+});
+schema.wire({
+  from: { node: multiply.uuid, pin: "result" },
+  to: { node: log.uuid, pin: "value" },
+});
+schema.wire({
+  from: { node: onClick.uuid, pin: "next" },
+  to: { node: log.uuid, pin: "start" },
+});
 
 console.log("✅ Пример 11: Позиционирование нод");
 

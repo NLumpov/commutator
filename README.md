@@ -66,7 +66,7 @@ const addPin = schema
   .getNodePins(add.uuid)
   .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
-schema.wire(eventPin.uuid, addPin.uuid);
+schema.wire({ fromPinUuid: eventPin!.uuid, toPinUuid: addPin!.uuid });
 ```
 
 ### @commutator/flow-control
@@ -134,8 +134,12 @@ const commutator = Commutator.initialize().configure({ maxSteps: 10_000 });
 await worker.triggerEvent("start", payload);
 ```
 
-`initialize(dataTypes, events, refs, pureFunctions, functions, apis)` keeps its
-existing positional arguments and type inference; `initialize()` remains valid.
+`initialize({ dataTypes, events, refs, pureFunctions, functions, apis })` registers
+definitions in bulk with inferred types; each section is optional and `initialize()`
+creates an empty registry. Positional arguments and unknown option keys are rejected.
+The `create*` methods return node fields and `wire()` on one object:
+`node.uuid`, `node.config`, `node.wire("next", otherNode, "in")`.
+To change the stored graph, use `schema.moveNode()` and `schema.updateNodeConfig()`.
 `configure({ maxSteps })` returns a new instance with the same registry types.
 It can be used before or after definitions without changing the original instance
 or existing schemas/workers. Definitions retain the limit;
@@ -153,9 +157,9 @@ an exec cycle rejects with `MAX_STEPS_REQUIRED` before changing event caches.
 
 One `triggerEvent` call is one run. Every Function admission, including repeated
 visits, reserves one step before reading inputs or invoking a Ref. All matching
-Event instances and parallel branches share this counter. Concurrent or subsequent
-trigger calls get independent counters under the same configured limit; their
-pin/meta caches retain the existing shared behavior. Events, PureFunctions and
+Event instances and parallel branches share this counter. Subsequent successful
+trigger calls get independent counters under the same configured limit. Concurrent
+triggers on one Worker reject with `WORKER_BUSY`. Events, PureFunctions and
 Refs do not consume separate steps. Exactly `maxSteps` admissions are allowed;
 the next attempt latches `CommutatorExecutionError` with `code: "STEP_LIMIT"`.
 Catching that error does not reset the budget. No further Function is admitted.
@@ -172,16 +176,50 @@ one value per node UUID.
 
 The budget does not limit time inside an arbitrary callback. Already admitted
 callbacks and issued `exec` calls are awaited before the trigger settles, including
-on failure. Their committed outputs remain; arbitrary JavaScript and external
+on failure. Their in-memory outputs remain inaccessible after failure; JavaScript and external
 effects cannot be forcibly stopped or rolled back. Callbacks must await their own
 asynchronous work. Awaited callback chains retain O(maxSteps) continuations until
 completion; this is not constant-memory tail-call execution.
 
-`WorkerSnapshot` still contains only `pinCache` and `metaCache`. Restoring it and
-triggering an event starts a new run. Durable budgets/checkpoints, crash recovery,
-human waits, completion deduplication, stop/reconciliation, and repeated Join
-generations require a separate runtime contract; they are not implemented here.
-Ordinary fan-in still executes once per incoming branch, not as a Join barrier.
+`WorkerSnapshot` contains only independent finite JSON `pinCache` and `metaCache`.
+Restore validates the entire snapshot, duplicates, cache ownership and value types
+without executing callbacks. Snapshots do not contain graph identity or versions;
+the library does not detect graph changes. The caller must discard saved snapshots
+and existing Workers when the graph or its definitions change, then create a fresh
+Worker without a snapshot. Schema remains mutable through its existing APIs.
+
+```ts
+const baseline = schema.createWorker().extract();
+const worker = schema.createWorker(baseline);
+await worker.triggerEvent("start", input);
+const next = worker.extract(); // persist only after the entire trigger succeeds
+```
+
+Restore, trigger input, and extraction separate nested caller data from Worker
+caches. Trigger input is checked before callbacks, while shared values and object
+key order are preserved inside a run. Non-JSON input/snapshot values (including
+undefined, non-finite numbers, functions, promises, cycles, accessors, custom
+objects and Array subclasses) are rejected rather than silently converted.
+Ordinary arrays and plain or null-prototype records are supported. Explicit
+undefined Function outputs or metadata updates are rejected; an omitted update
+retains the old value and null is a value. Invalid JSON produced internally through
+an Any field is also rejected at extract. `extract()` during execution rejects with `WORKER_BUSY`.
+After a trigger fails and all issued child exec calls drain, both trigger and
+extract reject with `WORKER_FAILED`; create a new Worker from the last baseline.
+Calling a retained exec after its callback context closes rejects with
+`EXEC_CONTEXT_CLOSED` without changing caches.
+
+A crash in `A → await exec(B) → tail` requires replaying the entire trigger from
+the baseline; previously persisted triggers are retained. Snapshots do not contain
+the JS stack, spent crash-attempt steps, race schedules, or call history. The host
+owns atomic persistence, retry limits, durable operation IDs, idempotency, receipts,
+unknown-outcome reconciliation, and stale-owner protection. The test-only
+`flow-consumer.test.ts` and `fixtures/flow-consumer.ts` demonstrate these boundaries:
+a lost response with unavailable or inconclusive lookup enters unknown outcome
+automatically, blocking launch/commit until an authoritative receipt reconciles it.
+A reliable same-key provider dedupe permits retry without another agent.
+The library adds no Agents
+or Flow runtime. Ordinary fan-in executes once per incoming branch, not as Join.
 
 See [the development/review cycle example](packages/examples/17-exec-cycles.ts).
 

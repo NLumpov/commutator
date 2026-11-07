@@ -153,7 +153,10 @@ const logUser = schema.createFunction("logUser");
 // Создание связей между нодами из разных расширений
 // userRef получает userId через конфигурацию, поэтому обновляем конфигурацию
 schema.updateNodeConfig(userRef.uuid, { userId: "user-from-action" });
-schema.wire({ from: { node: userRef.uuid, pin: "user" }, to: { node: logUser.uuid, pin: "user" } });
+schema.wire({
+  from: { node: userRef.uuid, pin: "user" },
+  to: { node: logUser.uuid, pin: "user" },
+});
 userAction.wire("next", logUser, "start");
 
 console.log("✅ Пример 9: Инъекция расширений");

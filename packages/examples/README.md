@@ -45,9 +45,9 @@
 **Подключение пинов**
 
 Показывает различные способы подключения пинов:
-- `wire(node, pinName, node, pinName)` - упрощенный синтаксис
-- `wire(uuid, uuid)` - оригинальный метод по UUID
-- `wireWithOptions()` - подключение с именованными параметрами
+- `builder.wire(pinName, targetBuilderOrNodeUuid, pinName)` - цепочечное подключение
+- `schema.wire({ fromPinUuid, toPinUuid })` - подключение по UUID пинов
+- `wire({ from, to })` - подключение с именованными параметрами
 - `unwire()` - отключение пинов
 - Подключение data-пинов
 - Подключение exec-пинов
@@ -57,8 +57,7 @@
 
 Демонстрирует использование fluent API для работы с нодами и пинами:
 - `FluentNodeBuilder` - возвращается из методов создания нод
-- `NodeBuilder` - через `schema.node()`
-- `PinBuilder` - через `node().pin()`
+- `node.uuid`, `node.config` - прямой доступ к полям ноды
 - Цепочки методов для создания связей
 
 ### 06-dynamic-pins.ts
@@ -208,7 +207,7 @@ import * as examples from "@commutator/examples";
 - ✅ `createPureFunction()`
 - ✅ `createFunction()`
 - ✅ `wire()` (все варианты)
-- ✅ `wireWithOptions()`
+- ✅ `wire({ from, to })`
 - ✅ `unwire()`
 - ✅ `addPinIn()`
 - ✅ `addPinOut()`
@@ -218,7 +217,6 @@ import * as examples from "@commutator/examples";
 - ✅ `updatePin()`
 - ✅ `moveNode()`
 - ✅ `updateNodeConfig()`
-- ✅ `node()` (Fluent API)
 - ✅ `getPin()`
 - ✅ `getNodePins()`
 - ✅ `extract()`
@@ -240,7 +238,7 @@ import * as examples from "@commutator/examples";
 - ✅ `extract()` - экспорт состояния воркера в снапшот
 
 ### Дополнительные возможности
-- ✅ Fluent API (FluentNodeBuilder, NodeBuilder, PinBuilder)
+- ✅ Fluent API (FluentNodeBuilder)
 - ✅ Динамические пины
 - ✅ Callbacks (onConfigChange)
 - ✅ Снапшоты (SchemaSnapshot, WorkerSnapshot)

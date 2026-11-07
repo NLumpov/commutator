@@ -600,7 +600,7 @@ describe("CommutatorWorker", () => {
       await expect(worker.triggerEvent("onClick", { value: null })).resolves.toBeUndefined();
     });
 
-    test("should handle undefined values in pins", async () => {
+    test("should reject explicit undefined event values", async () => {
       const commutator = Commutator.initialize()
         .defineEvent("onClick", {
           pinsOut: { value: { type: CommonDataType.Number } },
@@ -642,7 +642,8 @@ describe("CommutatorWorker", () => {
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: processExecIn!.uuid });
 
       const worker = schema.createWorker();
-      await expect(worker.triggerEvent("onClick", { value: undefined })).resolves.toBeUndefined();
+      await expect(worker.triggerEvent("onClick", { value: undefined })).rejects.toThrow("non-JSON");
+      expect(() => worker.extract()).toThrow("WORKER_FAILED");
     });
 
     test("should handle missing values in payload", async () => {
@@ -1407,7 +1408,7 @@ describe("CommutatorWorker", () => {
       expect(metaCache?.cache).toBe(2);
     });
 
-    test("should skip invalid cache entries in snapshot", async () => {
+    test("should reject invalid cache entries in snapshot", async () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: { x: { type: CommonDataType.Number } },
         execPinsOut: { next: null },
@@ -1428,8 +1429,7 @@ describe("CommutatorWorker", () => {
         metaCache: [],
       };
 
-      const worker = schema.createWorker(invalidSnapshot);
-      await expect(worker.triggerEvent("onClick", { x: 5 })).resolves.toBeUndefined();
+      expect(() => schema.createWorker(invalidSnapshot)).toThrow(CommutatorError);
     });
   });
 
@@ -2123,7 +2123,7 @@ describe("CommutatorWorker", () => {
   });
 
   describe("Performance edge cases", () => {
-    test("should handle rapid event triggers", async () => {
+    test("should reject overlapping rapid triggers and accept the next completed pass", async () => {
       const commutator = Commutator.initialize()
         .defineEvent("onClick", {
           pinsOut: {},
@@ -2159,7 +2159,13 @@ describe("CommutatorWorker", () => {
         promises.push(worker.triggerEvent("onClick", {}));
       }
 
-      await expect(Promise.all(promises)).resolves.toHaveLength(10);
+      const results = await Promise.allSettled(promises);
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      for (const result of results.slice(1)) {
+        expect(result.status).toBe("rejected");
+        if (result.status === "rejected") expect(result.reason).toHaveProperty("code", "WORKER_BUSY");
+      }
+      await expect(worker.triggerEvent("onClick", {})).resolves.toBeUndefined();
     });
   });
 
