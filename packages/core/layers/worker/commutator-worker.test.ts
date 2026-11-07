@@ -2123,7 +2123,7 @@ describe("CommutatorWorker", () => {
   });
 
   describe("Performance edge cases", () => {
-    test("should handle rapid event triggers", async () => {
+    test("should reject overlapping rapid triggers and accept the next completed pass", async () => {
       const commutator = Commutator.initialize()
         .defineEvent("onClick", {
           pinsOut: {},
@@ -2159,7 +2159,13 @@ describe("CommutatorWorker", () => {
         promises.push(worker.triggerEvent("onClick", {}));
       }
 
-      await expect(Promise.all(promises)).resolves.toHaveLength(10);
+      const results = await Promise.allSettled(promises);
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      for (const result of results.slice(1)) {
+        expect(result.status).toBe("rejected");
+        if (result.status === "rejected") expect(result.reason).toHaveProperty("code", "WORKER_BUSY");
+      }
+      await expect(worker.triggerEvent("onClick", {})).resolves.toBeUndefined();
     });
   });
 

@@ -46,6 +46,7 @@ export class CommutatorWorker<
 > {
   private pinCache: Map<string, unknown> = new Map();
   private metaCache: Map<string, unknown> = new Map();
+  private state: "idle" | "running" | "failed" = "idle";
 
   private constructor(
     private config: CommutatorConfig<DataTypes, Events, Refs, PureFunctions, Functions, Apis>,
@@ -152,6 +153,27 @@ export class CommutatorWorker<
   }
 
   public async triggerEvent<Name extends keyof Events>(
+    event: Name,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    this.assertAvailable();
+    this.state = "running";
+    try {
+      await this.runEvent(event, payload);
+      this.state = "idle";
+    } catch (error) {
+      // processFunction drains its descendants before propagating any failure.
+      this.state = "failed";
+      throw error;
+    }
+  }
+
+  private assertAvailable(): void {
+    if (this.state === "running") throw new CommutatorExecutionError("WORKER_BUSY");
+    if (this.state === "failed") throw new CommutatorExecutionError("WORKER_FAILED");
+  }
+
+  private async runEvent<Name extends keyof Events>(
     event: Name,
     payload: Record<string, unknown>,
   ): Promise<void> {
@@ -336,6 +358,7 @@ export class CommutatorWorker<
     }
 
     let pendingExecCount = 0;
+    let open = true;
     let resolveDrain: (() => void) | undefined;
     let failed = false;
     let failure: unknown;
@@ -408,6 +431,12 @@ export class CommutatorWorker<
     };
 
     const exec = (args: Parameters<typeof runExec>[0]): Promise<void> => {
+      if (!open) {
+        const rejected = Promise.reject<void>(new CommutatorExecutionError("EXEC_CONTEXT_CLOSED"));
+        // Match live exec: ignored calls are observed, awaited calls still reject.
+        void rejected.catch(() => {});
+        return rejected;
+      }
       // Start immediately, preserving continuation input reads and await exec ordering.
       const promise = runExec(args);
       pendingExecCount++;
@@ -453,6 +482,10 @@ export class CommutatorWorker<
         resolveDrain = resolve;
       });
     }
+
+    // Keep the context open for native continuation handlers while draining;
+    // after closure a retained exec must never publish into this or a later run.
+    open = false;
 
     if (run.limitError) throw run.limitError;
     if (failed) throw failure;
@@ -671,6 +704,7 @@ export class CommutatorWorker<
   }
 
   extract(): WorkerSnapshot {
+    this.assertAvailable();
     return this.validateSnapshot({
       schemaFingerprint: this.schemaFingerprint(),
       pinCache: Array.from(this.pinCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
