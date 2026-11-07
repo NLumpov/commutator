@@ -99,9 +99,11 @@ export class CommutatorWorker<
     )}`;
   }
 
-  private validateSnapshot(input: unknown): WorkerSnapshot {
+  private validateSnapshot(input: unknown, fingerprint?: string): WorkerSnapshot {
     const snapshot = readSnapshot(input);
-    if (snapshot.schemaFingerprint !== this.schemaFingerprint()) snapshotError("schema mismatch");
+    if (snapshot.schemaFingerprint !== (fingerprint ?? this.schemaFingerprint())) {
+      snapshotError("schema mismatch");
+    }
     for (const { uuid, cache } of snapshot.pinCache) {
       const pin = this.pinsRegistry.getPinByUuid(uuid);
       const node = pin && this.nodesRegistry.getNodeByUuid(pin.nodeUuid);
@@ -718,10 +720,15 @@ export class CommutatorWorker<
 
   extract(): WorkerSnapshot {
     this.assertAvailable();
-    return this.validateSnapshot({
-      schemaFingerprint: this.schemaFingerprint(),
-      pinCache: Array.from(this.pinCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
-      metaCache: Array.from(this.metaCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
-    });
+    // Reuse identity only inside this call: Schema remains live between calls.
+    const schemaFingerprint = this.schemaFingerprint();
+    return this.validateSnapshot(
+      {
+        schemaFingerprint,
+        pinCache: Array.from(this.pinCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
+        metaCache: Array.from(this.metaCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
+      },
+      schemaFingerprint,
+    );
   }
 }

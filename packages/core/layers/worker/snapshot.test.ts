@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { expect, spyOn, test } from "bun:test";
 import { CommonDataType, Commutator, type Field } from "../commutator";
 
 function fixture() {
@@ -196,4 +196,25 @@ test("descriptor normalization rejects cycles and retains unsupported descriptor
   delete field.name;
   Object.defineProperty(field, "hidden", { value: undefined });
   expect(() => worker.extract()).toThrow("hidden property");
+});
+
+test("extract computes graph identity once per call and still observes every live mutation", () => {
+  const { schema } = fixture();
+  const worker = schema.createWorker();
+  const identity = spyOn(Object.getPrototypeOf(worker), "schemaFingerprint");
+  try {
+    const first = worker.extract();
+    expect(identity).toHaveBeenCalledTimes(1);
+    const node = schema.extract().nodes[0]!;
+    Object.assign(node, { config: { changed: 1 } });
+    const second = worker.extract();
+    expect(identity).toHaveBeenCalledTimes(2);
+    expect(second.schemaFingerprint).not.toBe(first.schemaFingerprint);
+    expect(() => schema.createWorker(first)).toThrow("schema mismatch");
+    expect(identity).toHaveBeenCalledTimes(3);
+    expect(schema.createWorker(second).extract()).toEqual(second);
+    expect(identity).toHaveBeenCalledTimes(5);
+  } finally {
+    identity.mockRestore();
+  }
 });
