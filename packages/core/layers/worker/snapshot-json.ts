@@ -2,6 +2,7 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
 import stringify from "fast-json-stable-stringify";
 import { CommutatorExecutionError } from "../commutator";
+import type { SchemaSnapshot } from "../schema";
 
 export type JsonValue =
   | null
@@ -62,7 +63,17 @@ export function cloneJson<T>(value: T): T {
 }
 
 /** Serialize the live schema without coercing non-JSON graph values to null. */
-function serializeSchema(schema: unknown): string {
+function serializeSchema(schema: SchemaSnapshot): string {
+  // Built-in optional schema properties may be undefined. User config/default
+  // subtrees must be finite JSON, including every nested object property.
+  const strictValues = new WeakSet<object>();
+  const markStrict = (value: unknown): void => {
+    if (value !== null && typeof value === "object") strictValues.add(value);
+  };
+  for (const node of schema.nodes)
+    markStrict(Object.getOwnPropertyDescriptor(node, "config")?.value);
+  for (const pin of schema.pinInstances)
+    markStrict(Object.getOwnPropertyDescriptor(pin, "default")?.value);
   const invalid = (): never => {
     throw new CommutatorExecutionError("INVALID_JSON");
   };
@@ -95,7 +106,8 @@ function serializeSchema(schema: unknown): string {
             return invalid();
           if (array && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length))
             return invalid();
-          inspect(descriptor.value, !array);
+          inspect(descriptor.value, !array && !strictValues.has(value));
+          if (strictValues.has(value)) markStrict(descriptor.value);
         }
       }
       return value;
@@ -110,7 +122,7 @@ function serializeSchema(schema: unknown): string {
 const fingerprints = new WeakMap<object, { serialized: string; fingerprint: string }>();
 
 /** Object key order is irrelevant; array order (roots, pins and wires) is semantic. */
-export function schemaFingerprint(schema: unknown, identity: object): string {
+export function schemaFingerprint(schema: SchemaSnapshot, identity: object): string {
   // Always observe current values: public schema objects support in-place edits.
   const serialized = serializeSchema(schema);
   const previous = fingerprints.get(identity);

@@ -236,7 +236,7 @@ describe("independent finite JSON snapshots", () => {
     const pin = schema.extract().pinInstances.find((item) => item.dataType !== null)!;
     pin.default = null;
     const baseline = worker.extract();
-    for (const value of [NaN, Infinity, -Infinity, () => {}, 1n, new Date(), Object.assign([1], { extra: true }), [, 1], { [Symbol("x")]: 1 }]) {
+    for (const value of [NaN, Infinity, -Infinity, () => {}, 1n, new Date(), Object.assign([1], { extra: true }), [, 1], { [Symbol("x")]: 1 }, { nested: { value: undefined } }]) {
       pin.default = value;
       expect(() => worker.extract()).toThrow("INVALID_JSON");
       expect(() => schema.createWorker(baseline)).toThrow("INVALID_JSON");
@@ -255,6 +255,19 @@ describe("independent finite JSON snapshots", () => {
     expect(() => worker.extract()).toThrow("INVALID_JSON");
     pin.default = null;
     expect(worker.extract()).toEqual(baseline);
+  });
+
+  test("node config nested undefined is rejected while optional config absence stays valid", () => {
+    const { schema } = fixture();
+    const worker = schema.createWorker();
+    const node = schema.extract().nodes[0]!;
+    (node as any).config = {};
+    const baseline = worker.extract();
+    (node as any).config = { nested: { value: undefined } };
+    expect(() => worker.extract()).toThrow("INVALID_JSON");
+    expect(() => schema.createWorker(baseline)).toThrow("INVALID_JSON");
+    (node as any).config = undefined;
+    expect(() => worker.extract()).not.toThrow();
   });
 
   test("plain JSON special keys and null prototypes stay safe and detached", async () => {
