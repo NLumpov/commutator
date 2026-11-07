@@ -88,8 +88,8 @@ const logCount = schema.createFunction("logCount");
 onIncrement.wire("next", counter, "increment");
 counter.wire("next", logCount, "start");
 schema.wire({
-  from: { node: counter.uuid, pin: "count" },
-  to: { node: logCount.uuid, pin: "count" },
+  from: { node: counter.instance.uuid, pin: "count" },
+  to: { node: logCount.instance.uuid, pin: "count" },
 });
 
 // Подключение для сброса

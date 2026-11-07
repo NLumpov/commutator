@@ -18,6 +18,8 @@ import {
   type PinsRegistry,
   type WiresRegistry,
 } from "../schema";
+import { snapshotField } from "./snapshot-field";
+import { copyJson, createJsonCopier, readSnapshot, snapshotError } from "./snapshot-json";
 import type { WorkerSnapshot } from "./types";
 
 interface ExecutionRun {
@@ -45,6 +47,7 @@ export class CommutatorWorker<
 > {
   private pinCache: Map<string, unknown> = new Map();
   private metaCache: Map<string, unknown> = new Map();
+  private state: "idle" | "running" | "failed" = "idle";
 
   private constructor(
     private config: CommutatorConfig<DataTypes, Events, Refs, PureFunctions, Functions, Apis>,
@@ -54,47 +57,79 @@ export class CommutatorWorker<
     private wiresRegistry: WiresRegistry<DataTypes>,
     snapshot?: WorkerSnapshot,
   ) {
-    if (!snapshot) {
-      return;
+    if (snapshot === undefined) return;
+    const restored = this.validateSnapshot(snapshot);
+    for (const { uuid, cache } of restored.pinCache) this.pinCache.set(uuid, cache);
+    for (const { uuid, cache } of restored.metaCache) this.metaCache.set(uuid, cache);
+  }
+
+  private schemaFingerprint(): string {
+    // Canonical graph encoding is collision-free. Array order is execution-significant;
+    // callbacks/API implementations are deliberately outside this identity contract.
+    // Build owned containers in canonical key order; strictly copy every live value.
+    // A fresh copier observes mutations on every call and retains shared leaf copies.
+    const copy = createJsonCopier(true);
+    const nodes = this.nodesRegistry.getAllNodes().map((node) => ({
+      ...(node.config === undefined ? {} : { config: copy(node.config) }),
+      meta: copy(snapshotField(this.config.getNodeConfigByName(node.name)?.meta)),
+      name: copy(node.name),
+      type: copy(node.type),
+      uuid: copy(node.uuid),
+    }));
+    const pins = this.pinsRegistry.getAllPins().map((pin) => ({
+      dataType: copy(snapshotField(pin.dataType)),
+      ...(pin.default === undefined ? {} : { default: copy(pin.default) }),
+      name: copy(pin.name),
+      nodeUuid: copy(pin.nodeUuid),
+      type: copy(pin.type),
+      uuid: copy(pin.uuid),
+    }));
+    return `graph-v1:${JSON.stringify({
+      dataTypes: Object.fromEntries(
+        Object.keys(this.config.dataTypes)
+          .sort()
+          .map((name) => [name, copy(snapshotField(this.config.dataTypes[name]))]),
+      ),
+      nodes,
+      pins,
+      wires: copy(this.wiresRegistry.getAllWires()),
+    })}`;
+  }
+
+  private validateSnapshot(input: unknown, fingerprint?: string): WorkerSnapshot {
+    const snapshot = readSnapshot(input);
+    if (snapshot.schemaFingerprint !== (fingerprint ?? this.schemaFingerprint())) {
+      snapshotError("schema mismatch");
     }
-
-    for (const pinCache of snapshot.pinCache) {
-      const pinInstance = this.pinsRegistry.getPinByUuid(pinCache.uuid);
-
-      // Если пин по uuid не нашёлся или это exec-пин, то пропускаем кешированное значение
-      if (!pinInstance || pinInstance.dataType === null) {
-        continue;
+    for (const { uuid, cache } of snapshot.pinCache) {
+      const pin = this.pinsRegistry.getPinByUuid(uuid);
+      const node = pin && this.nodesRegistry.getNodeByUuid(pin.nodeUuid);
+      if (
+        !pin ||
+        pin.type !== PinInstanceType.Output ||
+        !pin.dataType ||
+        !node ||
+        (node.type !== NodeType.Event && node.type !== NodeType.Function) ||
+        !this.validator.validateFieldValue(pin.dataType, cache)
+      ) {
+        snapshotError(`invalid persistent pin ${uuid}`);
       }
-
-      // Если данные из кеша не соответствуют типу данных пина, то пропускаем кешированное значение
-      if (!this.validator.validateFieldValue(pinInstance.dataType, pinCache.cache)) {
-        continue;
-      }
-
-      this.pinCache.set(pinCache.uuid, pinCache.cache);
     }
-
-    for (const metaCache of snapshot.metaCache) {
-      const nodeInstance = this.nodesRegistry.getNodeByUuid(metaCache.uuid);
-
-      // Если нода по uuid не нашлась то пропускаем кешированное значение
-      if (!nodeInstance) {
-        continue;
+    for (const { uuid, cache } of snapshot.metaCache) {
+      const node = this.nodesRegistry.getNodeByUuid(uuid);
+      const config = node && this.config.getNodeConfigByName(node.name);
+      if (
+        !node ||
+        node.type !== NodeType.Function ||
+        !config ||
+        (config.meta === undefined
+          ? cache !== null
+          : !this.validator.validateFieldValue(config.meta, cache))
+      ) {
+        snapshotError(`invalid metadata ${uuid}`);
       }
-
-      const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
-
-      if (!nodeConfig) {
-        continue;
-      }
-
-      // Если данные из кеша не соответствуют типу метаданных ноды, то пропускаем кешированное значение
-      if (!this.validator.validateFieldValue(nodeConfig.meta, metaCache.cache)) {
-        continue;
-      }
-
-      this.metaCache.set(metaCache.uuid, metaCache.cache);
     }
+    return snapshot;
   }
 
   public static initialize<
@@ -129,6 +164,32 @@ export class CommutatorWorker<
     event: Name,
     payload: Record<string, unknown>,
   ): Promise<void> {
+    this.assertAvailable();
+    this.state = "running";
+    try {
+      await this.runEvent(event, payload);
+      this.state = "idle";
+    } catch (error) {
+      // processFunction drains its descendants before propagating any failure.
+      this.state = "failed";
+      throw error;
+    }
+  }
+
+  private assertAvailable(): void {
+    if (this.state === "running") throw new CommutatorExecutionError("WORKER_BUSY");
+    if (this.state === "failed") throw new CommutatorExecutionError("WORKER_FAILED");
+  }
+
+  private async runEvent<Name extends keyof Events>(
+    event: Name,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    // Own the input once per API call; Function callbacks share the run's values.
+    const input = copyJson(payload);
+    if (input === null || typeof input !== "object" || Array.isArray(input)) {
+      snapshotError("expected event payload object");
+    }
     const cyclic = this.wiresRegistry.hasCycle("exec");
     if (cyclic && this.config.maxSteps === undefined) {
       throw new CommutatorExecutionError("MAX_STEPS_REQUIRED");
@@ -147,7 +208,7 @@ export class CommutatorWorker<
       new Queue();
 
     for (const event of events) {
-      this.saveToPinCache(this.pinCache, event, payload);
+      this.saveToPinCache(this.pinCache, event, input);
 
       // Берём все exec пины на выход из ивента
       const eventExecPinsOut = this.pinsRegistry.getNodeOutExecPinsIndex().get(event.uuid);
@@ -308,6 +369,7 @@ export class CommutatorWorker<
     }
 
     let pendingExecCount = 0;
+    let open = true;
     let resolveDrain: (() => void) | undefined;
     let failed = false;
     let failure: unknown;
@@ -334,13 +396,17 @@ export class CommutatorWorker<
       pinsOut: Record<string, unknown>;
       execPinOut: string | null;
     }): Promise<void> => {
+      const nextMeta = args.meta;
+      if (nextMeta === undefined && Object.hasOwn(args, "meta")) {
+        snapshotError("non-JSON metadata");
+      }
       if (args.pinsOut) {
         this.saveToPinCache(runtimePinCache, node, args.pinsOut, this.pinCache);
       }
 
       // Publish meta only after every supplied output has passed validation.
-      if (args.meta !== undefined) {
-        this.metaCache.set(node.uuid, args.meta);
+      if (nextMeta !== undefined) {
+        this.metaCache.set(node.uuid, nextMeta);
       }
 
       // Если вызывается execPinOut – находим подключенные ноды и вызываем processFunction для них
@@ -380,6 +446,12 @@ export class CommutatorWorker<
     };
 
     const exec = (args: Parameters<typeof runExec>[0]): Promise<void> => {
+      if (!open) {
+        const rejected = Promise.reject<void>(new CommutatorExecutionError("EXEC_CONTEXT_CLOSED"));
+        // Match live exec: ignored calls are observed, awaited calls still reject.
+        void rejected.catch(() => {});
+        return rejected;
+      }
       // Start immediately, preserving continuation input reads and await exec ordering.
       const promise = runExec(args);
       pendingExecCount++;
@@ -425,6 +497,10 @@ export class CommutatorWorker<
         resolveDrain = resolve;
       });
     }
+
+    // Keep the context open for native continuation handlers while draining;
+    // after closure a retained exec must never publish into this or a later run.
+    open = false;
 
     if (run.limitError) throw run.limitError;
     if (failed) throw failure;
@@ -606,6 +682,7 @@ export class CommutatorWorker<
       const pinData = value[pin.name];
 
       if (pinData === undefined) {
+        if (Object.hasOwn(value, pin.name)) snapshotError(`non-JSON output ${pin.name}`);
         continue;
       }
 
@@ -643,9 +720,16 @@ export class CommutatorWorker<
   }
 
   extract(): WorkerSnapshot {
-    return {
-      pinCache: Array.from(this.pinCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
-      metaCache: Array.from(this.metaCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
-    };
+    this.assertAvailable();
+    // Reuse identity only inside this call: Schema remains live between calls.
+    const schemaFingerprint = this.schemaFingerprint();
+    return this.validateSnapshot(
+      {
+        schemaFingerprint,
+        pinCache: Array.from(this.pinCache, ([uuid, cache]) => ({ uuid, cache })),
+        metaCache: Array.from(this.metaCache, ([uuid, cache]) => ({ uuid, cache })),
+      },
+      schemaFingerprint,
+    );
   }
 }

@@ -107,21 +107,21 @@ const dynamicLog = schema.createFunction("dynamicLog");
 const variableInputs = schema.createPureFunction("variableInputs");
 
 // Добавление входных пинов
-schema.addPinIn(dynamicSum.uuid); // Добавит value2
-schema.addPinIn(dynamicSum.uuid); // Добавит value3
+schema.addPinIn(dynamicSum.instance.uuid); // Добавит value2
+schema.addPinIn(dynamicSum.instance.uuid); // Добавит value3
 
 // Добавление выходных exec-пинов
-schema.addExecPinOut(dynamicLog.uuid); // Добавит branch0
-schema.addExecPinOut(dynamicLog.uuid); // Добавит branch1
+schema.addExecPinOut(dynamicLog.instance.uuid); // Добавит branch0
+schema.addExecPinOut(dynamicLog.instance.uuid); // Добавит branch1
 
 // Добавление входных и выходных пинов
-schema.addPinIn(variableInputs.uuid); // Добавит input2
-schema.addPinOut(variableInputs.uuid); // Добавит output2
+schema.addPinIn(variableInputs.instance.uuid); // Добавит input2
+schema.addPinOut(variableInputs.instance.uuid); // Добавит output2
 
 console.log("✅ Пример 6: Динамические пины");
 
 // Получение всех пинов ноды
-const sumPins = schema.getNodePins(dynamicSum.uuid);
+const sumPins = schema.getNodePins(dynamicSum.instance.uuid);
 console.log("\nДинамические пины dynamicSum:");
 console.log(
   "  Начальные пины:",
@@ -129,20 +129,20 @@ console.log(
 );
 
 // Проверка добавленных пинов
-const sumPinsAfter = schema.getNodePins(dynamicSum.uuid);
+const sumPinsAfter = schema.getNodePins(dynamicSum.instance.uuid);
 console.log(
   "  После добавления:",
   sumPinsAfter.map((p) => p.name),
 );
 
-const logPins = schema.getNodePins(dynamicLog.uuid);
+const logPins = schema.getNodePins(dynamicLog.instance.uuid);
 console.log("\nДинамические exec-пины dynamicLog:");
 console.log(
   "  После добавления:",
   logPins.filter((p) => p.type === PinInstanceType.OutputExec).map((p) => p.name),
 );
 
-const variablePins = schema.getNodePins(variableInputs.uuid);
+const variablePins = schema.getNodePins(variableInputs.instance.uuid);
 console.log("\nДинамические пины variableInputs:");
 console.log(
   "  Входные пины:",
@@ -175,7 +175,7 @@ if (pinsToRemove.length > 0) {
   }
 }
 
-const finalPins = schema.getNodePins(dynamicSum.uuid);
+const finalPins = schema.getNodePins(dynamicSum.instance.uuid);
 console.log(
   "\nФинальные пины dynamicSum:",
   finalPins.map((p) => p.name),

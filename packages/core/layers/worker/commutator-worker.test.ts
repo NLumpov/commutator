@@ -38,16 +38,16 @@ describe("CommutatorWorker", () => {
       const log = schema.createFunction("log");
 
       const eventXOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const logValueIn = schema
-        .getNodePins(log.uuid)
+        .getNodePins(log.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const logExecIn = schema
-        .getNodePins(log.uuid)
+        .getNodePins(log.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventXOut!.uuid, toPinUuid: logValueIn!.uuid });
@@ -84,10 +84,10 @@ describe("CommutatorWorker", () => {
       const func2 = schema.createPureFunction("selfRef");
 
       const out1 = schema
-        .getNodePins(func1.uuid)
+        .getNodePins(func1.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const in1 = schema
-        .getNodePins(func1.uuid)
+        .getNodePins(func1.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       // Попытка создать цикл: func1.result -> func1.value должна быть обнаружена при создании связи
@@ -118,16 +118,16 @@ describe("CommutatorWorker", () => {
       const funcB = schema.createPureFunction("funcB");
 
       const aOut = schema
-        .getNodePins(funcA.uuid)
+        .getNodePins(funcA.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const bIn = schema
-        .getNodePins(funcB.uuid)
+        .getNodePins(funcB.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
       const bOut = schema
-        .getNodePins(funcB.uuid)
+        .getNodePins(funcB.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const aIn = schema
-        .getNodePins(funcA.uuid)
+        .getNodePins(funcA.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       schema.wire({ fromPinUuid: aOut!.uuid, toPinUuid: bIn!.uuid });
@@ -165,22 +165,22 @@ describe("CommutatorWorker", () => {
       const funcC = schema.createPureFunction("funcC");
 
       const aOut = schema
-        .getNodePins(funcA.uuid)
+        .getNodePins(funcA.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const bIn = schema
-        .getNodePins(funcB.uuid)
+        .getNodePins(funcB.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
       const bOut = schema
-        .getNodePins(funcB.uuid)
+        .getNodePins(funcB.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const cIn = schema
-        .getNodePins(funcC.uuid)
+        .getNodePins(funcC.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
       const cOut = schema
-        .getNodePins(funcC.uuid)
+        .getNodePins(funcC.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const aIn = schema
-        .getNodePins(funcA.uuid)
+        .getNodePins(funcA.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       schema.wire({ fromPinUuid: aOut!.uuid, toPinUuid: bIn!.uuid });
@@ -231,16 +231,16 @@ describe("CommutatorWorker", () => {
       const funcB = schema.createFunction("funcB");
 
       const aOut = schema
-        .getNodePins(funcA.uuid)
+        .getNodePins(funcA.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const bIn = schema
-        .getNodePins(funcB.uuid)
+        .getNodePins(funcB.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
       const bOut = schema
-        .getNodePins(funcB.uuid)
+        .getNodePins(funcB.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const aIn = schema
-        .getNodePins(funcA.uuid)
+        .getNodePins(funcA.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       // Первый wire успешен
@@ -274,10 +274,10 @@ describe("CommutatorWorker", () => {
       const func = schema.createFunction("selfLoop");
 
       const execOut = schema
-        .getNodePins(func.uuid)
+        .getNodePins(func.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const execIn = schema
-        .getNodePins(func.uuid)
+        .getNodePins(func.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       // Exec cycles are valid graphs, but require a configured execution budget.
@@ -317,16 +317,16 @@ describe("CommutatorWorker", () => {
       const funcB = schema.createFunction("funcB");
 
       const aExecOut = schema
-        .getNodePins(funcA.uuid)
+        .getNodePins(funcA.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const bExecIn = schema
-        .getNodePins(funcB.uuid)
+        .getNodePins(funcB.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
       const bExecOut = schema
-        .getNodePins(funcB.uuid)
+        .getNodePins(funcB.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const aExecIn = schema
-        .getNodePins(funcA.uuid)
+        .getNodePins(funcA.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: aExecOut!.uuid, toPinUuid: bExecIn!.uuid });
@@ -363,10 +363,10 @@ describe("CommutatorWorker", () => {
       const func = schema.createFunction("counter");
 
       const execOut = schema
-        .getNodePins(func.uuid)
+        .getNodePins(func.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const execIn = schema
-        .getNodePins(func.uuid)
+        .getNodePins(func.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       // Exec cycles are valid graphs, but require a configured execution budget.
@@ -411,23 +411,23 @@ describe("CommutatorWorker", () => {
       const log = schema.createFunction("log");
 
       const eventXOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const addAIn = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((p) => p.name === "a" && p.type === PinInstanceType.Input);
       const addResultOut = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const logValueIn = schema
-        .getNodePins(log.uuid)
+        .getNodePins(log.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const logExecIn = schema
-        .getNodePins(log.uuid)
+        .getNodePins(log.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventXOut!.uuid, toPinUuid: addAIn!.uuid });
@@ -474,10 +474,10 @@ describe("CommutatorWorker", () => {
       const format = schema.createPureFunction("format");
 
       const refUserOut = schema
-        .getNodePins(ref.uuid)
+        .getNodePins(ref.instance.uuid)
         .find((p) => p.name === "user" && p.type === PinInstanceType.Output);
       const formatValueIn = schema
-        .getNodePins(format.uuid)
+        .getNodePins(format.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       // Ref получает данные из config, а не из пинов, поэтому подключаем только ref -> format
@@ -526,23 +526,23 @@ describe("CommutatorWorker", () => {
       const funcB = schema.createFunction("funcB");
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const aExecIn = schema
-        .getNodePins(funcA.uuid)
+        .getNodePins(funcA.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
       const aExecOut = schema
-        .getNodePins(funcA.uuid)
+        .getNodePins(funcA.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const bExecIn = schema
-        .getNodePins(funcB.uuid)
+        .getNodePins(funcB.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       const aValueOut = schema
-        .getNodePins(funcA.uuid)
+        .getNodePins(funcA.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Output);
       const bValueIn = schema
-        .getNodePins(funcB.uuid)
+        .getNodePins(funcB.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: aExecIn!.uuid });
@@ -580,17 +580,17 @@ describe("CommutatorWorker", () => {
       const process = schema.createFunction("process");
 
       const eventValueOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Output);
       const processValueIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const processExecIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventValueOut!.uuid, toPinUuid: processValueIn!.uuid });
@@ -600,7 +600,7 @@ describe("CommutatorWorker", () => {
       await expect(worker.triggerEvent("onClick", { value: null })).resolves.toBeUndefined();
     });
 
-    test("should handle undefined values in pins", async () => {
+    test("should reject explicit undefined event values", async () => {
       const commutator = Commutator.initialize()
         .defineEvent("onClick", {
           pinsOut: { value: { type: CommonDataType.Number } },
@@ -625,24 +625,25 @@ describe("CommutatorWorker", () => {
       const process = schema.createFunction("process");
 
       const eventValueOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Output);
       const processValueIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const processExecIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventValueOut!.uuid, toPinUuid: processValueIn!.uuid });
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: processExecIn!.uuid });
 
       const worker = schema.createWorker();
-      await expect(worker.triggerEvent("onClick", { value: undefined })).resolves.toBeUndefined();
+      await expect(worker.triggerEvent("onClick", { value: undefined })).rejects.toThrow("non-JSON");
+      expect(() => worker.extract()).toThrow("WORKER_FAILED");
     });
 
     test("should handle missing values in payload", async () => {
@@ -670,23 +671,23 @@ describe("CommutatorWorker", () => {
       const process = schema.createFunction("process");
 
       const eventXOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const eventYOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "y" && p.type === PinInstanceType.Output);
       const processXIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Input);
       const processYIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "y" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const processExecIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventXOut!.uuid, toPinUuid: processXIn!.uuid });
@@ -717,13 +718,13 @@ describe("CommutatorWorker", () => {
       const add2 = schema.createPureFunction("add");
 
       const eventXOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const add1AIn = schema
-        .getNodePins(add1.uuid)
+        .getNodePins(add1.instance.uuid)
         .find((p) => p.name === "a" && p.type === PinInstanceType.Input);
       const add2AIn = schema
-        .getNodePins(add2.uuid)
+        .getNodePins(add2.instance.uuid)
         .find((p) => p.name === "a" && p.type === PinInstanceType.Input);
 
       schema.wire({ fromPinUuid: eventXOut!.uuid, toPinUuid: add1AIn!.uuid });
@@ -767,16 +768,16 @@ describe("CommutatorWorker", () => {
       const consumer = schema.createPureFunction("consumer");
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const producerExecIn = schema
-        .getNodePins(producer.uuid)
+        .getNodePins(producer.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
       const producerValueOut = schema
-        .getNodePins(producer.uuid)
+        .getNodePins(producer.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Output);
       const consumerValueIn = schema
-        .getNodePins(consumer.uuid)
+        .getNodePins(consumer.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: producerExecIn!.uuid });
@@ -787,7 +788,7 @@ describe("CommutatorWorker", () => {
 
       const snapshot = worker.extract();
       const producerPin = schema
-        .getNodePins(producer.uuid)
+        .getNodePins(producer.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Output);
       const cached = snapshot.pinCache.find((c) => c.uuid === producerPin!.uuid);
       expect(cached).toBeDefined();
@@ -825,23 +826,23 @@ describe("CommutatorWorker", () => {
       const consumer = schema.createFunction("consumer");
 
       const eventXOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const addAIn = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((p) => p.name === "a" && p.type === PinInstanceType.Input);
       const addResultOut = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const consumerValueIn = schema
-        .getNodePins(consumer.uuid)
+        .getNodePins(consumer.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const consumerExecIn = schema
-        .getNodePins(consumer.uuid)
+        .getNodePins(consumer.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventXOut!.uuid, toPinUuid: addAIn!.uuid });
@@ -884,10 +885,10 @@ describe("CommutatorWorker", () => {
       const counter = schema.createFunction("counter");
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const counterExecIn = schema
-        .getNodePins(counter.uuid)
+        .getNodePins(counter.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: counterExecIn!.uuid });
@@ -896,13 +897,13 @@ describe("CommutatorWorker", () => {
       await worker.triggerEvent("onClick", {});
 
       const snapshot = worker.extract();
-      const metaCache = snapshot.metaCache.find((c) => c.uuid === counter.uuid);
+      const metaCache = snapshot.metaCache.find((c) => c.uuid === counter.instance.uuid);
       expect(metaCache).toBeDefined();
       expect(metaCache?.cache).toBe(1);
 
       await worker.triggerEvent("onClick", {});
       const snapshot2 = worker.extract();
-      const metaCache2 = snapshot2.metaCache.find((c) => c.uuid === counter.uuid);
+      const metaCache2 = snapshot2.metaCache.find((c) => c.uuid === counter.instance.uuid);
       expect(metaCache2?.cache).toBe(2);
     });
 
@@ -932,10 +933,10 @@ describe("CommutatorWorker", () => {
       const test = schema.createFunction("test");
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const testExecIn = schema
-        .getNodePins(test.uuid)
+        .getNodePins(test.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: testExecIn!.uuid });
@@ -1021,16 +1022,16 @@ describe("CommutatorWorker", () => {
       const consumer = schema2.createFunction("consumer");
 
       const refUserOut = schema2
-        .getNodePins(ref2.uuid)
+        .getNodePins(ref2.instance.uuid)
         .find((p) => p.name === "user" && p.type === PinInstanceType.Output);
       const consumerUserIn = schema2
-        .getNodePins(consumer.uuid)
+        .getNodePins(consumer.instance.uuid)
         .find((p) => p.name === "user" && p.type === PinInstanceType.Input);
       const eventExecOut = schema2
-        .getNodePins(event2.uuid)
+        .getNodePins(event2.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const consumerExecIn = schema2
-        .getNodePins(consumer.uuid)
+        .getNodePins(consumer.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema2.wire({ fromPinUuid: refUserOut!.uuid, toPinUuid: consumerUserIn!.uuid });
@@ -1086,31 +1087,31 @@ describe("CommutatorWorker", () => {
       const consumer = schema.createFunction("consumer");
 
       const refUserOut = schema
-        .getNodePins(ref.uuid)
+        .getNodePins(ref.instance.uuid)
         .find((p) => p.name === "user" && p.type === PinInstanceType.Output);
       const format1ValueIn = schema
-        .getNodePins(format1.uuid)
+        .getNodePins(format1.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
       const format2ValueIn = schema
-        .getNodePins(format2.uuid)
+        .getNodePins(format2.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
       const format1ResultOut = schema
-        .getNodePins(format1.uuid)
+        .getNodePins(format1.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const format2ResultOut = schema
-        .getNodePins(format2.uuid)
+        .getNodePins(format2.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const consumerValue1In = schema
-        .getNodePins(consumer.uuid)
+        .getNodePins(consumer.instance.uuid)
         .find((p) => p.name === "value1" && p.type === PinInstanceType.Input);
       const consumerValue2In = schema
-        .getNodePins(consumer.uuid)
+        .getNodePins(consumer.instance.uuid)
         .find((p) => p.name === "value2" && p.type === PinInstanceType.Input);
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const consumerExecIn = schema
-        .getNodePins(consumer.uuid)
+        .getNodePins(consumer.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       // Ref выходной пин подключён к двум format-функциям
@@ -1155,10 +1156,10 @@ describe("CommutatorWorker", () => {
       const format = schema.createPureFunction("format");
 
       const refUserOut = schema
-        .getNodePins(ref.uuid)
+        .getNodePins(ref.instance.uuid)
         .find((p) => p.name === "user" && p.type === PinInstanceType.Output);
       const formatValueIn = schema
-        .getNodePins(format.uuid)
+        .getNodePins(format.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       // Ref получает данные из config, а не из пинов, поэтому подключаем только ref -> format
@@ -1220,22 +1221,22 @@ describe("CommutatorWorker", () => {
       const falseHandler = schema.createFunction("falseHandler");
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const branchExecIn = schema
-        .getNodePins(branch.uuid)
+        .getNodePins(branch.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
       const branchTrueOut = schema
-        .getNodePins(branch.uuid)
+        .getNodePins(branch.instance.uuid)
         .find((p) => p.name === "true" && p.type === PinInstanceType.OutputExec);
       const branchFalseOut = schema
-        .getNodePins(branch.uuid)
+        .getNodePins(branch.instance.uuid)
         .find((p) => p.name === "false" && p.type === PinInstanceType.OutputExec);
       const trueHandlerExecIn = schema
-        .getNodePins(trueHandler.uuid)
+        .getNodePins(trueHandler.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
       const falseHandlerExecIn = schema
-        .getNodePins(falseHandler.uuid)
+        .getNodePins(falseHandler.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: branchExecIn!.uuid });
@@ -1298,10 +1299,10 @@ describe("CommutatorWorker", () => {
       const errorFunc = schema.createFunction("errorFunc");
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const errorFuncExecIn = schema
-        .getNodePins(errorFunc.uuid)
+        .getNodePins(errorFunc.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: errorFuncExecIn!.uuid });
@@ -1333,17 +1334,17 @@ describe("CommutatorWorker", () => {
       const process = schema.createFunction("process");
 
       const eventXOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const processValueIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const processExecIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventXOut!.uuid, toPinUuid: processValueIn!.uuid });
@@ -1386,10 +1387,10 @@ describe("CommutatorWorker", () => {
       const counter = schema.createFunction("counter");
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const counterExecIn = schema
-        .getNodePins(counter.uuid)
+        .getNodePins(counter.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: counterExecIn!.uuid });
@@ -1403,11 +1404,11 @@ describe("CommutatorWorker", () => {
       await worker2.triggerEvent("onClick", {});
 
       const snapshot2 = worker2.extract();
-      const metaCache = snapshot2.metaCache.find((c) => c.uuid === counter.uuid);
+      const metaCache = snapshot2.metaCache.find((c) => c.uuid === counter.instance.uuid);
       expect(metaCache?.cache).toBe(2);
     });
 
-    test("should skip invalid cache entries in snapshot", async () => {
+    test("should reject invalid cache entries in snapshot", async () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: { x: { type: CommonDataType.Number } },
         execPinsOut: { next: null },
@@ -1417,10 +1418,11 @@ describe("CommutatorWorker", () => {
       const event = schema.createEvent("onClick");
 
       const eventXOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
 
       const invalidSnapshot: WorkerSnapshot = {
+        schemaFingerprint: schema.createWorker().extract().schemaFingerprint,
         pinCache: [
           { uuid: eventXOut!.uuid, cache: "invalid string instead of number" },
           { uuid: "non-existent-uuid", cache: 42 },
@@ -1428,8 +1430,7 @@ describe("CommutatorWorker", () => {
         metaCache: [],
       };
 
-      const worker = schema.createWorker(invalidSnapshot);
-      await expect(worker.triggerEvent("onClick", { x: 5 })).resolves.toBeUndefined();
+      expect(() => schema.createWorker(invalidSnapshot)).toThrow(CommutatorError);
     });
   });
 
@@ -1480,22 +1481,22 @@ describe("CommutatorWorker", () => {
       const level3 = schema.createFunction("level3");
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const level1ExecIn = schema
-        .getNodePins(level1.uuid)
+        .getNodePins(level1.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
       const level1ExecOut = schema
-        .getNodePins(level1.uuid)
+        .getNodePins(level1.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const level2ExecIn = schema
-        .getNodePins(level2.uuid)
+        .getNodePins(level2.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
       const level2ExecOut = schema
-        .getNodePins(level2.uuid)
+        .getNodePins(level2.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const level3ExecIn = schema
-        .getNodePins(level3.uuid)
+        .getNodePins(level3.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: level1ExecIn!.uuid });
@@ -1557,22 +1558,22 @@ describe("CommutatorWorker", () => {
       const branch2 = schema.createFunction("branch2");
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const splitterExecIn = schema
-        .getNodePins(splitter.uuid)
+        .getNodePins(splitter.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
       const splitterBranch1Out = schema
-        .getNodePins(splitter.uuid)
+        .getNodePins(splitter.instance.uuid)
         .find((p) => p.name === "branch1" && p.type === PinInstanceType.OutputExec);
       const splitterBranch2Out = schema
-        .getNodePins(splitter.uuid)
+        .getNodePins(splitter.instance.uuid)
         .find((p) => p.name === "branch2" && p.type === PinInstanceType.OutputExec);
       const branch1ExecIn = schema
-        .getNodePins(branch1.uuid)
+        .getNodePins(branch1.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
       const branch2ExecIn = schema
-        .getNodePins(branch2.uuid)
+        .getNodePins(branch2.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: splitterExecIn!.uuid });
@@ -1611,10 +1612,10 @@ describe("CommutatorWorker", () => {
       const process = schema.createFunction("process");
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const processExecIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: processExecIn!.uuid });
@@ -1660,36 +1661,36 @@ describe("CommutatorWorker", () => {
       const process = schema.createFunction("process");
 
       const eventStrOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "str" && p.type === PinInstanceType.Output);
       const eventNumOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "num" && p.type === PinInstanceType.Output);
       const eventBoolOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "bool" && p.type === PinInstanceType.Output);
       const eventDateOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "date" && p.type === PinInstanceType.Output);
 
       const processStrIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "str" && p.type === PinInstanceType.Input);
       const processNumIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "num" && p.type === PinInstanceType.Input);
       const processBoolIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "bool" && p.type === PinInstanceType.Input);
       const processDateIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "date" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const processExecIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventStrOut!.uuid, toPinUuid: processStrIn!.uuid });
@@ -1740,17 +1741,17 @@ describe("CommutatorWorker", () => {
       const process = schema.createFunction("process");
 
       const eventUserOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "user" && p.type === PinInstanceType.Output);
       const processUserIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "user" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const processExecIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventUserOut!.uuid, toPinUuid: processUserIn!.uuid });
@@ -1786,17 +1787,17 @@ describe("CommutatorWorker", () => {
       const process = schema.createFunction("process");
 
       const eventItemsOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "items" && p.type === PinInstanceType.Output);
       const processItemsIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "items" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const processExecIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventItemsOut!.uuid, toPinUuid: processItemsIn!.uuid });
@@ -1828,17 +1829,17 @@ describe("CommutatorWorker", () => {
       const process = schema.createFunction("process");
 
       const eventStatusOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "status" && p.type === PinInstanceType.Output);
       const processStatusIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "status" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const processExecIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventStatusOut!.uuid, toPinUuid: processStatusIn!.uuid });
@@ -1870,17 +1871,17 @@ describe("CommutatorWorker", () => {
       const process = schema.createFunction("process");
 
       const eventCodeOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "code" && p.type === PinInstanceType.Output);
       const processCodeIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "code" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const processExecIn = schema
-        .getNodePins(process.uuid)
+        .getNodePins(process.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventCodeOut!.uuid, toPinUuid: processCodeIn!.uuid });
@@ -1918,16 +1919,16 @@ describe("CommutatorWorker", () => {
       const handler2 = schema.createFunction("handler");
 
       const event1ExecOut = schema
-        .getNodePins(event1.uuid)
+        .getNodePins(event1.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const event2ExecOut = schema
-        .getNodePins(event2.uuid)
+        .getNodePins(event2.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const handler1ExecIn = schema
-        .getNodePins(handler1.uuid)
+        .getNodePins(handler1.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
       const handler2ExecIn = schema
-        .getNodePins(handler2.uuid)
+        .getNodePins(handler2.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: event1ExecOut!.uuid, toPinUuid: handler1ExecIn!.uuid });
@@ -1979,16 +1980,16 @@ describe("CommutatorWorker", () => {
       const hoverHandler = schema.createFunction("hoverHandler");
 
       const clickEventExecOut = schema
-        .getNodePins(clickEvent.uuid)
+        .getNodePins(clickEvent.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const hoverEventExecOut = schema
-        .getNodePins(hoverEvent.uuid)
+        .getNodePins(hoverEvent.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const clickHandlerExecIn = schema
-        .getNodePins(clickHandler.uuid)
+        .getNodePins(clickHandler.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
       const hoverHandlerExecIn = schema
-        .getNodePins(hoverHandler.uuid)
+        .getNodePins(hoverHandler.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: clickEventExecOut!.uuid, toPinUuid: clickHandlerExecIn!.uuid });
@@ -2098,20 +2099,20 @@ describe("CommutatorWorker", () => {
       }
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const firstNodeExecIn = schema
-        .getNodePins(nodes[0].uuid)
+        .getNodePins(nodes[0].instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: firstNodeExecIn!.uuid });
 
       for (let i = 0; i < nodes.length - 1; i++) {
         const nodeExecOut = schema
-          .getNodePins(nodes[i].uuid)
+          .getNodePins(nodes[i].instance.uuid)
           .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
         const nextNodeExecIn = schema
-          .getNodePins(nodes[i + 1].uuid)
+          .getNodePins(nodes[i + 1].instance.uuid)
           .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
         schema.wire({ fromPinUuid: nodeExecOut!.uuid, toPinUuid: nextNodeExecIn!.uuid });
@@ -2123,7 +2124,7 @@ describe("CommutatorWorker", () => {
   });
 
   describe("Performance edge cases", () => {
-    test("should handle rapid event triggers", async () => {
+    test("should reject overlapping rapid triggers and accept the next completed pass", async () => {
       const commutator = Commutator.initialize()
         .defineEvent("onClick", {
           pinsOut: {},
@@ -2144,10 +2145,10 @@ describe("CommutatorWorker", () => {
       const handler = schema.createFunction("handler");
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const handlerExecIn = schema
-        .getNodePins(handler.uuid)
+        .getNodePins(handler.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventExecOut!.uuid, toPinUuid: handlerExecIn!.uuid });
@@ -2159,7 +2160,13 @@ describe("CommutatorWorker", () => {
         promises.push(worker.triggerEvent("onClick", {}));
       }
 
-      await expect(Promise.all(promises)).resolves.toHaveLength(10);
+      const results = await Promise.allSettled(promises);
+      expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+      for (const result of results.slice(1)) {
+        expect(result.status).toBe("rejected");
+        if (result.status === "rejected") expect(result.reason).toHaveProperty("code", "WORKER_BUSY");
+      }
+      await expect(worker.triggerEvent("onClick", {})).resolves.toBeUndefined();
     });
   });
 
@@ -2214,23 +2221,23 @@ describe("CommutatorWorker", () => {
       // Ref получает данные через config, не через wire от event
       // Правильная цепочка: ref.user -> format.value -> log.message
       const refUserOut = schema
-        .getNodePins(ref.uuid)
+        .getNodePins(ref.instance.uuid)
         .find((p) => p.name === "user" && p.type === PinInstanceType.Output);
       const formatValueIn = schema
-        .getNodePins(format.uuid)
+        .getNodePins(format.instance.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
       const formatResultOut = schema
-        .getNodePins(format.uuid)
+        .getNodePins(format.instance.uuid)
         .find((p) => p.name === "result" && p.type === PinInstanceType.Output);
       const logMessageIn = schema
-        .getNodePins(log.uuid)
+        .getNodePins(log.instance.uuid)
         .find((p) => p.name === "message" && p.type === PinInstanceType.Input);
 
       const eventExecOut = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       const logExecIn = schema
-        .getNodePins(log.uuid)
+        .getNodePins(log.instance.uuid)
         .find((p) => p.name === "start" && p.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: refUserOut!.uuid, toPinUuid: formatValueIn!.uuid });

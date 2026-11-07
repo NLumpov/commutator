@@ -38,10 +38,10 @@ describe("CommutatorValidator", () => {
       const add = schema.createPureFunction("add");
 
       const eventXPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const addAPin = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
       schema.wire({ fromPinUuid: eventXPin!.uuid, toPinUuid: addAPin!.uuid });
@@ -171,10 +171,10 @@ describe("CommutatorValidator", () => {
       const add = schema.createPureFunction("add");
 
       const eventXPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const addAPin = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
       schema.wire({ fromPinUuid: eventXPin!.uuid, toPinUuid: addAPin!.uuid });
@@ -242,10 +242,10 @@ describe("CommutatorValidator", () => {
       const add = schema.createPureFunction("add");
 
       const eventXPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const addAPin = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
       schema.wire({ fromPinUuid: eventXPin!.uuid, toPinUuid: addAPin!.uuid });
@@ -283,10 +283,10 @@ describe("CommutatorValidator", () => {
       const log = schema.createFunction("log");
 
       const eventXPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const logStartPin = schema
-        .getNodePins(log.uuid)
+        .getNodePins(log.instance.uuid)
         .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec);
 
       const snapshot = schema.extract();
@@ -319,10 +319,10 @@ describe("CommutatorValidator", () => {
       const test = schema.createFunction("test");
 
       const outputPin = schema
-        .getNodePins(test.uuid)
+        .getNodePins(test.instance.uuid)
         .find((pin) => pin.name === "b" && pin.type === PinInstanceType.Output);
       const inputPin = schema
-        .getNodePins(test.uuid)
+        .getNodePins(test.instance.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
       const snapshot = schema.extract();
@@ -359,10 +359,10 @@ describe("CommutatorValidator", () => {
       const add = schema.createPureFunction("add");
 
       const eventXPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const addAPin = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
       const snapshot = schema.extract();
@@ -399,10 +399,10 @@ describe("CommutatorValidator", () => {
       const add = schema.createPureFunction("add");
 
       const eventXPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const addAPin = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
       const snapshot = schema.extract();
@@ -439,10 +439,10 @@ describe("CommutatorValidator", () => {
       const add = schema.createPureFunction("add");
 
       const eventXPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const addAPin = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
       const snapshot = schema.extract();
@@ -479,10 +479,10 @@ describe("CommutatorValidator", () => {
       const add = schema.createPureFunction("add");
 
       const eventXPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const addAPin = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
       const snapshot = schema.extract();
@@ -525,13 +525,13 @@ describe("CommutatorValidator", () => {
       const log2 = schema.createFunction("log2");
 
       const eventNextPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec);
       const log1StartPin = schema
-        .getNodePins(log1.uuid)
+        .getNodePins(log1.instance.uuid)
         .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec);
       const log2StartPin = schema
-        .getNodePins(log2.uuid)
+        .getNodePins(log2.instance.uuid)
         .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: eventNextPin!.uuid, toPinUuid: log1StartPin!.uuid });
@@ -576,13 +576,13 @@ describe("CommutatorValidator", () => {
       const add = schema.createPureFunction("add");
 
       const event1XPin = schema
-        .getNodePins(event1.uuid)
+        .getNodePins(event1.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const event2XPin = schema
-        .getNodePins(event2.uuid)
+        .getNodePins(event2.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const addAPin = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
       schema.wire({ fromPinUuid: event1XPin!.uuid, toPinUuid: addAPin!.uuid });
@@ -621,16 +621,16 @@ describe("CommutatorValidator", () => {
       const b = schema.createFunction("B");
 
       const aNextPin = schema
-        .getNodePins(a.uuid)
+        .getNodePins(a.instance.uuid)
         .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec);
       const bStartPin = schema
-        .getNodePins(b.uuid)
+        .getNodePins(b.instance.uuid)
         .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec);
       const bNextPin = schema
-        .getNodePins(b.uuid)
+        .getNodePins(b.instance.uuid)
         .find((pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec);
       const aStartPin = schema
-        .getNodePins(a.uuid)
+        .getNodePins(a.instance.uuid)
         .find((pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec);
 
       schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
@@ -741,10 +741,10 @@ describe("CommutatorValidator", () => {
       const add = schema.createPureFunction("add");
 
       const eventXPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const addAPin = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
       schema.wire({ fromPinUuid: eventXPin!.uuid, toPinUuid: addAPin!.uuid });
@@ -941,13 +941,13 @@ describe("CommutatorValidator", () => {
       const add = schema.createPureFunction("add");
 
       const eventXPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
       const addAPin = schema
-        .getNodePins(add.uuid)
+        .getNodePins(add.instance.uuid)
         .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
-      const nodesRegistry = new NodesRegistry([event, add], commutator["config"], commutator.validator);
+      const nodesRegistry = new NodesRegistry([event.instance, add.instance], commutator["config"], commutator.validator);
       const pinsRegistry = new PinsRegistry([eventXPin!, addAPin!], nodesRegistry, commutator.validator);
       const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
 
@@ -973,17 +973,17 @@ describe("CommutatorValidator", () => {
       const event = schema.createEvent("onClick");
 
       const eventXPin = schema
-        .getNodePins(event.uuid)
+        .getNodePins(event.instance.uuid)
         .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
 
       const allNodesMap = new Map();
-      allNodesMap.set(event.uuid, event);
+      allNodesMap.set(event.instance.uuid, event);
 
       const allPinsMap = new Map(
-        schema.getNodePins(event.uuid).map((pin) => [pin.uuid, pin]),
+        schema.getNodePins(event.instance.uuid).map((pin) => [pin.uuid, pin]),
       );
 
-      const nodesRegistry = new NodesRegistry([event], commutator["config"], commutator.validator);
+      const nodesRegistry = new NodesRegistry([event.instance], commutator["config"], commutator.validator);
       const pinsRegistry = new PinsRegistry([eventXPin!], nodesRegistry, commutator.validator);
       const wiresRegistry = new WiresRegistry([], pinsRegistry, nodesRegistry, commutator.validator);
 
@@ -1145,16 +1145,16 @@ describe("CommutatorValidator", () => {
         const b = schema.createFunction("B");
         const c = schema.createFunction("C");
 
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const bNextPin = schema.getNodePins(b.uuid).find(
+        const bNextPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const cStartPin = schema.getNodePins(c.uuid).find(
+        const cStartPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -1211,28 +1211,28 @@ describe("CommutatorValidator", () => {
 
         // A -> B -> D
         // A -> C -> D (diamond pattern)
-        const aNext1Pin = schema.getNodePins(a.uuid).find(
+        const aNext1Pin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next1" && pin.type === PinInstanceType.OutputExec,
         );
-        const aNext2Pin = schema.getNodePins(a.uuid).find(
+        const aNext2Pin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next2" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const bNextPin = schema.getNodePins(b.uuid).find(
+        const bNextPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const cStartPin = schema.getNodePins(c.uuid).find(
+        const cStartPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const cNextPin = schema.getNodePins(c.uuid).find(
+        const cNextPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const dStart1Pin = schema.getNodePins(d.uuid).find(
+        const dStart1Pin = schema.getNodePins(d.instance.uuid).find(
           (pin) => pin.name === "start1" && pin.type === PinInstanceType.InputExec,
         );
-        const dStart2Pin = schema.getNodePins(d.uuid).find(
+        const dStart2Pin = schema.getNodePins(d.instance.uuid).find(
           (pin) => pin.name === "start2" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -1273,10 +1273,10 @@ describe("CommutatorValidator", () => {
         const a = schema.createFunction("A");
         const b = schema.createFunction("B");
 
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -1285,10 +1285,10 @@ describe("CommutatorValidator", () => {
         const snapshot = schema.extract();
 
         // Manually add the cycle wire (B -> A)
-        const bNextPin = schema.getNodePins(b.uuid).find(
+        const bNextPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const aStartPin = schema.getNodePins(a.uuid).find(
+        const aStartPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         snapshot.wires.push({ from: bNextPin!.uuid, to: aStartPin!.uuid });
@@ -1335,16 +1335,16 @@ describe("CommutatorValidator", () => {
         const b = schema.createFunction("B");
         const c = schema.createFunction("C");
 
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const bNextPin = schema.getNodePins(b.uuid).find(
+        const bNextPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const cStartPin = schema.getNodePins(c.uuid).find(
+        const cStartPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -1354,10 +1354,10 @@ describe("CommutatorValidator", () => {
         const snapshot = schema.extract();
 
         // Manually add the cycle wire (C -> A)
-        const cNextPin = schema.getNodePins(c.uuid).find(
+        const cNextPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const aStartPin = schema.getNodePins(a.uuid).find(
+        const aStartPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         snapshot.wires.push({ from: cNextPin!.uuid, to: aStartPin!.uuid });
@@ -1413,19 +1413,19 @@ describe("CommutatorValidator", () => {
         const y = schema.createFunction("Y");
 
         // Acyclic component: X -> Y
-        const xNextPin = schema.getNodePins(x.uuid).find(
+        const xNextPin = schema.getNodePins(x.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const yStartPin = schema.getNodePins(y.uuid).find(
+        const yStartPin = schema.getNodePins(y.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         schema.wire({ fromPinUuid: xNextPin!.uuid, toPinUuid: yStartPin!.uuid });
 
         // Setup cyclic component: A -> B (will manually add B -> A)
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
@@ -1433,10 +1433,10 @@ describe("CommutatorValidator", () => {
         const snapshot = schema.extract();
 
         // Add cycle B -> A
-        const bNextPin = schema.getNodePins(b.uuid).find(
+        const bNextPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const aStartPin = schema.getNodePins(a.uuid).find(
+        const aStartPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         snapshot.wires.push({ from: bNextPin!.uuid, to: aStartPin!.uuid });
@@ -1491,19 +1491,19 @@ describe("CommutatorValidator", () => {
         const y = schema.createFunction("Y");
 
         // Component 1: A -> B
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
 
         // Component 2: X -> Y
-        const xNextPin = schema.getNodePins(x.uuid).find(
+        const xNextPin = schema.getNodePins(x.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const yStartPin = schema.getNodePins(y.uuid).find(
+        const yStartPin = schema.getNodePins(y.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         schema.wire({ fromPinUuid: xNextPin!.uuid, toPinUuid: yStartPin!.uuid });
@@ -1544,16 +1544,16 @@ describe("CommutatorValidator", () => {
         const b = schema.createPureFunction("B");
         const c = schema.createPureFunction("C");
 
-        const aValuePin = schema.getNodePins(a.uuid).find(
+        const aValuePin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const bInputPin = schema.getNodePins(b.uuid).find(
+        const bInputPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
-        const bValuePin = schema.getNodePins(b.uuid).find(
+        const bValuePin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const cInputPin = schema.getNodePins(c.uuid).find(
+        const cInputPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
 
@@ -1588,10 +1588,10 @@ describe("CommutatorValidator", () => {
         const a = schema.createPureFunction("A");
         const b = schema.createPureFunction("B");
 
-        const aValuePin = schema.getNodePins(a.uuid).find(
+        const aValuePin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const bInputPin = schema.getNodePins(b.uuid).find(
+        const bInputPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
 
@@ -1600,10 +1600,10 @@ describe("CommutatorValidator", () => {
         const snapshot = schema.extract();
 
         // Manually add cycle B -> A
-        const bValuePin = schema.getNodePins(b.uuid).find(
+        const bValuePin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const aInputPin = schema.getNodePins(a.uuid).find(
+        const aInputPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
         snapshot.wires.push({ from: bValuePin!.uuid, to: aInputPin!.uuid });
@@ -1642,19 +1642,19 @@ describe("CommutatorValidator", () => {
         const b = schema.createFunction("B");
 
         // Data wire: A -> B
-        const aValuePin = schema.getNodePins(a.uuid).find(
+        const aValuePin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const bInputPin = schema.getNodePins(b.uuid).find(
+        const bInputPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
         schema.wire({ fromPinUuid: aValuePin!.uuid, toPinUuid: bInputPin!.uuid });
 
         // Exec wire: A -> B
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
@@ -1662,10 +1662,10 @@ describe("CommutatorValidator", () => {
         const snapshot = schema.extract();
 
         // Add exec cycle B -> A (should not affect data cycle check)
-        const bNextPin = schema.getNodePins(b.uuid).find(
+        const bNextPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const aStartPin = schema.getNodePins(a.uuid).find(
+        const aStartPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         snapshot.wires.push({ from: bNextPin!.uuid, to: aStartPin!.uuid });
@@ -1704,10 +1704,10 @@ describe("CommutatorValidator", () => {
         const snapshot = schema.extract();
 
         // Self-loop on node level
-        const aValuePin = schema.getNodePins(a.uuid).find(
+        const aValuePin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const aInputPin = schema.getNodePins(a.uuid).find(
+        const aInputPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
         snapshot.wires.push({ from: aValuePin!.uuid, to: aInputPin!.uuid });
@@ -1775,10 +1775,10 @@ describe("CommutatorValidator", () => {
           const currentNode = nodes[i];
           const nextNode = nodes[i + 1];
           if (!currentNode || !nextNode) continue;
-          const nextPin = schema.getNodePins(currentNode.uuid).find(
+          const nextPin = schema.getNodePins(currentNode.instance.uuid).find(
             (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
           );
-          const startPin = schema.getNodePins(nextNode.uuid).find(
+          const startPin = schema.getNodePins(nextNode.instance.uuid).find(
             (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
           );
           schema.wire({ fromPinUuid: nextPin!.uuid, toPinUuid: startPin!.uuid });
@@ -1787,10 +1787,10 @@ describe("CommutatorValidator", () => {
         const snapshot = schema.extract();
 
         // Add cycle N5 -> N1
-        const n5NextPin = schema.getNodePins(n5.uuid).find(
+        const n5NextPin = schema.getNodePins(n5.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const n1StartPin = schema.getNodePins(n1.uuid).find(
+        const n1StartPin = schema.getNodePins(n1.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         snapshot.wires.push({ from: n5NextPin!.uuid, to: n1StartPin!.uuid });
@@ -1832,10 +1832,10 @@ describe("CommutatorValidator", () => {
         const a = schema.createFunction("A");
         const b = schema.createFunction("B");
 
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -1866,10 +1866,10 @@ describe("CommutatorValidator", () => {
         const schema = commutator.createSchema();
         const a = schema.createFunction("A");
 
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const aStartPin = schema.getNodePins(a.uuid).find(
+        const aStartPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -1908,16 +1908,16 @@ describe("CommutatorValidator", () => {
         const a = schema.createFunction("A");
         const b = schema.createFunction("B");
 
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const bNextPin = schema.getNodePins(b.uuid).find(
+        const bNextPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const aStartPin = schema.getNodePins(a.uuid).find(
+        const aStartPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -1968,22 +1968,22 @@ describe("CommutatorValidator", () => {
         const b = schema.createFunction("B");
         const c = schema.createFunction("C");
 
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const bNextPin = schema.getNodePins(b.uuid).find(
+        const bNextPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const cStartPin = schema.getNodePins(c.uuid).find(
+        const cStartPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const cNextPin = schema.getNodePins(c.uuid).find(
+        const cNextPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const aStartPin = schema.getNodePins(a.uuid).find(
+        const aStartPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -2044,19 +2044,19 @@ describe("CommutatorValidator", () => {
         const y = schema.createFunction("Y");
 
         // Component 1: A -> B (cycle)
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
 
         // Component 2 is disconnected
-        const xNextPin = schema.getNodePins(x.uuid).find(
+        const xNextPin = schema.getNodePins(x.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const yStartPin = schema.getNodePins(y.uuid).find(
+        const yStartPin = schema.getNodePins(y.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -2088,7 +2088,7 @@ describe("CommutatorValidator", () => {
         const schema = commutator.createSchema();
         const a = schema.createFunction("A");
 
-        const aStartPin = schema.getNodePins(a.uuid).find(
+        const aStartPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -2119,7 +2119,7 @@ describe("CommutatorValidator", () => {
         const schema = commutator.createSchema();
         const a = schema.createFunction("A");
 
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
 
@@ -2175,34 +2175,34 @@ describe("CommutatorValidator", () => {
         const d = schema.createFunction("D");
 
         // A -> B -> D and A -> C -> D
-        const aNext1Pin = schema.getNodePins(a.uuid).find(
+        const aNext1Pin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next1" && pin.type === PinInstanceType.OutputExec,
         );
-        const aNext2Pin = schema.getNodePins(a.uuid).find(
+        const aNext2Pin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next2" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const bNextPin = schema.getNodePins(b.uuid).find(
+        const bNextPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const cStartPin = schema.getNodePins(c.uuid).find(
+        const cStartPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const cNextPin = schema.getNodePins(c.uuid).find(
+        const cNextPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const dStart1Pin = schema.getNodePins(d.uuid).find(
+        const dStart1Pin = schema.getNodePins(d.instance.uuid).find(
           (pin) => pin.name === "start1" && pin.type === PinInstanceType.InputExec,
         );
-        const dStart2Pin = schema.getNodePins(d.uuid).find(
+        const dStart2Pin = schema.getNodePins(d.instance.uuid).find(
           (pin) => pin.name === "start2" && pin.type === PinInstanceType.InputExec,
         );
-        const dNextPin = schema.getNodePins(d.uuid).find(
+        const dNextPin = schema.getNodePins(d.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const aStartPin = schema.getNodePins(a.uuid).find(
+        const aStartPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -2245,10 +2245,10 @@ describe("CommutatorValidator", () => {
         const a = schema.createPureFunction("A");
         const b = schema.createPureFunction("B");
 
-        const aValuePin = schema.getNodePins(a.uuid).find(
+        const aValuePin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const bInputPin = schema.getNodePins(b.uuid).find(
+        const bInputPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
 
@@ -2277,10 +2277,10 @@ describe("CommutatorValidator", () => {
         const schema = commutator.createSchema();
         const a = schema.createPureFunction("A");
 
-        const aValuePin = schema.getNodePins(a.uuid).find(
+        const aValuePin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const aInputPin = schema.getNodePins(a.uuid).find(
+        const aInputPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
 
@@ -2315,16 +2315,16 @@ describe("CommutatorValidator", () => {
         const a = schema.createPureFunction("A");
         const b = schema.createPureFunction("B");
 
-        const aValuePin = schema.getNodePins(a.uuid).find(
+        const aValuePin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const bInputPin = schema.getNodePins(b.uuid).find(
+        const bInputPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
-        const bValuePin = schema.getNodePins(b.uuid).find(
+        const bValuePin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const aInputPin = schema.getNodePins(a.uuid).find(
+        const aInputPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
 
@@ -2368,10 +2368,10 @@ describe("CommutatorValidator", () => {
         const b = schema.createFunction("B");
 
         // Exec wire B -> A
-        const bNextPin = schema.getNodePins(b.uuid).find(
+        const bNextPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const aStartPin = schema.getNodePins(a.uuid).find(
+        const aStartPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         schema.wire({ fromPinUuid: bNextPin!.uuid, toPinUuid: aStartPin!.uuid });
@@ -2383,10 +2383,10 @@ describe("CommutatorValidator", () => {
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
         // Adding data wire A -> B should not consider exec wires
-        const aValuePin = schema.getNodePins(a.uuid).find(
+        const aValuePin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const bInputPin = schema.getNodePins(b.uuid).find(
+        const bInputPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
 
@@ -2447,37 +2447,37 @@ describe("CommutatorValidator", () => {
 
         // A -> B -> D -> E
         // A -> C -> D -> E
-        const aNext1Pin = schema.getNodePins(a.uuid).find(
+        const aNext1Pin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next1" && pin.type === PinInstanceType.OutputExec,
         );
-        const aNext2Pin = schema.getNodePins(a.uuid).find(
+        const aNext2Pin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next2" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const bNextPin = schema.getNodePins(b.uuid).find(
+        const bNextPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const cStartPin = schema.getNodePins(c.uuid).find(
+        const cStartPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const cNextPin = schema.getNodePins(c.uuid).find(
+        const cNextPin = schema.getNodePins(c.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const dStartPin = schema.getNodePins(d.uuid).find(
+        const dStartPin = schema.getNodePins(d.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const dNextPin = schema.getNodePins(d.uuid).find(
+        const dNextPin = schema.getNodePins(d.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const eStartPin = schema.getNodePins(e.uuid).find(
+        const eStartPin = schema.getNodePins(e.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
-        const eNextPin = schema.getNodePins(e.uuid).find(
+        const eNextPin = schema.getNodePins(e.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const aStartPin = schema.getNodePins(a.uuid).find(
+        const aStartPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -2524,10 +2524,10 @@ describe("CommutatorValidator", () => {
         const b = schema.createFunction("B");
 
         // Exec: A -> B
-        const aNextPin = schema.getNodePins(a.uuid).find(
+        const aNextPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const bStartPin = schema.getNodePins(b.uuid).find(
+        const bStartPin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
         schema.wire({ fromPinUuid: aNextPin!.uuid, toPinUuid: bStartPin!.uuid });
@@ -2539,10 +2539,10 @@ describe("CommutatorValidator", () => {
         const wiresRegistry = new WiresRegistry(snapshot.wires, pinsRegistry, nodesRegistry, commutator.validator);
 
         // Adding data wire B -> A should not be affected by exec wire A -> B
-        const bValuePin = schema.getNodePins(b.uuid).find(
+        const bValuePin = schema.getNodePins(b.instance.uuid).find(
           (pin) => pin.name === "value" && pin.type === PinInstanceType.Output,
         );
-        const aInputPin = schema.getNodePins(a.uuid).find(
+        const aInputPin = schema.getNodePins(a.instance.uuid).find(
           (pin) => pin.name === "input" && pin.type === PinInstanceType.Input,
         );
 
@@ -2586,10 +2586,10 @@ describe("CommutatorValidator", () => {
           const currentNode = nodes[i];
           const nextNode = nodes[i + 1];
           if (!currentNode || !nextNode) continue;
-          const nextPin = schema.getNodePins(currentNode.uuid).find(
+          const nextPin = schema.getNodePins(currentNode.instance.uuid).find(
             (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
           );
-          const startPin = schema.getNodePins(nextNode.uuid).find(
+          const startPin = schema.getNodePins(nextNode.instance.uuid).find(
             (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
           );
           schema.wire({ fromPinUuid: nextPin!.uuid, toPinUuid: startPin!.uuid });
@@ -2604,10 +2604,10 @@ describe("CommutatorValidator", () => {
         // Adding N8 -> N9 should not create cycle
         const n8 = nodes[8];
         const n9 = nodes[9];
-        const n8NextPin = schema.getNodePins(n8!.uuid).find(
+        const n8NextPin = schema.getNodePins(n8!.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const n9StartPin = schema.getNodePins(n9!.uuid).find(
+        const n9StartPin = schema.getNodePins(n9!.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 
@@ -2641,10 +2641,10 @@ describe("CommutatorValidator", () => {
           const currentNode = nodes[i];
           const nextNode = nodes[i + 1];
           if (!currentNode || !nextNode) continue;
-          const nextPin = schema.getNodePins(currentNode.uuid).find(
+          const nextPin = schema.getNodePins(currentNode.instance.uuid).find(
             (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
           );
-          const startPin = schema.getNodePins(nextNode.uuid).find(
+          const startPin = schema.getNodePins(nextNode.instance.uuid).find(
             (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
           );
           schema.wire({ fromPinUuid: nextPin!.uuid, toPinUuid: startPin!.uuid });
@@ -2659,10 +2659,10 @@ describe("CommutatorValidator", () => {
         // Adding N4 -> N0 should create cycle
         const n4 = nodes[4];
         const n0 = nodes[0];
-        const n4NextPin = schema.getNodePins(n4!.uuid).find(
+        const n4NextPin = schema.getNodePins(n4!.instance.uuid).find(
           (pin) => pin.name === "next" && pin.type === PinInstanceType.OutputExec,
         );
-        const n0StartPin = schema.getNodePins(n0!.uuid).find(
+        const n0StartPin = schema.getNodePins(n0!.instance.uuid).find(
           (pin) => pin.name === "start" && pin.type === PinInstanceType.InputExec,
         );
 

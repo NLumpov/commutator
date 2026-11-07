@@ -253,8 +253,8 @@ async function benchmarkWiring(runner: BenchmarkRunner): Promise<void> {
       const e = testSchema.createEvent("onClick");
       const a = testSchema.createPureFunction("add");
       testSchema.wire({
-        from: { node: e.uuid, pin: "x" },
-        to: { node: a.uuid, pin: "a" },
+        from: { node: e.instance.uuid, pin: "x" },
+        to: { node: a.instance.uuid, pin: "a" },
       });
     },
     500,
@@ -270,20 +270,20 @@ async function benchmarkWiring(runner: BenchmarkRunner): Promise<void> {
       const m = testSchema.createPureFunction("multiply");
 
       testSchema.wire({
-        from: { node: e.uuid, pin: "x" },
-        to: { node: a1.uuid, pin: "a" },
+        from: { node: e.instance.uuid, pin: "x" },
+        to: { node: a1.instance.uuid, pin: "a" },
       });
       testSchema.wire({
-        from: { node: e.uuid, pin: "y" },
-        to: { node: a1.uuid, pin: "b" },
+        from: { node: e.instance.uuid, pin: "y" },
+        to: { node: a1.instance.uuid, pin: "b" },
       });
       testSchema.wire({
-        from: { node: a1.uuid, pin: "result" },
-        to: { node: a2.uuid, pin: "a" },
+        from: { node: a1.instance.uuid, pin: "result" },
+        to: { node: a2.instance.uuid, pin: "a" },
       });
       testSchema.wire({
-        from: { node: a2.uuid, pin: "result" },
-        to: { node: m.uuid, pin: "a" },
+        from: { node: a2.instance.uuid, pin: "result" },
+        to: { node: m.instance.uuid, pin: "a" },
       });
     },
     500,
@@ -296,8 +296,8 @@ async function benchmarkWiring(runner: BenchmarkRunner): Promise<void> {
       const e = testSchema.createEvent("onClick");
       const f = testSchema.createFunction("log");
       testSchema.wire({
-        from: { node: e.uuid, pin: "next" },
-        to: { node: f.uuid, pin: "start" },
+        from: { node: e.instance.uuid, pin: "next" },
+        to: { node: f.instance.uuid, pin: "start" },
       });
     },
     500,
@@ -317,8 +317,8 @@ async function benchmarkWireValidation(runner: BenchmarkRunner): Promise<void> {
       const e = schema.createEvent("onClick");
       const a = schema.createPureFunction("add");
       schema.wire({
-        from: { node: e.uuid, pin: "x" },
-        to: { node: a.uuid, pin: "a" },
+        from: { node: e.instance.uuid, pin: "x" },
+        to: { node: a.instance.uuid, pin: "a" },
       });
     },
     500,
@@ -333,8 +333,8 @@ async function benchmarkWireValidation(runner: BenchmarkRunner): Promise<void> {
       try {
         // Попытка подключить Number к String (должна провалиться)
         schema.wire({
-          from: { node: e.uuid, pin: "x" },
-          to: { node: a.uuid, pin: "a" },
+          from: { node: e.instance.uuid, pin: "x" },
+          to: { node: a.instance.uuid, pin: "a" },
         });
       } catch {
         // Ожидаемая ошибка
@@ -359,12 +359,12 @@ async function benchmarkCycleDetection(runner: BenchmarkRunner): Promise<void> {
       const a3 = schema.createPureFunction("add");
 
       schema.wire({
-        from: { node: a1.uuid, pin: "result" },
-        to: { node: a2.uuid, pin: "a" },
+        from: { node: a1.instance.uuid, pin: "result" },
+        to: { node: a2.instance.uuid, pin: "a" },
       });
       schema.wire({
-        from: { node: a2.uuid, pin: "result" },
-        to: { node: a3.uuid, pin: "a" },
+        from: { node: a2.instance.uuid, pin: "result" },
+        to: { node: a3.instance.uuid, pin: "a" },
       });
     },
     500,
@@ -378,14 +378,14 @@ async function benchmarkCycleDetection(runner: BenchmarkRunner): Promise<void> {
       const a2 = schema.createPureFunction("add");
 
       schema.wire({
-        from: { node: a1.uuid, pin: "result" },
-        to: { node: a2.uuid, pin: "a" },
+        from: { node: a1.instance.uuid, pin: "result" },
+        to: { node: a2.instance.uuid, pin: "a" },
       });
       try {
         // Попытка создать цикл (должна провалиться)
         schema.wire({
-          from: { node: a2.uuid, pin: "result" },
-          to: { node: a1.uuid, pin: "a" },
+          from: { node: a2.instance.uuid, pin: "result" },
+          to: { node: a1.instance.uuid, pin: "a" },
         });
       } catch {
         // Ожидаемая ошибка
@@ -410,20 +410,20 @@ async function benchmarkSnapshots(runner: BenchmarkRunner): Promise<void> {
     const m = schema.createPureFunction("multiply");
 
     schema.wire({
-      from: { node: e.uuid, pin: "x" },
-      to: { node: a1.uuid, pin: "a" },
+      from: { node: e.instance.uuid, pin: "x" },
+      to: { node: a1.instance.uuid, pin: "a" },
     });
     schema.wire({
-      from: { node: e.uuid, pin: "y" },
-      to: { node: a1.uuid, pin: "b" },
+      from: { node: e.instance.uuid, pin: "y" },
+      to: { node: a1.instance.uuid, pin: "b" },
     });
     schema.wire({
-      from: { node: a1.uuid, pin: "result" },
-      to: { node: a2.uuid, pin: "a" },
+      from: { node: a1.instance.uuid, pin: "result" },
+      to: { node: a2.instance.uuid, pin: "a" },
     });
     schema.wire({
-      from: { node: a2.uuid, pin: "result" },
-      to: { node: m.uuid, pin: "a" },
+      from: { node: a2.instance.uuid, pin: "result" },
+      to: { node: m.instance.uuid, pin: "a" },
     });
 
     return schema;
@@ -464,7 +464,7 @@ async function benchmarkLargeGraphs(runner: BenchmarkRunner): Promise<void> {
     for (let i = 0; i < nodeCount; i++) {
       const node = schema.createPureFunction("add");
       nodes.push({
-        uuid: node.uuid,
+        uuid: node.instance.uuid,
         resultPin: "result",
       });
     }
@@ -474,7 +474,7 @@ async function benchmarkLargeGraphs(runner: BenchmarkRunner): Promise<void> {
       const firstNode = nodes[0];
       if (firstNode) {
         schema.wire({
-          from: { node: event.uuid, pin: "x" },
+          from: { node: event.instance.uuid, pin: "x" },
           to: { node: firstNode.uuid, pin: "a" },
         });
       }
@@ -554,20 +554,20 @@ async function benchmarkSnapshotValidation(runner: BenchmarkRunner): Promise<voi
     const m = schema.createPureFunction("multiply");
 
     schema.wire({
-      from: { node: e.uuid, pin: "x" },
-      to: { node: a1.uuid, pin: "a" },
+      from: { node: e.instance.uuid, pin: "x" },
+      to: { node: a1.instance.uuid, pin: "a" },
     });
     schema.wire({
-      from: { node: e.uuid, pin: "y" },
-      to: { node: a1.uuid, pin: "b" },
+      from: { node: e.instance.uuid, pin: "y" },
+      to: { node: a1.instance.uuid, pin: "b" },
     });
     schema.wire({
-      from: { node: a1.uuid, pin: "result" },
-      to: { node: a2.uuid, pin: "a" },
+      from: { node: a1.instance.uuid, pin: "result" },
+      to: { node: a2.instance.uuid, pin: "a" },
     });
     schema.wire({
-      from: { node: a2.uuid, pin: "result" },
-      to: { node: m.uuid, pin: "a" },
+      from: { node: a2.instance.uuid, pin: "result" },
+      to: { node: m.instance.uuid, pin: "a" },
     });
 
     return schema.extract();
@@ -591,7 +591,7 @@ async function benchmarkSnapshotValidation(runner: BenchmarkRunner): Promise<voi
     for (let i = 0; i < 500; i++) {
       const node = schema.createPureFunction("add");
       nodes.push({
-        uuid: node.uuid,
+        uuid: node.instance.uuid,
         resultPin: "result",
       });
     }
@@ -600,7 +600,7 @@ async function benchmarkSnapshotValidation(runner: BenchmarkRunner): Promise<voi
       const firstNode = nodes[0];
       if (firstNode) {
         schema.wire({
-          from: { node: event.uuid, pin: "x" },
+          from: { node: event.instance.uuid, pin: "x" },
           to: { node: firstNode.uuid, pin: "a" },
         });
       }
