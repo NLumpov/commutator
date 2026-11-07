@@ -45,8 +45,8 @@
 **Подключение пинов**
 
 Показывает различные способы подключения пинов:
-- `wire(node, pinName, node, pinName)` - упрощенный синтаксис
-- `wire(uuid, uuid)` - оригинальный метод по UUID
+- `builder.wire(pinName, targetBuilderOrNodeUuid, pinName)` - цепочечное подключение
+- `schema.wire({ fromPinUuid, toPinUuid })` - подключение по UUID пинов
 - `wire({ from, to })` - подключение с именованными параметрами
 - `unwire()` - отключение пинов
 - Подключение data-пинов
@@ -217,7 +217,6 @@ import * as examples from "@commutator/examples";
 - ✅ `updatePin()`
 - ✅ `moveNode()`
 - ✅ `updateNodeConfig()`
-- ✅ `node()` (Fluent API)
 - ✅ `getPin()`
 - ✅ `getNodePins()`
 - ✅ `extract()`
