@@ -1,10 +1,132 @@
 # COM-0008 verification
 
+## Performance follow-up: PERF_NOT_ACCEPTED
+
+The PR is draft. The earlier correctness review did not establish acceptable
+performance. The remaining snapshot regression against master is **not accepted**;
+the stronger snapshot contract is not a performance approval. No merge or publish.
+
+Current correctness commit: `4eda88a551cc74ca6ac5d0b8f4ef3963385e8bf7`. The full
+guarded suite has 343 PASS / 0 FAIL; targeted boundary tests have 41 PASS / 0 FAIL.
+Typecheck and ordinary commit hooks exit 0. Coverage has not been rerun on this
+follow-up code. The exception-mapping fix received an independent scoped
+correctness ACCEPT; this does not establish performance acceptance.
+
+The intermediate commit `959e36f04d3842ebfa393d4c679aa665a2fff9f5` compares all
+live descriptors/values against one detached previous graph. An unchanged graph
+does not serialize or hash again. A difference still triggers complete JSON
+validation before canonicalization. Extract builds its own wrappers and clones
+only cache values; primitive values avoid unnecessary clone bookkeeping.
+Caller JSON detachment and separate copies for repeated occurrences remain intact.
+
+### Measured causes and experiments
+
+Components are timed independently; they are not additive accounting. For the
+old implementation, graph validation/serialization was about 82% of numeric/wide
+extract cost. Nested extract instead spends a large part copying nested cached
+values repeatedly. These measurements separate the causes rather than treating
+the strict contract as sufficient justification.
+
+| Component, us | Number | Wide | Nested |
+| --- | ---: | ---: | ---: |
+| graph-validate-serialize | 87.51 | 365.52 | 33.88 |
+| cache-wrapper-clone | 7.68 | 34.51 | 45.72 |
+| cache-typed-validate | 1.02 | 7.12 | 9.62 |
+| input-detach | 0.06 | 0.73 | 4.88 |
+| extract-whole | 106.14 | 446.89 | 98.44 |
+
+Walking known previous keys improved the descriptor comparison about 5-6%; bulk
+getOwnPropertyDescriptors was about 40% slower and was rejected. A separate fused
+validate/compare/detach visitor reduced cold fingerprint time about 20-22%, but
+made warm fingerprint time 25-54% slower. It was rejected from production. No
+source-to-clone memo, public alias change, proxy layer or revision API was added.
+
+The ordinary event-only regression is separate: the numeric input object must
+be detached once at the trigger boundary. Descriptor copying is measured directly;
+the primitive fast path does not eliminate object copying.
+
+### Final focused pairs for current production
+
+The exception-mapping commit 4eda88a was measured independently on the same fixed
+SchemaSnapshots: five pairs / 90 sequential snapshot children, process and guard
+exit 0. Guard `1794052216602-31322.json` observed 94.1 MiB peak. Fingerprint state
+was warmed. These current measurements remain PERF_NOT_ACCEPTED.
+
+| Case | Operation | Master us | 4eda88a us | Ratio |
+| --- | --- | ---: | ---: | ---: |
+| number-32 | extract | 1.38 | 50.03 | 36.38x |
+| number-32 | restore | 1.73 | 58.24 | 33.69x |
+| number-32 | checkpoint | 21.59 | 126.66 | 5.87x |
+| nested-128x8 | extract | 1.00 | 72.27 | 72.31x |
+| nested-128x8 | restore | 9.75 | 76.92 | 7.89x |
+| nested-128x8 | checkpoint | 27.29 | 175.62 | 6.44x |
+| wide-32x8 | extract | 4.51 | 203.47 | 45.13x |
+| wide-32x8 | restore | 10.47 | 252.09 | 24.07x |
+| wide-32x8 | checkpoint | 60.06 | 511.91 | 8.52x |
+
+The final current POSIX/macOS recovery probe also exited 0: 18 children, five
+intentional SIGKILL barriers, identical recovered snapshots and one fake agent
+effect. Guard `1794052228006-31818.json`. This is a correctness result, not a
+performance approval or a real Flow/Agents acceptance.
+
+### Independent intermediate pairs against master
+
+Five alternating pairs / 160 sequential children exited 0. These are measurements
+of 959e36f, not the newer exception-mapping commit. Warm fingerprint state and
+fixed shared SchemaSnapshots match the earlier benchmark method.
+
+| Case | Operation | Master us | 959e36f us | Ratio |
+| --- | --- | ---: | ---: | ---: |
+| empty-32 | measure | 11.61 | 12.09 | 1.04x |
+| number-32 | measure | 16.58 | 17.04 | 1.03x |
+| wide-32x8 | measure | 45.90 | 48.17 | 1.05x |
+| nested-128x8 | measure | 13.93 | 20.16 | 1.45x |
+| event-32 | measure | 2.35 | 3.29 | 1.40x |
+| pure-16 | measure | 3.82 | 4.11 | 1.07x |
+| unawaited-16 | measure | 5.77 | 5.94 | 1.03x |
+| number-32 | extract | 1.55 | 51.46 | 33.31x |
+| nested-128x8 | extract | 0.98 | 74.54 | 76.38x |
+| wide-32x8 | extract | 4.50 | 208.70 | 46.37x |
+| number-32 | restore | 1.95 | 59.74 | 30.61x |
+| nested-128x8 | restore | 9.70 | 76.96 | 7.93x |
+| wide-32x8 | restore | 10.64 | 258.05 | 24.25x |
+| number-32 | checkpoint | 21.53 | 130.33 | 6.05x |
+| nested-128x8 | checkpoint | 26.72 | 179.39 | 6.71x |
+| wide-32x8 | checkpoint | 59.94 | 530.29 | 8.85x |
+
+The checkpoint still takes about 6-9 times master; extract/restore regressions
+are also substantial. This is progress over the earlier implementation, not
+performance acceptance. [Follow-up data](com0008-performance-followup.json)
+preserves all component samples, comparison variants, rejected experiments and
+pair ranges. The prior report/data below remain historical evidence.
+
+### Retention and pending ownership decision
+
+Two fixed-size graph/default replacement probes ran 13 epochs of 200 mutations.
+API replacement retained +79,759 heap bytes (Promises 177 -> 178); direct alias
+replacement retained +30,602 bytes (Promises 178 -> 178). The guard exited 0.
+No linear history accumulation was observed in these probes; this is not a
+universal memory bound. An initial probe setup syntax failure is retained separately.
+
+The intermediate 959e36f memory probes also completed eight sequential children
+with guard exit 0 (`1794052070974-30623.json`, 91.6 MiB peak). Candidate endpoint
+heap changes ranged from -793 to +83,540 bytes; Promise counts stayed near
+179-184. RSS increases remain in the raw data. These probes were not rerun on the
+exception-mapping commit and are not reported as a universal memory proof.
+
+The current Schema exposes mutable references as well as explicit edit methods.
+A revision counter alone cannot detect edits through those references. A narrow
+ownership decision is pending with the user; no ownership, live-edit or public API
+guarantee has been changed. Windows/Linux and real Flow/Agents acceptance remain
+NOT_RUN.
+
+## Historical verification: 94b9401
+
 Scope: Commutator library, tests and documentation. No production Flow/Agents,
 storage, retries, Join, merge or package publication. Baseline is
 `af9ce9bcded35b5ead9020215cf24f2f2ba7f51a`; production candidate is
-`94b9401cfa9233224234168f54c0f4b3428d7904`. Later documentation/test commits
-do not change the benchmarked production sources.
+`94b9401cfa9233224234168f54c0f4b3428d7904` for this historical section. The
+follow-up above supersedes its performance acceptance interpretation.
 
 ## Runtime verification
 
@@ -102,8 +224,8 @@ and are not a retained-memory bound or a causal allocation breakdown.
 ### Optimization evidence
 
 The first prototype used descriptor definitions for every copied array index and
-recomputed a sorted canonical graph plus SHA-256 at every snapshot boundary. The
-final code uses dense array copies, a shared bounded per-schema raw-JSON/hash cache
+recomputed a sorted canonical graph plus SHA-256 at every snapshot boundary. That
+candidate uses dense array copies, a shared bounded per-schema raw-JSON/hash cache
 and dense descriptor validation with one strict-subtree lookup per container.
 No revision API, proxy layer, stale-reference shortcut or per-Function cache was
 introduced. Invalid finite-JSON/coercion cases were strengthened during this work.
