@@ -319,6 +319,17 @@ describe("independent finite JSON snapshots", () => {
     expect(worker.extract()).toEqual(baseline);
   });
 
+  test("warm graph comparison maps a revoked proxy to INVALID_JSON", () => {
+    const { schema } = fixture();
+    const worker = schema.createWorker();
+    const pin = schema.extract().pinInstances.find((item) => item.dataType !== null)!;
+    const { proxy, revoke } = Proxy.revocable({ value: 1 }, {});
+    pin.default = proxy;
+    worker.extract();
+    revoke();
+    expect(() => worker.extract()).toThrow("INVALID_JSON");
+  });
+
   test("node config nested undefined is rejected while optional config absence stays valid", () => {
     const { schema } = fixture();
     const worker = schema.createWorker();

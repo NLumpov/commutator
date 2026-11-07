@@ -207,7 +207,13 @@ const fingerprints = new WeakMap<object, { graph: SchemaSnapshot; fingerprint: s
 /** Object key order is irrelevant; array order (roots, pins and wires) is semantic. */
 export function schemaFingerprint(schema: SchemaSnapshot, identity: object): string {
   const previous = fingerprints.get(identity);
-  if (previous && matchesSchema(schema, previous.graph)) return previous.fingerprint;
+  if (previous) {
+    try {
+      if (matchesSchema(schema, previous.graph)) return previous.fingerprint;
+    } catch {
+      throw new CommutatorExecutionError("INVALID_JSON");
+    }
+  }
   // A mismatch may be invalid, including beyond the first differing value.
   // Validate the whole graph before canonicalization can observe any hooks.
   const graph: SchemaSnapshot = JSON.parse(serializeSchema(schema));
