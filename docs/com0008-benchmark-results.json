@@ -1,0 +1,2135 @@
+{
+  "baselineCommit": "af9ce9bcded35b5ead9020215cf24f2f2ba7f51a",
+  "candidateProductionCommit": "94b9401cfa9233224234168f54c0f4b3428d7904",
+  "environment": {
+    "platform": "macOS-26.3-arm64-arm-64bit",
+    "bun": "1.4.2",
+    "node": "v22.18.0",
+    "cpu": "Apple M4 Pro",
+    "memory": "25769803776"
+  },
+  "benchmarks": {
+    "diagnostic-v1": [
+      {
+        "mode": "extract",
+        "case": "nested-128x8",
+        "baselineUs": 1.0119433333333325,
+        "candidateUs": 160.00305666666662,
+        "deltaPercent": 15711.464080663287,
+        "pairedMinPercent": 14267.666539943917,
+        "pairedMaxPercent": 16635.915993296327,
+        "rounds": 3,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 46153728,
+        "candidateRss": 58359808
+      },
+      {
+        "mode": "extract",
+        "case": "wide-32x8",
+        "baselineUs": 3.9833333333333343,
+        "candidateUs": 931.5366666666666,
+        "deltaPercent": 23285.85774058577,
+        "pairedMinPercent": 21518.261819374507,
+        "pairedMaxPercent": 23994.63721748254,
+        "rounds": 3,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 54935552,
+        "candidateRss": 61276160
+      },
+      {
+        "mode": "measure",
+        "case": "nested-128x8",
+        "baselineUs": 13.834203655352479,
+        "candidateUs": 23.230771322889478,
+        "deltaPercent": 67.92272183951442,
+        "pairedMinPercent": 66.88891897949665,
+        "pairedMaxPercent": 68.81729117764668,
+        "rounds": 3,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 72105984,
+        "candidateRss": 81428480
+      },
+      {
+        "mode": "checkpoint",
+        "case": "wide-32x8",
+        "baselineUs": 58.76055666666668,
+        "candidateUs": 1947.98264,
+        "deltaPercent": 3215.119444920166,
+        "pairedMinPercent": 3118.5293891873753,
+        "pairedMaxPercent": 3215.119444920166,
+        "rounds": 3,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 81002496,
+        "candidateRss": 73613312
+      },
+      {
+        "mode": "restore",
+        "case": "wide-32x8",
+        "baselineUs": 10.299026666666661,
+        "candidateUs": 912.6390299999999,
+        "deltaPercent": 8761.410495749116,
+        "pairedMinPercent": 8702.057937169784,
+        "pairedMaxPercent": 9286.277698307982,
+        "rounds": 3,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 63913984,
+        "candidateRss": 66846720
+      },
+      {
+        "mode": "measure",
+        "case": "wide-32x8",
+        "baselineUs": 45.54555389492755,
+        "candidateUs": 47.28745833333333,
+        "deltaPercent": 3.8245323405755816,
+        "pairedMinPercent": 2.9215474398178065,
+        "pairedMaxPercent": 7.0079240772602525,
+        "rounds": 3,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 80822272,
+        "candidateRss": 84197376
+      },
+      {
+        "mode": "checkpoint",
+        "case": "nested-128x8",
+        "baselineUs": 26.380139999999994,
+        "candidateUs": 366.3718066666669,
+        "deltaPercent": 1288.8167639241753,
+        "pairedMinPercent": 1238.3726672160699,
+        "pairedMaxPercent": 1336.8765975278695,
+        "rounds": 3,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 67584000,
+        "candidateRss": 67403776
+      },
+      {
+        "mode": "extract",
+        "case": "number-32",
+        "baselineUs": 1.5243066666666691,
+        "candidateUs": 219.20708333333323,
+        "deltaPercent": 14280.773116520706,
+        "pairedMinPercent": 13946.723711837882,
+        "pairedMaxPercent": 14889.29442977878,
+        "rounds": 3,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 51544064,
+        "candidateRss": 60112896
+      },
+      {
+        "mode": "measure",
+        "case": "pure-16",
+        "baselineUs": 3.7029171091332747,
+        "candidateUs": 4.015768058367392,
+        "deltaPercent": 8.448769983602066,
+        "pairedMinPercent": 5.462483707393928,
+        "pairedMaxPercent": 9.929775494024561,
+        "rounds": 3,
+        "baselineBytes": 77,
+        "candidateBytes": 171,
+        "baselineRss": 73613312,
+        "candidateRss": 81051648
+      },
+      {
+        "mode": "measure",
+        "case": "number-32",
+        "baselineUs": 16.567802360937222,
+        "candidateUs": 17.109603112144516,
+        "deltaPercent": 3.270202887527951,
+        "pairedMinPercent": 0.6113898689377839,
+        "pairedMaxPercent": 8.381633735798255,
+        "rounds": 3,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 79527936,
+        "candidateRss": 83034112
+      },
+      {
+        "mode": "restore",
+        "case": "number-32",
+        "baselineUs": 1.9137500000000016,
+        "candidateUs": 222.34194333333332,
+        "deltaPercent": 11518.128978880895,
+        "pairedMinPercent": 11238.324652777766,
+        "pairedMaxPercent": 13822.241035875908,
+        "rounds": 3,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 53772288,
+        "candidateRss": 58277888
+      },
+      {
+        "mode": "measure",
+        "case": "empty-32",
+        "baselineUs": 11.772936624907887,
+        "candidateUs": 12.136273888479488,
+        "deltaPercent": 3.0862075890470075,
+        "pairedMinPercent": 2.8213474397653204,
+        "pairedMaxPercent": 6.249353494078291,
+        "rounds": 3,
+        "baselineBytes": 1661,
+        "candidateBytes": 1755,
+        "baselineRss": 77266944,
+        "candidateRss": 82411520
+      },
+      {
+        "mode": "measure",
+        "case": "event-32",
+        "baselineUs": 2.2893842813112912,
+        "candidateUs": 3.7263345941907167,
+        "deltaPercent": 62.76579797500763,
+        "pairedMinPercent": 56.473802650584744,
+        "pairedMaxPercent": 62.76579797500763,
+        "rounds": 3,
+        "baselineBytes": 1565,
+        "candidateBytes": 1659,
+        "baselineRss": 71286784,
+        "candidateRss": 73269248
+      },
+      {
+        "mode": "checkpoint",
+        "case": "number-32",
+        "baselineUs": 20.781803333333333,
+        "candidateUs": 461.9709733333336,
+        "deltaPercent": 2122.9590277776674,
+        "pairedMinPercent": 2028.663494954615,
+        "pairedMaxPercent": 2122.9590277776674,
+        "rounds": 3,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 69959680,
+        "candidateRss": 67895296
+      },
+      {
+        "mode": "restore",
+        "case": "nested-128x8",
+        "baselineUs": 9.608193333333332,
+        "candidateUs": 170.01375,
+        "deltaPercent": 1669.4663721032537,
+        "pairedMinPercent": 1602.9288199585417,
+        "pairedMaxPercent": 1669.4663721032537,
+        "rounds": 3,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 51412992,
+        "candidateRss": 60227584
+      },
+      {
+        "mode": "measure",
+        "case": "unawaited-16",
+        "baselineUs": 5.583102155247943,
+        "candidateUs": 5.752465276560948,
+        "deltaPercent": 3.033494938898973,
+        "pairedMinPercent": 1.0009028841364787,
+        "pairedMaxPercent": 5.500388616397167,
+        "rounds": 3,
+        "baselineBytes": 128,
+        "candidateBytes": 222,
+        "baselineRss": 75808768,
+        "candidateRss": 78381056
+      }
+    ],
+    "diagnostic-v2": [
+      {
+        "mode": "extract",
+        "case": "nested-128x8",
+        "baselineUs": 1.0063899999999986,
+        "candidateUs": 101.43805333333333,
+        "deltaPercent": 9979.397980239617,
+        "pairedMinPercent": 9710.00361048073,
+        "pairedMaxPercent": 10005.853926741465,
+        "rounds": 3,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 46088192,
+        "candidateRss": 59965440
+      },
+      {
+        "mode": "extract",
+        "case": "wide-32x8",
+        "baselineUs": 4.095970000000004,
+        "candidateUs": 510.80514000000016,
+        "deltaPercent": 12370.91995302699,
+        "pairedMinPercent": 11933.273524720882,
+        "pairedMaxPercent": 12663.096465311553,
+        "rounds": 3,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 56082432,
+        "candidateRss": 85819392
+      },
+      {
+        "mode": "measure",
+        "case": "nested-128x8",
+        "baselineUs": 13.854710617928632,
+        "candidateUs": 20.398970191470845,
+        "deltaPercent": 47.23490626410949,
+        "pairedMinPercent": 46.71093444449757,
+        "pairedMaxPercent": 49.44240255550589,
+        "rounds": 3,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 74399744,
+        "candidateRss": 79200256
+      },
+      {
+        "mode": "checkpoint",
+        "case": "wide-32x8",
+        "baselineUs": 60.81500000000001,
+        "candidateUs": 1078.6490266666667,
+        "deltaPercent": 1673.6562142015398,
+        "pairedMinPercent": 1639.9823432304856,
+        "pairedMaxPercent": 1721.4568651021395,
+        "rounds": 3,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 81215488,
+        "candidateRss": 101466112
+      },
+      {
+        "mode": "restore",
+        "case": "wide-32x8",
+        "baselineUs": 9.821390000000001,
+        "candidateUs": 506.94861333333336,
+        "deltaPercent": 5061.6788798055395,
+        "pairedMinPercent": 4963.760492829085,
+        "pairedMaxPercent": 5273.8738224278495,
+        "rounds": 3,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 61751296,
+        "candidateRss": 89735168
+      },
+      {
+        "mode": "measure",
+        "case": "wide-32x8",
+        "baselineUs": 45.44291621376812,
+        "candidateUs": 47.167968750000014,
+        "deltaPercent": 3.7960867830688194,
+        "pairedMinPercent": 3.018506684992439,
+        "pairedMaxPercent": 4.754231654796048,
+        "rounds": 3,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 81379328,
+        "candidateRss": 83656704
+      },
+      {
+        "mode": "checkpoint",
+        "case": "nested-128x8",
+        "baselineUs": 25.981110000000005,
+        "candidateUs": 224.3065266666667,
+        "deltaPercent": 763.3446633599052,
+        "pairedMinPercent": 753.9724043845878,
+        "pairedMaxPercent": 797.3661964368905,
+        "rounds": 3,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 67813376,
+        "candidateRss": 74481664
+      },
+      {
+        "mode": "extract",
+        "case": "number-32",
+        "baselineUs": 1.5040266666666706,
+        "candidateUs": 111.9704166666667,
+        "deltaPercent": 7344.70953529191,
+        "pairedMinPercent": 6950.160664401344,
+        "pairedMaxPercent": 8321.65449882581,
+        "rounds": 3,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 51675136,
+        "candidateRss": 74776576
+      },
+      {
+        "mode": "measure",
+        "case": "pure-16",
+        "baselineUs": 3.771604492150197,
+        "candidateUs": 4.1000802169677995,
+        "deltaPercent": 8.709177367384502,
+        "pairedMinPercent": 6.394340466918891,
+        "pairedMaxPercent": 8.709177367384502,
+        "rounds": 3,
+        "baselineBytes": 77,
+        "candidateBytes": 171,
+        "baselineRss": 73416704,
+        "candidateRss": 80674816
+      },
+      {
+        "mode": "measure",
+        "case": "number-32",
+        "baselineUs": 16.70043373278483,
+        "candidateUs": 17.02691826149168,
+        "deltaPercent": 1.9549464039722686,
+        "pairedMinPercent": 0.3757813158905998,
+        "pairedMaxPercent": 4.53533750114512,
+        "rounds": 3,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 81297408,
+        "candidateRss": 85180416
+      },
+      {
+        "mode": "restore",
+        "case": "number-32",
+        "baselineUs": 1.791249999999997,
+        "candidateUs": 113.19208333333336,
+        "deltaPercent": 6219.167248197267,
+        "pairedMinPercent": 5894.285083848196,
+        "pairedMaxPercent": 6508.561570147814,
+        "rounds": 3,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 52953088,
+        "candidateRss": 68747264
+      },
+      {
+        "mode": "measure",
+        "case": "empty-32",
+        "baselineUs": 11.654057234094813,
+        "candidateUs": 12.230568901989685,
+        "deltaPercent": 4.946875206758405,
+        "pairedMinPercent": 3.2118768120768193,
+        "pairedMaxPercent": 4.946875206758405,
+        "rounds": 3,
+        "baselineBytes": 1661,
+        "candidateBytes": 1755,
+        "baselineRss": 78905344,
+        "candidateRss": 84426752
+      },
+      {
+        "mode": "measure",
+        "case": "event-32",
+        "baselineUs": 2.357577612776688,
+        "candidateUs": 3.2864111562529192,
+        "deltaPercent": 39.39779282100824,
+        "pairedMinPercent": 39.39779282100824,
+        "pairedMaxPercent": 42.72001361314788,
+        "rounds": 3,
+        "baselineBytes": 1565,
+        "candidateBytes": 1659,
+        "baselineRss": 71499776,
+        "candidateRss": 73744384
+      },
+      {
+        "mode": "checkpoint",
+        "case": "number-32",
+        "baselineUs": 20.93680333333334,
+        "candidateUs": 247.78722000000008,
+        "deltaPercent": 1083.5007286212588,
+        "pairedMinPercent": 1083.5007286212588,
+        "pairedMaxPercent": 1116.1107738817398,
+        "rounds": 3,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 69779456,
+        "candidateRss": 86949888
+      },
+      {
+        "mode": "restore",
+        "case": "nested-128x8",
+        "baselineUs": 9.223613333333324,
+        "candidateUs": 102.40166666666661,
+        "deltaPercent": 1010.2120499413829,
+        "pairedMinPercent": 959.359780910158,
+        "pairedMaxPercent": 1071.321933494707,
+        "rounds": 3,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 52183040,
+        "candidateRss": 61030400
+      },
+      {
+        "mode": "measure",
+        "case": "unawaited-16",
+        "baselineUs": 5.634014251504002,
+        "candidateUs": 6.2130059575959296,
+        "deltaPercent": 10.276717101618349,
+        "pairedMinPercent": 6.661916236292065,
+        "pairedMaxPercent": 10.276717101618349,
+        "rounds": 3,
+        "baselineBytes": 128,
+        "candidateBytes": 222,
+        "baselineRss": 75939840,
+        "candidateRss": 78938112
+      }
+    ],
+    "paired-a550963": [
+      {
+        "mode": "extract",
+        "case": "nested-128x8",
+        "baselineUs": 0.9804166666666644,
+        "candidateUs": 96.9808333333333,
+        "deltaPercent": 9791.797705057392,
+        "pairedMinPercent": 9496.804434445372,
+        "pairedMaxPercent": 9981.111806992712,
+        "rounds": 5,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 46022656,
+        "candidateRss": 61112320
+      },
+      {
+        "mode": "extract",
+        "case": "wide-32x8",
+        "baselineUs": 4.183609999999997,
+        "candidateUs": 484.82388999999995,
+        "deltaPercent": 11488.649276581715,
+        "pairedMinPercent": 10661.640046565079,
+        "pairedMaxPercent": 11996.250404051272,
+        "rounds": 5,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 55115776,
+        "candidateRss": 85098496
+      },
+      {
+        "mode": "measure",
+        "case": "nested-128x8",
+        "baselineUs": 13.96397214969538,
+        "candidateUs": 20.20663816362054,
+        "deltaPercent": 44.705517506072525,
+        "pairedMinPercent": 40.49802086363705,
+        "pairedMaxPercent": 51.2627710017848,
+        "rounds": 5,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 73760768,
+        "candidateRss": 81035264
+      },
+      {
+        "mode": "checkpoint",
+        "case": "wide-32x8",
+        "baselineUs": 61.54819333333335,
+        "candidateUs": 1037.4173600000001,
+        "deltaPercent": 1585.536656423925,
+        "pairedMinPercent": 1506.1310939194186,
+        "pairedMaxPercent": 1638.4185250754172,
+        "rounds": 5,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 81821696,
+        "candidateRss": 92602368
+      },
+      {
+        "mode": "restore",
+        "case": "wide-32x8",
+        "baselineUs": 10.576526666666672,
+        "candidateUs": 482.7219466666664,
+        "deltaPercent": 4464.0876431393,
+        "pairedMinPercent": 4346.9497983738975,
+        "pairedMaxPercent": 4870.875257862168,
+        "rounds": 5,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 64634880,
+        "candidateRss": 83755008
+      },
+      {
+        "mode": "measure",
+        "case": "wide-32x8",
+        "baselineUs": 45.579124999999976,
+        "candidateUs": 48.01343568840582,
+        "deltaPercent": 5.340845591936749,
+        "pairedMinPercent": 2.536114300617176,
+        "pairedMaxPercent": 5.340845591936749,
+        "rounds": 5,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 80461824,
+        "candidateRss": 84754432
+      },
+      {
+        "mode": "checkpoint",
+        "case": "nested-128x8",
+        "baselineUs": 26.736943333333322,
+        "candidateUs": 223.71361,
+        "deltaPercent": 736.7209639895265,
+        "pairedMinPercent": 664.1552371001663,
+        "pairedMaxPercent": 778.307348272504,
+        "rounds": 5,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 67993600,
+        "candidateRss": 74039296
+      },
+      {
+        "mode": "extract",
+        "case": "number-32",
+        "baselineUs": 1.5311133333333338,
+        "candidateUs": 115.3488866666667,
+        "deltaPercent": 7433.660909055284,
+        "pairedMinPercent": 7203.948772678751,
+        "pairedMaxPercent": 8402.95824896826,
+        "rounds": 5,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 51527680,
+        "candidateRss": 65339392
+      },
+      {
+        "mode": "measure",
+        "case": "pure-16",
+        "baselineUs": 3.737427900225372,
+        "candidateUs": 3.982452538294052,
+        "deltaPercent": 6.555969629645686,
+        "pairedMinPercent": 4.509510600700883,
+        "pairedMaxPercent": 7.8010803225629255,
+        "rounds": 5,
+        "baselineBytes": 77,
+        "candidateBytes": 171,
+        "baselineRss": 73940992,
+        "candidateRss": 77021184
+      },
+      {
+        "mode": "measure",
+        "case": "number-32",
+        "baselineUs": 16.78268646038276,
+        "candidateUs": 17.176734931139332,
+        "deltaPercent": 2.347946329610373,
+        "pairedMinPercent": -0.28424171707948087,
+        "pairedMaxPercent": 4.013708468740851,
+        "rounds": 5,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 79478784,
+        "candidateRss": 83509248
+      },
+      {
+        "mode": "restore",
+        "case": "number-32",
+        "baselineUs": 1.792636666666662,
+        "candidateUs": 115.94555666666669,
+        "deltaPercent": 6367.8782277873925,
+        "pairedMinPercent": 5588.1232341318955,
+        "pairedMaxPercent": 6521.350721847918,
+        "rounds": 5,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 53542912,
+        "candidateRss": 61046784
+      },
+      {
+        "mode": "measure",
+        "case": "empty-32",
+        "baselineUs": 11.758986366985999,
+        "candidateUs": 12.127635593220337,
+        "deltaPercent": 3.1350425515360714,
+        "pairedMinPercent": 0.715791221377482,
+        "pairedMaxPercent": 5.32469584268791,
+        "rounds": 5,
+        "baselineBytes": 1661,
+        "candidateBytes": 1755,
+        "baselineRss": 79151104,
+        "candidateRss": 83591168
+      },
+      {
+        "mode": "measure",
+        "case": "event-32",
+        "baselineUs": 2.3595866022228447,
+        "candidateUs": 3.3132432754272907,
+        "deltaPercent": 40.41626072575828,
+        "pairedMinPercent": 35.88517049115205,
+        "pairedMaxPercent": 43.4906547315798,
+        "rounds": 5,
+        "baselineBytes": 1565,
+        "candidateBytes": 1659,
+        "baselineRss": 70090752,
+        "candidateRss": 74858496
+      },
+      {
+        "mode": "checkpoint",
+        "case": "number-32",
+        "baselineUs": 21.11764000000001,
+        "candidateUs": 252.63555333333338,
+        "deltaPercent": 1096.3247471466188,
+        "pairedMinPercent": 1053.887442486319,
+        "pairedMaxPercent": 1111.024465742008,
+        "rounds": 5,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 70025216,
+        "candidateRss": 81231872
+      },
+      {
+        "mode": "restore",
+        "case": "nested-128x8",
+        "baselineUs": 9.425553333333335,
+        "candidateUs": 97.87208333333335,
+        "deltaPercent": 938.3696306423744,
+        "pairedMinPercent": 909.6781946147362,
+        "pairedMaxPercent": 974.0888689729334,
+        "rounds": 5,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 51691520,
+        "candidateRss": 60817408
+      },
+      {
+        "mode": "measure",
+        "case": "unawaited-16",
+        "baselineUs": 5.6747634483967095,
+        "candidateUs": 5.86668418900765,
+        "deltaPercent": 3.3820042431048636,
+        "pairedMinPercent": 2.740271763325053,
+        "pairedMaxPercent": 5.056251483376073,
+        "rounds": 5,
+        "baselineBytes": 128,
+        "candidateBytes": 222,
+        "baselineRss": 76316672,
+        "candidateRss": 79691776
+      }
+    ],
+    "microopt-94b9401": [
+      {
+        "mode": "extract",
+        "case": "nested-128x8",
+        "baselineUs": 99.52403000000004,
+        "candidateUs": 96.94833333333334,
+        "deltaPercent": -2.588014840904951,
+        "pairedMinPercent": -2.947471071609109,
+        "pairedMaxPercent": -1.537296432379054,
+        "rounds": 3,
+        "baselineBytes": 4841,
+        "candidateBytes": 4841,
+        "baselineRss": 59703296,
+        "candidateRss": 59539456
+      },
+      {
+        "mode": "extract",
+        "case": "wide-32x8",
+        "baselineUs": 484.15833333333353,
+        "candidateUs": 455.86291666666665,
+        "deltaPercent": -5.84424861013102,
+        "pairedMinPercent": -5.911936477012169,
+        "pairedMaxPercent": -5.416063467140608,
+        "rounds": 3,
+        "baselineBytes": 14354,
+        "candidateBytes": 14354,
+        "baselineRss": 83574784,
+        "candidateRss": 81149952
+      },
+      {
+        "mode": "checkpoint",
+        "case": "wide-32x8",
+        "baselineUs": 1048.9943066666667,
+        "candidateUs": 992.3038900000003,
+        "deltaPercent": -5.404263522345376,
+        "pairedMinPercent": -5.404263522345376,
+        "pairedMaxPercent": -4.437422861004814,
+        "rounds": 3,
+        "baselineBytes": 14354,
+        "candidateBytes": 14354,
+        "baselineRss": 99844096,
+        "candidateRss": 92012544
+      },
+      {
+        "mode": "restore",
+        "case": "wide-32x8",
+        "baselineUs": 485.5169433333333,
+        "candidateUs": 463.11472,
+        "deltaPercent": -4.614097126977712,
+        "pairedMinPercent": -4.763960112496147,
+        "pairedMaxPercent": -4.251724440148131,
+        "rounds": 3,
+        "baselineBytes": 14354,
+        "candidateBytes": 14354,
+        "baselineRss": 81117184,
+        "candidateRss": 77938688
+      },
+      {
+        "mode": "checkpoint",
+        "case": "nested-128x8",
+        "baselineUs": 225.56958333333333,
+        "candidateUs": 220.54402666666667,
+        "deltaPercent": -2.227940749990298,
+        "pairedMinPercent": -3.7377601516161763,
+        "pairedMaxPercent": -1.07736714449439,
+        "rounds": 3,
+        "baselineBytes": 4841,
+        "candidateBytes": 4841,
+        "baselineRss": 73269248,
+        "candidateRss": 74203136
+      },
+      {
+        "mode": "extract",
+        "case": "number-32",
+        "baselineUs": 115.12583333333329,
+        "candidateUs": 110.79999999999993,
+        "deltaPercent": -3.7574827543774836,
+        "pairedMinPercent": -6.341210141572262,
+        "pairedMaxPercent": -2.9471313204802008,
+        "rounds": 3,
+        "baselineBytes": 3361,
+        "candidateBytes": 3361,
+        "baselineRss": 66895872,
+        "candidateRss": 65224704
+      },
+      {
+        "mode": "restore",
+        "case": "number-32",
+        "baselineUs": 114.55055666666667,
+        "candidateUs": 108.62153000000006,
+        "deltaPercent": -5.17590384472737,
+        "pairedMinPercent": -7.3170050359423815,
+        "pairedMaxPercent": -5.128049853974737,
+        "rounds": 3,
+        "baselineBytes": 3361,
+        "candidateBytes": 3361,
+        "baselineRss": 60882944,
+        "candidateRss": 60588032
+      },
+      {
+        "mode": "checkpoint",
+        "case": "number-32",
+        "baselineUs": 254.02847000000028,
+        "candidateUs": 240.29125000000005,
+        "deltaPercent": -5.407748194523321,
+        "pairedMinPercent": -5.407748194523321,
+        "pairedMaxPercent": -4.3339263390081095,
+        "rounds": 3,
+        "baselineBytes": 3361,
+        "candidateBytes": 3361,
+        "baselineRss": 80527360,
+        "candidateRss": 81477632
+      },
+      {
+        "mode": "restore",
+        "case": "nested-128x8",
+        "baselineUs": 97.15402666666668,
+        "candidateUs": 95.94139000000003,
+        "deltaPercent": -1.2481589371763135,
+        "pairedMinPercent": -3.5502226923656233,
+        "pairedMaxPercent": -1.0869029686468967,
+        "rounds": 3,
+        "baselineBytes": 4841,
+        "candidateBytes": 4841,
+        "baselineRss": 61227008,
+        "candidateRss": 60162048
+      }
+    ],
+    "paired-94b9401": [
+      {
+        "mode": "extract",
+        "case": "nested-128x8",
+        "baselineUs": 0.9798633333333306,
+        "candidateUs": 95.02416666666672,
+        "deltaPercent": 9597.695937188551,
+        "pairedMinPercent": 9337.449674255173,
+        "pairedMaxPercent": 10194.51650985839,
+        "rounds": 5,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 45383680,
+        "candidateRss": 59228160
+      },
+      {
+        "mode": "extract",
+        "case": "wide-32x8",
+        "baselineUs": 4.0254166666666675,
+        "candidateUs": 460.5227766666669,
+        "deltaPercent": 11340.375364869065,
+        "pairedMinPercent": 10983.321587142123,
+        "pairedMaxPercent": 11375.758203084562,
+        "rounds": 5,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 55361536,
+        "candidateRss": 81215488
+      },
+      {
+        "mode": "measure",
+        "case": "nested-128x8",
+        "baselineUs": 13.95757180156658,
+        "candidateUs": 20.28548368146214,
+        "deltaPercent": 45.33676752560443,
+        "pairedMinPercent": 40.02385443731888,
+        "pairedMaxPercent": 48.340045078358514,
+        "rounds": 5,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 72499200,
+        "candidateRss": 79773696
+      },
+      {
+        "mode": "checkpoint",
+        "case": "wide-32x8",
+        "baselineUs": 60.207500000000024,
+        "candidateUs": 996.458473333333,
+        "deltaPercent": 1555.04044069814,
+        "pairedMinPercent": 1498.2318293207497,
+        "pairedMaxPercent": 1588.8251721648085,
+        "rounds": 5,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 78970880,
+        "candidateRss": 90505216
+      },
+      {
+        "mode": "restore",
+        "case": "wide-32x8",
+        "baselineUs": 10.161803333333333,
+        "candidateUs": 464.14069666666666,
+        "deltaPercent": 4467.503241714643,
+        "pairedMinPercent": 4303.132248795975,
+        "pairedMaxPercent": 4808.508841503625,
+        "rounds": 5,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 64585728,
+        "candidateRss": 79249408
+      },
+      {
+        "mode": "measure",
+        "case": "wide-32x8",
+        "baselineUs": 46.36741394927536,
+        "candidateUs": 47.931065217391286,
+        "deltaPercent": 3.3723063999784753,
+        "pairedMinPercent": 1.0819634717083915,
+        "pairedMaxPercent": 5.469511798730808,
+        "rounds": 5,
+        "baselineBytes": 14260,
+        "candidateBytes": 14354,
+        "baselineRss": 80117760,
+        "candidateRss": 84770816
+      },
+      {
+        "mode": "checkpoint",
+        "case": "nested-128x8",
+        "baselineUs": 27.09652666666667,
+        "candidateUs": 220.53916666666643,
+        "deltaPercent": 713.9019785807717,
+        "pairedMinPercent": 695.7408573578889,
+        "pairedMaxPercent": 746.8233400916366,
+        "rounds": 5,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 67354624,
+        "candidateRss": 75350016
+      },
+      {
+        "mode": "extract",
+        "case": "number-32",
+        "baselineUs": 1.5136133333333333,
+        "candidateUs": 110.11819666666668,
+        "deltaPercent": 7175.1867495881825,
+        "pairedMinPercent": 7052.140949316173,
+        "pairedMaxPercent": 8055.26334673681,
+        "rounds": 5,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 51888128,
+        "candidateRss": 66240512
+      },
+      {
+        "mode": "measure",
+        "case": "pure-16",
+        "baselineUs": 3.824702051262462,
+        "candidateUs": 4.0508820810573365,
+        "deltaPercent": 5.913664038750843,
+        "pairedMinPercent": 5.005845049645408,
+        "pairedMaxPercent": 6.923882250484281,
+        "rounds": 5,
+        "baselineBytes": 77,
+        "candidateBytes": 171,
+        "baselineRss": 72597504,
+        "candidateRss": 76529664
+      },
+      {
+        "mode": "measure",
+        "case": "number-32",
+        "baselineUs": 16.76487515650151,
+        "candidateUs": 17.142833661241287,
+        "deltaPercent": 2.2544665630462646,
+        "pairedMinPercent": 2.22543018544743,
+        "pairedMaxPercent": 3.1945991534604756,
+        "rounds": 5,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 78544896,
+        "candidateRss": 84639744
+      },
+      {
+        "mode": "restore",
+        "case": "number-32",
+        "baselineUs": 1.7812499999999967,
+        "candidateUs": 110.53111000000003,
+        "deltaPercent": 6105.255298245627,
+        "pairedMinPercent": 5620.376465215686,
+        "pairedMaxPercent": 6316.152394543004,
+        "rounds": 5,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 53493760,
+        "candidateRss": 60964864
+      },
+      {
+        "mode": "measure",
+        "case": "empty-32",
+        "baselineUs": 11.8346945467944,
+        "candidateUs": 12.147972488332105,
+        "deltaPercent": 2.647114721034849,
+        "pairedMinPercent": 2.375416004802755,
+        "pairedMaxPercent": 6.504605208541281,
+        "rounds": 5,
+        "baselineBytes": 1661,
+        "candidateBytes": 1755,
+        "baselineRss": 79314944,
+        "candidateRss": 81739776
+      },
+      {
+        "mode": "measure",
+        "case": "event-32",
+        "baselineUs": 2.3541228868964237,
+        "candidateUs": 3.3168380965723356,
+        "deltaPercent": 40.89485791224412,
+        "pairedMinPercent": 39.06147618522171,
+        "pairedMaxPercent": 42.97313242210845,
+        "rounds": 5,
+        "baselineBytes": 1565,
+        "candidateBytes": 1659,
+        "baselineRss": 69976064,
+        "candidateRss": 72908800
+      },
+      {
+        "mode": "checkpoint",
+        "case": "number-32",
+        "baselineUs": 20.648053333333323,
+        "candidateUs": 240.43125000000015,
+        "deltaPercent": 1064.4257505469457,
+        "pairedMinPercent": 1014.705967875084,
+        "pairedMaxPercent": 1071.769735839505,
+        "rounds": 5,
+        "baselineBytes": 3267,
+        "candidateBytes": 3361,
+        "baselineRss": 68911104,
+        "candidateRss": 80822272
+      },
+      {
+        "mode": "restore",
+        "case": "nested-128x8",
+        "baselineUs": 9.62764,
+        "candidateUs": 97.275,
+        "deltaPercent": 910.3722199832981,
+        "pairedMinPercent": 866.7098391476918,
+        "pairedMaxPercent": 991.1111161082217,
+        "rounds": 5,
+        "baselineBytes": 4747,
+        "candidateBytes": 4841,
+        "baselineRss": 51609600,
+        "candidateRss": 59441152
+      },
+      {
+        "mode": "measure",
+        "case": "unawaited-16",
+        "baselineUs": 5.692524268442266,
+        "candidateUs": 5.945018807312656,
+        "deltaPercent": 4.435546112120203,
+        "pairedMinPercent": 2.927319215067614,
+        "pairedMaxPercent": 5.465611983450591,
+        "rounds": 5,
+        "baselineBytes": 128,
+        "candidateBytes": 222,
+        "baselineRss": 75612160,
+        "candidateRss": 78987264
+      }
+    ]
+  },
+  "verification": {
+    "suite": {
+      "tests": 339,
+      "failures": 0,
+      "assertions": 4068,
+      "exitCode": 0,
+      "guard": "1794049138412-24076.json",
+      "peakMiB": 168.4,
+      "durationSeconds": 2.08
+    },
+    "typecheckExitCode": 0,
+    "lintExitCode": 0,
+    "browserBundleExitCode": 0,
+    "coverage": {
+      "worker": {
+        "functionsHit": 29,
+        "functionsFound": 29,
+        "linesHit": 508,
+        "linesFound": 508
+      },
+      "snapshotJson": {
+        "functionsHit": 9,
+        "functionsFound": 9,
+        "linesHit": 108,
+        "linesFound": 108
+      },
+      "branches": "NOT_REPORTED",
+      "statements": "NOT_REPORTED",
+      "legacyFlowControl": {
+        "functionsPercent": 33.33,
+        "linesPercent": 61.8
+      }
+    },
+    "platforms": {
+      "macOS": "PASS within reported scope",
+      "Linux": "NOT_RUN",
+      "Windows": "NOT_RUN"
+    },
+    "portableBenchmarkSmoke": {
+      "prepareExitCode": 0,
+      "checkpointExitCode": 0,
+      "timingAcceptance": false
+    }
+  },
+  "processRecovery": [
+    {
+      "stage": "none",
+      "killExit": null,
+      "resumeExit": 0,
+      "duplicateExit": 0,
+      "effects": 1,
+      "trace": ["seed", "A", "B", "tail-A"],
+      "snapshotSHA256": "585e19eda87b8cb1b199629b7370ed3d46d69797b8a964deefaf30454e564844"
+    },
+    {
+      "stage": "before-start",
+      "killExit": -9,
+      "resumeExit": 0,
+      "duplicateExit": 0,
+      "effects": 1,
+      "trace": ["seed", "A", "B", "A", "B", "tail-A"],
+      "snapshotSHA256": "585e19eda87b8cb1b199629b7370ed3d46d69797b8a964deefaf30454e564844"
+    },
+    {
+      "stage": "after-start",
+      "killExit": -9,
+      "resumeExit": 0,
+      "duplicateExit": 0,
+      "effects": 1,
+      "trace": ["seed", "A", "B", "A", "B", "tail-A"],
+      "snapshotSHA256": "585e19eda87b8cb1b199629b7370ed3d46d69797b8a964deefaf30454e564844"
+    },
+    {
+      "stage": "after-B",
+      "killExit": -9,
+      "resumeExit": 0,
+      "duplicateExit": 0,
+      "effects": 1,
+      "trace": ["seed", "A", "B", "A", "B", "tail-A"],
+      "snapshotSHA256": "585e19eda87b8cb1b199629b7370ed3d46d69797b8a964deefaf30454e564844"
+    },
+    {
+      "stage": "before-commit",
+      "killExit": -9,
+      "resumeExit": 0,
+      "duplicateExit": 0,
+      "effects": 1,
+      "trace": ["seed", "A", "B", "tail-A", "A", "B", "tail-A"],
+      "snapshotSHA256": "585e19eda87b8cb1b199629b7370ed3d46d69797b8a964deefaf30454e564844"
+    },
+    {
+      "stage": "after-commit",
+      "killExit": -9,
+      "resumeExit": 0,
+      "duplicateExit": 0,
+      "effects": 1,
+      "trace": ["seed", "A", "B", "tail-A"],
+      "snapshotSHA256": "585e19eda87b8cb1b199629b7370ed3d46d69797b8a964deefaf30454e564844"
+    }
+  ],
+  "rejectionProbe": {
+    "platform": "darwin",
+    "runtime": "1.4.2",
+    "schemaHash": "2827319ddfd02747970b38e1d205aae00fee9471a14a0dcbde021830aaa027ea",
+    "snapshotBytes": 124,
+    "note": "Candidate-only rejection behavior; old Worker had different semantics and has no comparable baseline.",
+    "results": [
+      {
+        "name": "busy-trigger",
+        "count": 5000,
+        "samplesUs": [
+          0.585275, 0.6799333999999998, 0.4679000000000002, 0.5831915999999999, 0.5250999999999997,
+          0.5231084000000003, 0.5369
+        ],
+        "memory": {
+          "rss": 68370432,
+          "heapTotal": 10944512,
+          "heapUsed": 1567844,
+          "external": 677716,
+          "arrayBuffers": 2283
+        }
+      },
+      {
+        "name": "busy-extract",
+        "count": 5000,
+        "samplesUs": [
+          0.32214999999999994, 0.3125249999999994, 0.3377416000000011, 0.34384999999999905,
+          0.4169917999999996, 0.33813339999999953, 0.3312168
+        ],
+        "memory": {
+          "rss": 83034112,
+          "heapTotal": 13418496,
+          "heapUsed": 1596912,
+          "external": 701472,
+          "arrayBuffers": 2283
+        }
+      },
+      {
+        "name": "failed-trigger",
+        "count": 5000,
+        "samplesUs": [
+          0.5177250000000001, 0.5660834000000008, 0.5308331999999993, 0.5546666000000002,
+          0.4941416000000004, 0.5361081999999996, 0.5147417999999988
+        ],
+        "memory": {
+          "rss": 83656704,
+          "heapTotal": 13828096,
+          "heapUsed": 1625625,
+          "external": 722009,
+          "arrayBuffers": 2283
+        }
+      },
+      {
+        "name": "failed-extract",
+        "count": 5000,
+        "samplesUs": [
+          0.339333400000001, 0.3805581999999987, 0.3340499999999992, 0.32373339999999756,
+          0.33303319999999986, 0.335775000000001, 0.3274416000000002
+        ],
+        "memory": {
+          "rss": 83705856,
+          "heapTotal": 13828096,
+          "heapUsed": 1640445,
+          "external": 734029,
+          "arrayBuffers": 2283
+        }
+      },
+      {
+        "name": "invalid-snapshot",
+        "count": 5000,
+        "samplesUs": [
+          4.5591500000000025, 4.493816600000002, 4.418975000000003, 4.240591800000004,
+          4.474458400000003, 4.196300000000003, 4.232941599999998
+        ],
+        "memory": {
+          "rss": 94535680,
+          "heapTotal": 17350656,
+          "heapUsed": 1877225,
+          "external": 903385,
+          "arrayBuffers": 2283
+        }
+      }
+    ]
+  },
+  "retentionProbes": {
+    "baseline-memory-nested-128x8": {
+      "variant": "baseline",
+      "case": "nested-128x8",
+      "count": 10000,
+      "samples": [
+        {
+          "epoch": 0,
+          "heapSize": 1841107,
+          "heapCapacity": 2883667,
+          "objects": 10622,
+          "promises": 164,
+          "rss": 69615616
+        },
+        {
+          "epoch": 1,
+          "heapSize": 1840972,
+          "heapCapacity": 2884476,
+          "objects": 10619,
+          "promises": 165,
+          "rss": 72826880
+        },
+        {
+          "epoch": 2,
+          "heapSize": 1844257,
+          "heapCapacity": 2982785,
+          "objects": 10651,
+          "promises": 170,
+          "rss": 73318400
+        },
+        {
+          "epoch": 3,
+          "heapSize": 1844321,
+          "heapCapacity": 3064705,
+          "objects": 10652,
+          "promises": 170,
+          "rss": 73318400
+        },
+        {
+          "epoch": 4,
+          "heapSize": 1844385,
+          "heapCapacity": 3113857,
+          "objects": 10653,
+          "promises": 170,
+          "rss": 73334784
+        },
+        {
+          "epoch": 5,
+          "heapSize": 1876777,
+          "heapCapacity": 3047657,
+          "objects": 10655,
+          "promises": 170,
+          "rss": 75907072
+        },
+        {
+          "epoch": 6,
+          "heapSize": 1872105,
+          "heapCapacity": 2851049,
+          "objects": 10611,
+          "promises": 164,
+          "rss": 76333056
+        },
+        {
+          "epoch": 7,
+          "heapSize": 1875385,
+          "heapCapacity": 3047657,
+          "objects": 10643,
+          "promises": 169,
+          "rss": 76611584
+        },
+        {
+          "epoch": 8,
+          "heapSize": 1874777,
+          "heapCapacity": 3047657,
+          "objects": 10638,
+          "promises": 169,
+          "rss": 77119488
+        },
+        {
+          "epoch": 9,
+          "heapSize": 1874841,
+          "heapCapacity": 3047657,
+          "objects": 10639,
+          "promises": 169,
+          "rss": 77398016
+        },
+        {
+          "epoch": 10,
+          "heapSize": 1848693,
+          "heapCapacity": 3037973,
+          "objects": 10639,
+          "promises": 169,
+          "rss": 77398016
+        },
+        {
+          "epoch": 11,
+          "heapSize": 1848757,
+          "heapCapacity": 3005205,
+          "objects": 10640,
+          "promises": 169,
+          "rss": 77398016
+        },
+        {
+          "epoch": 12,
+          "heapSize": 1846693,
+          "heapCapacity": 3005205,
+          "objects": 10622,
+          "promises": 169,
+          "rss": 77398016
+        }
+      ],
+      "schemaHash": "acb323d027301128887186dbf7310f23993046c260c00a76aa3daec080bc5889",
+      "workerHash": "952912bce049b4a64004941e72f5d87e184dac1017a655e0df83f83f61cbd52b"
+    },
+    "baseline-memory-unawaited-16": {
+      "variant": "baseline",
+      "case": "unawaited-16",
+      "count": 20000,
+      "samples": [
+        {
+          "epoch": 0,
+          "heapSize": 1639669,
+          "heapCapacity": 2698901,
+          "objects": 10018,
+          "promises": 164,
+          "rss": 71434240
+        },
+        {
+          "epoch": 1,
+          "heapSize": 1717748,
+          "heapCapacity": 2807524,
+          "objects": 10036,
+          "promises": 165,
+          "rss": 81887232
+        },
+        {
+          "epoch": 2,
+          "heapSize": 1714564,
+          "heapCapacity": 2807524,
+          "objects": 10008,
+          "promises": 165,
+          "rss": 83083264
+        },
+        {
+          "epoch": 3,
+          "heapSize": 1746957,
+          "heapCapacity": 2856013,
+          "objects": 10010,
+          "promises": 165,
+          "rss": 84738048
+        },
+        {
+          "epoch": 4,
+          "heapSize": 1747021,
+          "heapCapacity": 2888781,
+          "objects": 10011,
+          "promises": 165,
+          "rss": 84787200
+        },
+        {
+          "epoch": 5,
+          "heapSize": 1720730,
+          "heapCapacity": 2846266,
+          "objects": 10011,
+          "promises": 165,
+          "rss": 84787200
+        },
+        {
+          "epoch": 6,
+          "heapSize": 1720825,
+          "heapCapacity": 2862649,
+          "objects": 10012,
+          "promises": 165,
+          "rss": 85016576
+        },
+        {
+          "epoch": 7,
+          "heapSize": 1720889,
+          "heapCapacity": 2862649,
+          "objects": 10013,
+          "promises": 165,
+          "rss": 85229568
+        },
+        {
+          "epoch": 8,
+          "heapSize": 1720105,
+          "heapCapacity": 2764345,
+          "objects": 10001,
+          "promises": 164,
+          "rss": 85245952
+        },
+        {
+          "epoch": 9,
+          "heapSize": 1721017,
+          "heapCapacity": 2862649,
+          "objects": 10015,
+          "promises": 165,
+          "rss": 85245952
+        },
+        {
+          "epoch": 10,
+          "heapSize": 1721129,
+          "heapCapacity": 2846265,
+          "objects": 10015,
+          "promises": 164,
+          "rss": 85262336
+        },
+        {
+          "epoch": 11,
+          "heapSize": 1721737,
+          "heapCapacity": 2846809,
+          "objects": 10016,
+          "promises": 164,
+          "rss": 85262336
+        },
+        {
+          "epoch": 12,
+          "heapSize": 1722025,
+          "heapCapacity": 2895961,
+          "objects": 10023,
+          "promises": 166,
+          "rss": 85262336
+        }
+      ],
+      "schemaHash": "0fad527b92431ae97ac17198b1dcac99d14c3958c28e66c061e37d1a78c5a461",
+      "workerHash": "a253a1a61ac9e349860922aaac929561a4912527cc46dcbac5ccbd386a262e2a"
+    },
+    "baseline-snapshot-memory-nested-128x8": {
+      "variant": "baseline",
+      "case": "nested-128x8",
+      "count": 1000,
+      "samples": [
+        {
+          "epoch": 0,
+          "heapSize": 1906082,
+          "heapCapacity": 2865122,
+          "objects": 10630,
+          "promises": 164,
+          "rss": 61128704
+        },
+        {
+          "epoch": 1,
+          "heapSize": 1852038,
+          "heapCapacity": 2843062,
+          "objects": 10644,
+          "promises": 165,
+          "rss": 66453504
+        },
+        {
+          "epoch": 2,
+          "heapSize": 1856566,
+          "heapCapacity": 3039462,
+          "objects": 10666,
+          "promises": 170,
+          "rss": 67764224
+        },
+        {
+          "epoch": 3,
+          "heapSize": 1913371,
+          "heapCapacity": 3177643,
+          "objects": 10670,
+          "promises": 170,
+          "rss": 71860224
+        },
+        {
+          "epoch": 4,
+          "heapSize": 1927643,
+          "heapCapacity": 3109931,
+          "objects": 10671,
+          "promises": 170,
+          "rss": 72089600
+        },
+        {
+          "epoch": 5,
+          "heapSize": 1927683,
+          "heapCapacity": 3077363,
+          "objects": 10671,
+          "promises": 170,
+          "rss": 72761344
+        },
+        {
+          "epoch": 6,
+          "heapSize": 1928443,
+          "heapCapacity": 3077803,
+          "objects": 10673,
+          "promises": 170,
+          "rss": 72761344
+        },
+        {
+          "epoch": 7,
+          "heapSize": 1928507,
+          "heapCapacity": 3176107,
+          "objects": 10674,
+          "promises": 170,
+          "rss": 73154560
+        },
+        {
+          "epoch": 8,
+          "heapSize": 1927423,
+          "heapCapacity": 3110879,
+          "objects": 10662,
+          "promises": 170,
+          "rss": 73154560
+        },
+        {
+          "epoch": 9,
+          "heapSize": 1926031,
+          "heapCapacity": 3094495,
+          "objects": 10650,
+          "promises": 170,
+          "rss": 73154560
+        },
+        {
+          "epoch": 10,
+          "heapSize": 1926175,
+          "heapCapacity": 3094495,
+          "objects": 10651,
+          "promises": 170,
+          "rss": 73154560
+        },
+        {
+          "epoch": 11,
+          "heapSize": 1926239,
+          "heapCapacity": 3078111,
+          "objects": 10652,
+          "promises": 170,
+          "rss": 73154560
+        },
+        {
+          "epoch": 12,
+          "heapSize": 1926303,
+          "heapCapacity": 3094495,
+          "objects": 10653,
+          "promises": 170,
+          "rss": 73154560
+        }
+      ],
+      "schemaHash": "acb323d027301128887186dbf7310f23993046c260c00a76aa3daec080bc5889",
+      "workerHash": "952912bce049b4a64004941e72f5d87e184dac1017a655e0df83f83f61cbd52b"
+    },
+    "baseline-snapshot-memory-wide-32x8": {
+      "variant": "baseline",
+      "case": "wide-32x8",
+      "count": 300,
+      "samples": [
+        {
+          "epoch": 0,
+          "heapSize": 2679066,
+          "heapCapacity": 3813498,
+          "objects": 16552,
+          "promises": 164,
+          "rss": 58163200
+        },
+        {
+          "epoch": 1,
+          "heapSize": 2691116,
+          "heapCapacity": 3857148,
+          "objects": 16575,
+          "promises": 165,
+          "rss": 67731456
+        },
+        {
+          "epoch": 2,
+          "heapSize": 2802723,
+          "heapCapacity": 4144067,
+          "objects": 16618,
+          "promises": 170,
+          "rss": 69287936
+        },
+        {
+          "epoch": 3,
+          "heapSize": 2867455,
+          "heapCapacity": 4241631,
+          "objects": 16646,
+          "promises": 170,
+          "rss": 73007104
+        },
+        {
+          "epoch": 4,
+          "heapSize": 2867543,
+          "heapCapacity": 4307191,
+          "objects": 16647,
+          "promises": 170,
+          "rss": 74694656
+        },
+        {
+          "epoch": 5,
+          "heapSize": 2867607,
+          "heapCapacity": 4258039,
+          "objects": 16648,
+          "promises": 170,
+          "rss": 75677696
+        },
+        {
+          "epoch": 6,
+          "heapSize": 2867703,
+          "heapCapacity": 4208887,
+          "objects": 16649,
+          "promises": 170,
+          "rss": 76201984
+        },
+        {
+          "epoch": 7,
+          "heapSize": 2866311,
+          "heapCapacity": 4225271,
+          "objects": 16637,
+          "promises": 170,
+          "rss": 76234752
+        },
+        {
+          "epoch": 8,
+          "heapSize": 2866375,
+          "heapCapacity": 4258039,
+          "objects": 16638,
+          "promises": 170,
+          "rss": 76251136
+        },
+        {
+          "epoch": 9,
+          "heapSize": 2866439,
+          "heapCapacity": 4241655,
+          "objects": 16639,
+          "promises": 170,
+          "rss": 76251136
+        },
+        {
+          "epoch": 10,
+          "heapSize": 2867535,
+          "heapCapacity": 4258767,
+          "objects": 16641,
+          "promises": 170,
+          "rss": 78348288
+        },
+        {
+          "epoch": 11,
+          "heapSize": 2867599,
+          "heapCapacity": 4209615,
+          "objects": 16642,
+          "promises": 170,
+          "rss": 78348288
+        },
+        {
+          "epoch": 12,
+          "heapSize": 2867663,
+          "heapCapacity": 4209615,
+          "objects": 16643,
+          "promises": 170,
+          "rss": 78675968
+        }
+      ],
+      "schemaHash": "0cfe1f0722d5f97008449543719cb22bee6a20813fa54e4e9bfb36486ee472cb",
+      "workerHash": "e4618a43102502b72499acd4b8b5b65f68753119b02d66b11ea0fbeeb918b4f0"
+    },
+    "candidate-memory-nested-128x8": {
+      "variant": "candidate",
+      "case": "nested-128x8",
+      "count": 10000,
+      "samples": [
+        {
+          "epoch": 0,
+          "heapSize": 2114009,
+          "heapCapacity": 3467657,
+          "objects": 12357,
+          "promises": 182,
+          "rss": 75350016
+        },
+        {
+          "epoch": 1,
+          "heapSize": 2193593,
+          "heapCapacity": 3593561,
+          "objects": 12384,
+          "promises": 183,
+          "rss": 80543744
+        },
+        {
+          "epoch": 2,
+          "heapSize": 2195045,
+          "heapCapacity": 3806565,
+          "objects": 12390,
+          "promises": 188,
+          "rss": 80887808
+        },
+        {
+          "epoch": 3,
+          "heapSize": 2195114,
+          "heapCapacity": 3741034,
+          "objects": 12391,
+          "promises": 188,
+          "rss": 80887808
+        },
+        {
+          "epoch": 4,
+          "heapSize": 2190394,
+          "heapCapacity": 3560810,
+          "objects": 12354,
+          "promises": 182,
+          "rss": 80904192
+        },
+        {
+          "epoch": 5,
+          "heapSize": 2227410,
+          "heapCapacity": 3789522,
+          "objects": 12390,
+          "promises": 187,
+          "rss": 81903616
+        },
+        {
+          "epoch": 6,
+          "heapSize": 2227506,
+          "heapCapacity": 3805906,
+          "objects": 12391,
+          "promises": 187,
+          "rss": 82132992
+        },
+        {
+          "epoch": 7,
+          "heapSize": 2227570,
+          "heapCapacity": 3822290,
+          "objects": 12392,
+          "promises": 187,
+          "rss": 82542592
+        },
+        {
+          "epoch": 8,
+          "heapSize": 2227634,
+          "heapCapacity": 3773138,
+          "objects": 12393,
+          "promises": 187,
+          "rss": 82542592
+        },
+        {
+          "epoch": 9,
+          "heapSize": 2223074,
+          "heapCapacity": 3592914,
+          "objects": 12360,
+          "promises": 182,
+          "rss": 83148800
+        },
+        {
+          "epoch": 10,
+          "heapSize": 2200878,
+          "heapCapacity": 3763454,
+          "objects": 12388,
+          "promises": 187,
+          "rss": 83591168
+        },
+        {
+          "epoch": 11,
+          "heapSize": 2200942,
+          "heapCapacity": 3747070,
+          "objects": 12389,
+          "promises": 187,
+          "rss": 83951616
+        },
+        {
+          "epoch": 12,
+          "heapSize": 2201006,
+          "heapCapacity": 3763454,
+          "objects": 12390,
+          "promises": 187,
+          "rss": 84115456
+        }
+      ],
+      "schemaHash": "acb323d027301128887186dbf7310f23993046c260c00a76aa3daec080bc5889",
+      "workerHash": "952912bce049b4a64004941e72f5d87e184dac1017a655e0df83f83f61cbd52b"
+    },
+    "candidate-memory-unawaited-16": {
+      "variant": "candidate",
+      "case": "unawaited-16",
+      "count": 20000,
+      "samples": [
+        {
+          "epoch": 0,
+          "heapSize": 2015438,
+          "heapCapacity": 3253758,
+          "objects": 11569,
+          "promises": 182,
+          "rss": 67584000
+        },
+        {
+          "epoch": 1,
+          "heapSize": 2015683,
+          "heapCapacity": 3255475,
+          "objects": 11559,
+          "promises": 183,
+          "rss": 71385088
+        },
+        {
+          "epoch": 2,
+          "heapSize": 2015751,
+          "heapCapacity": 3255479,
+          "objects": 11560,
+          "promises": 183,
+          "rss": 71385088
+        },
+        {
+          "epoch": 3,
+          "heapSize": 2047803,
+          "heapCapacity": 3287579,
+          "objects": 11559,
+          "promises": 183,
+          "rss": 74498048
+        },
+        {
+          "epoch": 4,
+          "heapSize": 2045067,
+          "heapCapacity": 3254811,
+          "objects": 11535,
+          "promises": 183,
+          "rss": 74825728
+        },
+        {
+          "epoch": 5,
+          "heapSize": 2018872,
+          "heapCapacity": 3277928,
+          "objects": 11535,
+          "promises": 183,
+          "rss": 74825728
+        },
+        {
+          "epoch": 6,
+          "heapSize": 2018967,
+          "heapCapacity": 3277927,
+          "objects": 11536,
+          "promises": 183,
+          "rss": 74825728
+        },
+        {
+          "epoch": 7,
+          "heapSize": 2018135,
+          "heapCapacity": 3196007,
+          "objects": 11524,
+          "promises": 182,
+          "rss": 74842112
+        },
+        {
+          "epoch": 8,
+          "heapSize": 2019095,
+          "heapCapacity": 3277927,
+          "objects": 11538,
+          "promises": 183,
+          "rss": 74842112
+        },
+        {
+          "epoch": 9,
+          "heapSize": 2019159,
+          "heapCapacity": 3277927,
+          "objects": 11539,
+          "promises": 183,
+          "rss": 74842112
+        },
+        {
+          "epoch": 10,
+          "heapSize": 2019303,
+          "heapCapacity": 3261543,
+          "objects": 11540,
+          "promises": 183,
+          "rss": 74842112
+        },
+        {
+          "epoch": 11,
+          "heapSize": 2019335,
+          "heapCapacity": 3261543,
+          "objects": 11540,
+          "promises": 182,
+          "rss": 75055104
+        },
+        {
+          "epoch": 12,
+          "heapSize": 2019943,
+          "heapCapacity": 3262087,
+          "objects": 11541,
+          "promises": 182,
+          "rss": 75055104
+        }
+      ],
+      "schemaHash": "0fad527b92431ae97ac17198b1dcac99d14c3958c28e66c061e37d1a78c5a461",
+      "workerHash": "a253a1a61ac9e349860922aaac929561a4912527cc46dcbac5ccbd386a262e2a"
+    },
+    "candidate-snapshot-memory-nested-128x8": {
+      "variant": "candidate",
+      "case": "nested-128x8",
+      "count": 1000,
+      "samples": [
+        {
+          "epoch": 0,
+          "heapSize": 2348592,
+          "heapCapacity": 3870400,
+          "objects": 12434,
+          "promises": 182,
+          "rss": 67977216
+        },
+        {
+          "epoch": 1,
+          "heapSize": 2294859,
+          "heapCapacity": 3831643,
+          "objects": 12453,
+          "promises": 183,
+          "rss": 71024640
+        },
+        {
+          "epoch": 2,
+          "heapSize": 2304467,
+          "heapCapacity": 4093587,
+          "objects": 12501,
+          "promises": 188,
+          "rss": 71630848
+        },
+        {
+          "epoch": 3,
+          "heapSize": 2367579,
+          "heapCapacity": 4092299,
+          "objects": 12491,
+          "promises": 188,
+          "rss": 72433664
+        },
+        {
+          "epoch": 4,
+          "heapSize": 2379517,
+          "heapCapacity": 3790877,
+          "objects": 12423,
+          "promises": 182,
+          "rss": 74776576
+        },
+        {
+          "epoch": 5,
+          "heapSize": 2389333,
+          "heapCapacity": 4054341,
+          "objects": 12461,
+          "promises": 187,
+          "rss": 74776576
+        },
+        {
+          "epoch": 6,
+          "heapSize": 2390098,
+          "heapCapacity": 4087554,
+          "objects": 12463,
+          "promises": 187,
+          "rss": 74776576
+        },
+        {
+          "epoch": 7,
+          "heapSize": 2390162,
+          "heapCapacity": 4038402,
+          "objects": 12464,
+          "promises": 187,
+          "rss": 74776576
+        },
+        {
+          "epoch": 8,
+          "heapSize": 2401742,
+          "heapCapacity": 4033534,
+          "objects": 12465,
+          "promises": 187,
+          "rss": 74858496
+        },
+        {
+          "epoch": 9,
+          "heapSize": 2392030,
+          "heapCapacity": 3755006,
+          "objects": 12418,
+          "promises": 182,
+          "rss": 74858496
+        },
+        {
+          "epoch": 10,
+          "heapSize": 2401950,
+          "heapCapacity": 4033534,
+          "objects": 12467,
+          "promises": 187,
+          "rss": 75218944
+        },
+        {
+          "epoch": 11,
+          "heapSize": 2402014,
+          "heapCapacity": 3967998,
+          "objects": 12468,
+          "promises": 187,
+          "rss": 75497472
+        },
+        {
+          "epoch": 12,
+          "heapSize": 2397902,
+          "heapCapacity": 3935230,
+          "objects": 12458,
+          "promises": 187,
+          "rss": 75497472
+        }
+      ],
+      "schemaHash": "acb323d027301128887186dbf7310f23993046c260c00a76aa3daec080bc5889",
+      "workerHash": "952912bce049b4a64004941e72f5d87e184dac1017a655e0df83f83f61cbd52b"
+    },
+    "candidate-snapshot-memory-wide-32x8": {
+      "variant": "candidate",
+      "case": "wide-32x8",
+      "count": 300,
+      "samples": [
+        {
+          "epoch": 0,
+          "heapSize": 3226278,
+          "heapCapacity": 4761318,
+          "objects": 18769,
+          "promises": 182,
+          "rss": 75022336
+        },
+        {
+          "epoch": 1,
+          "heapSize": 3230073,
+          "heapCapacity": 4781737,
+          "objects": 18772,
+          "promises": 183,
+          "rss": 83918848
+        },
+        {
+          "epoch": 2,
+          "heapSize": 3291406,
+          "heapCapacity": 4953630,
+          "objects": 18808,
+          "promises": 188,
+          "rss": 84983808
+        },
+        {
+          "epoch": 3,
+          "heapSize": 3299090,
+          "heapCapacity": 4833906,
+          "objects": 18773,
+          "promises": 182,
+          "rss": 85983232
+        },
+        {
+          "epoch": 4,
+          "heapSize": 3426091,
+          "heapCapacity": 5087163,
+          "objects": 18816,
+          "promises": 187,
+          "rss": 89047040
+        },
+        {
+          "epoch": 5,
+          "heapSize": 3426155,
+          "heapCapacity": 5054395,
+          "objects": 18817,
+          "promises": 187,
+          "rss": 91095040
+        },
+        {
+          "epoch": 6,
+          "heapSize": 3425128,
+          "heapCapacity": 5087160,
+          "objects": 18808,
+          "promises": 187,
+          "rss": 91422720
+        },
+        {
+          "epoch": 7,
+          "heapSize": 3318388,
+          "heapCapacity": 4837428,
+          "objects": 18768,
+          "promises": 182,
+          "rss": 91488256
+        },
+        {
+          "epoch": 8,
+          "heapSize": 3423060,
+          "heapCapacity": 5169460,
+          "objects": 18786,
+          "promises": 187,
+          "rss": 91521024
+        },
+        {
+          "epoch": 9,
+          "heapSize": 3423124,
+          "heapCapacity": 5153076,
+          "objects": 18787,
+          "promises": 187,
+          "rss": 91570176
+        },
+        {
+          "epoch": 10,
+          "heapSize": 3371379,
+          "heapCapacity": 5003987,
+          "objects": 18780,
+          "promises": 187,
+          "rss": 91799552
+        },
+        {
+          "epoch": 11,
+          "heapSize": 3316464,
+          "heapCapacity": 4821584,
+          "objects": 18747,
+          "promises": 182,
+          "rss": 91815936
+        },
+        {
+          "epoch": 12,
+          "heapSize": 3371504,
+          "heapCapacity": 4987600,
+          "objects": 18782,
+          "promises": 187,
+          "rss": 91865088
+        }
+      ],
+      "schemaHash": "0cfe1f0722d5f97008449543719cb22bee6a20813fa54e4e9bfb36486ee472cb",
+      "workerHash": "e4618a43102502b72499acd4b8b5b65f68753119b02d66b11ea0fbeeb918b4f0"
+    }
+  }
+}

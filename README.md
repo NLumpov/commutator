@@ -223,7 +223,9 @@ const next = attempt.extract();
 // On failure, discard attempt and reconcile effects before replay from baseline.
 ```
 
-See [the development/review cycle example](packages/examples/17-exec-cycles.ts).
+See [the development/review cycle example](packages/examples/17-exec-cycles.ts),
+[COM-0008 verification](docs/com0008-verification.md), and the
+[reproduction commands](tooling/com0008/README.md).
 
 Подробная документация для разработчиков и AI агентов находится в файле [AGENTS.MD](./AGENTS.MD).
 

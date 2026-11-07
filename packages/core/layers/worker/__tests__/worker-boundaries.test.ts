@@ -257,6 +257,24 @@ describe("independent finite JSON snapshots", () => {
     expect(worker.extract()).toEqual(baseline);
   });
 
+  test("array descriptor validation rejects sparse substitutions, symbols, hidden values and getters", async () => {
+    const invalidArrays = [
+      Object.assign([, 1], { extra: 2 }),
+      Object.assign([1], { [Symbol("extra")]: 2 }),
+      Object.defineProperty([1], "0", { value: 1, enumerable: false }),
+      Object.defineProperty([1], "0", { enumerable: true, get() { throw new Error("getter must not run"); } }),
+    ];
+    const { schema } = fixture();
+    const worker = schema.createWorker();
+    const pin = schema.extract().pinInstances.find((item) => item.dataType !== null)!;
+    for (const value of invalidArrays) {
+      await expect(schema.createWorker().triggerEvent("start", { value })).rejects.toHaveProperty("code", "INVALID_JSON");
+      pin.default = value;
+      expect(() => worker.extract()).toThrow("INVALID_JSON");
+      pin.default = undefined;
+    }
+  });
+
   test("node config nested undefined is rejected while optional config absence stays valid", () => {
     const { schema } = fixture();
     const worker = schema.createWorker();

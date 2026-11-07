@@ -12,14 +12,14 @@ class FakeOperations {
       if (existing.request !== request) throw new Error("OPERATION_CONFLICT");
       return existing;
     }
-    const operation = { operationId: `operation-${this.operations.size + 1}`, request, agentId: undefined as string | undefined };
+    const operation = { operationId: `01ARZ3NDEKTSV4RRFFQ69G5FA${this.operations.size + 1}`, request, agentId: undefined as string | undefined };
     this.operations.set(key, operation);
     return operation;
   }
   start(key: string, request: string, loseResponse: boolean) {
     const operation = this.ensure(key, request);
     if (this.unknown) throw new Error("OUTCOME_UNKNOWN");
-    if (!operation.agentId) operation.agentId = `agent-${++this.starts}`;
+    if (!operation.agentId) operation.agentId = `01ARZ3NDEKTSV4RRFFQ69G5FB${++this.starts}`;
     if (loseResponse) throw new Error("lost response");
     return operation.agentId;
   }
@@ -78,7 +78,7 @@ for (const crash of ["before-B", "inside-B", "after-B"] as const) {
       : ["A", "B", "A:tail", "A", "B", "A:tail"]);
     expect(operations.starts).toBe(1);
     expect(committed).toBe(1);
-    expect(replay.extract().pinCache).toContainEqual({ uuid: schema.getPin(b.uuid, "agentId").uuid, cache: "agent-1" });
+    expect(replay.extract().pinCache).toContainEqual({ uuid: schema.getPin(b.uuid, "agentId").uuid, cache: "01ARZ3NDEKTSV4RRFFQ69G5FB1" });
     expect(replay.extract().pinCache).toContainEqual({ uuid: schema.getPin(a.uuid, "done").uuid, cache: true });
   });
 }
@@ -87,10 +87,10 @@ describe("consumer operation fake limits", () => {
   test("same action retries keep identity, new iterations and parallel actions differ", () => {
     const fake = new FakeOperations();
     expect(() => fake.start("run/action/1", "request", true)).toThrow("lost response");
-    expect(fake.start("run/action/1", "request", false)).toBe("agent-1");
-    expect(fake.start("run/action/1", "request", false)).toBe("agent-1");
-    expect(fake.start("run/action/2", "request", false)).toBe("agent-2");
-    expect(fake.start("run/other/1", "request", false)).toBe("agent-3");
+    expect(fake.start("run/action/1", "request", false)).toBe("01ARZ3NDEKTSV4RRFFQ69G5FB1");
+    expect(fake.start("run/action/1", "request", false)).toBe("01ARZ3NDEKTSV4RRFFQ69G5FB1");
+    expect(fake.start("run/action/2", "request", false)).toBe("01ARZ3NDEKTSV4RRFFQ69G5FB2");
+    expect(fake.start("run/other/1", "request", false)).toBe("01ARZ3NDEKTSV4RRFFQ69G5FB3");
     expect(new Set([...fake.operations.values()].map((item) => item.operationId)).size).toBe(3);
     expect(() => fake.start("run/action/1", "changed request", false)).toThrow("OPERATION_CONFLICT");
     expect(fake.starts).toBe(3);
