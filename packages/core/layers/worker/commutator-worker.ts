@@ -18,6 +18,7 @@ import {
   type PinsRegistry,
   type WiresRegistry,
 } from "../schema";
+import { snapshotField } from "./snapshot-field";
 import { copyJson, readSnapshot, snapshotError } from "./snapshot-json";
 import type { WorkerSnapshot } from "./types";
 
@@ -70,14 +71,14 @@ export class CommutatorWorker<
       name: node.name,
       type: node.type,
       ...(node.config === undefined ? {} : { config: node.config }),
-      meta: this.config.getNodeConfigByName(node.name)?.meta ?? null,
+      meta: snapshotField(this.config.getNodeConfigByName(node.name)?.meta),
     }));
     const pins = this.pinsRegistry.getAllPins().map((pin) => ({
       uuid: pin.uuid,
       nodeUuid: pin.nodeUuid,
       name: pin.name,
       type: pin.type,
-      dataType: pin.dataType,
+      dataType: snapshotField(pin.dataType),
       ...(pin.default === undefined ? {} : { default: pin.default }),
     }));
     return `graph-v1:${JSON.stringify(
@@ -86,7 +87,12 @@ export class CommutatorWorker<
           nodes,
           pins,
           wires: this.wiresRegistry.getAllWires(),
-          dataTypes: this.config.dataTypes,
+          dataTypes: Object.fromEntries(
+            Object.entries(this.config.dataTypes).map(([name, field]) => [
+              name,
+              snapshotField(field),
+            ]),
+          ),
         },
         true,
       ),

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { CommonDataType, Commutator } from "../commutator";
+import { CommonDataType, Commutator, type Field } from "../commutator";
 
 function fixture() {
   let callbacks = 0;
@@ -130,4 +130,70 @@ test("JSON boundaries reject custom array prototypes instead of silently convert
   output = new CustomArray(1, 2);
   await worker.triggerEvent("start", {});
   expect(() => worker.extract()).toThrow("non-JSON");
+});
+
+for (const field of [
+  { type: CommonDataType.Any, name: undefined },
+  { type: CommonDataType.Object, name: undefined, properties: {
+    values: { type: CommonDataType.Array, name: undefined, itemType: { type: CommonDataType.Number, name: undefined } },
+  } },
+] satisfies Field<{}>[]) {
+  for (const location of ["pin", "meta", "dataType"] as const) {
+    test(`fingerprint accepts optional undefined names in ${location} ${field.type} descriptors`, () => {
+      const schema = Commutator.initialize()
+        .defineDataType("Payload", location === "dataType" ? field : { type: CommonDataType.Any })
+        .defineEvent("start", { pinsOut: { value: location === "pin" ? field : { type: "Payload" } }, execPinsOut: {} })
+        .defineFunction("read", {
+          pinsIn: {}, pinsOut: {}, execPinsIn: { in: null }, execPinsOut: {},
+          meta: location === "meta" ? field : { type: CommonDataType.Any },
+          exec: async () => {},
+        }).createSchema();
+      const event = schema.createEvent("start");
+      schema.createFunction("read");
+      const baseline = schema.createWorker().extract();
+      expect(schema.createWorker(baseline).extract()).toEqual(baseline);
+      expect(Object.hasOwn(field, "name")).toBe(true);
+      expect(field.name).toBeUndefined();
+      const pin = schema.getPin(event.uuid, "value");
+      if (pin.dataType) pin.dataType.name = "visible name";
+      expect(schema.createWorker().extract().schemaFingerprint).not.toBe(baseline.schemaFingerprint);
+      expect(() => schema.createWorker(baseline)).toThrow("schema mismatch");
+      // Definitions and pins stay live; restore the shared fixture for the next location.
+      if (pin.dataType) pin.dataType.name = undefined;
+    });
+  }
+}
+
+test("descriptor normalization does not erase undefined in user config or pin defaults", () => {
+  const schema = Commutator.initialize()
+    .defineFunction("read", {
+      config: { type: CommonDataType.Any, name: undefined },
+      pinsIn: { value: { type: CommonDataType.Any, name: undefined } }, pinsOut: {},
+      execPinsIn: { in: null }, execPinsOut: {}, exec: async () => {},
+    }).createSchema();
+  const node = schema.createFunction("read");
+  const worker = schema.createWorker();
+  const baseline = worker.extract();
+  schema.updateNodeConfig(node.uuid, { nested: { value: undefined } });
+  expect(() => worker.extract()).toThrow("non-JSON");
+  schema.updateNodeConfig(node.uuid, null);
+  schema.setPinDefaultValue(schema.getPin(node.uuid, "value").uuid, { nested: { value: undefined } });
+  expect(() => worker.extract()).toThrow("non-JSON");
+  expect(baseline.pinCache).toEqual([]);
+});
+
+test("descriptor normalization rejects cycles and retains unsupported descriptors for JSON validation", () => {
+  const field: Field<{}> = { type: CommonDataType.Object, properties: {} };
+  const schema = Commutator.initialize()
+    .defineEvent("start", { pinsOut: { value: field }, execPinsOut: {} }).createSchema();
+  schema.createEvent("start");
+  const worker = schema.createWorker();
+  field.properties.self = field;
+  expect(() => worker.extract()).toThrow("cyclic field");
+  delete field.properties.self;
+  Object.defineProperty(field, "name", { enumerable: true, configurable: true, get() { throw new Error("getter executed"); } });
+  expect(() => worker.extract()).toThrow("accessor");
+  delete field.name;
+  Object.defineProperty(field, "hidden", { value: undefined });
+  expect(() => worker.extract()).toThrow("hidden property");
 });
