@@ -18,8 +18,8 @@ do not change the benchmarked production sources.
 | Branch / statement coverage | NOT_REPORTED by Bun LCOV |
 | Existing flow-control coverage gap | 33.33% functions / 61.80% lines; unrelated to this change |
 
-The release suite guard is `1794049138412-24076.json` (168.4 MiB observed peak,
-2.08 seconds). Coverage does not establish an all-metric/all-file 80% gate:
+The release suite took 2.08 seconds. Its guard record is
+`1794049138412-24076.json` (168.4 MiB observed peak; 2.29 seconds including monitoring). Coverage does not establish an all-metric/all-file 80% gate:
 missing metrics and the existing flow-control gap remain explicit. The browser
 bundle resolves the portable hashing/serialization dependencies without Node
 runtime imports in the library.

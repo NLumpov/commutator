@@ -1050,7 +1050,8 @@
       "exitCode": 0,
       "guard": "1794049138412-24076.json",
       "peakMiB": 168.4,
-      "durationSeconds": 2.08
+      "durationSeconds": 2.08,
+      "guardDurationSeconds": 2.293
     },
     "typecheckExitCode": 0,
     "lintExitCode": 0,
