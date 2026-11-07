@@ -204,7 +204,8 @@ schemas/workers. Все `define` сохраняют настройку; `host.in
 Один trigger — один счётчик для всех его Event instances и параллельных ветвей.
 Каждый вход в Function резервирует шаг до чтения входов. Ровно `maxSteps` входов
 допустимы, следующий фиксирует `STEP_LIMIT`; перехват ошибки не сбрасывает бюджет.
-Конкурентные trigger имеют независимые счётчики и прежние общие pin/meta cache.
+Конкурентный trigger одного Worker отклоняется с WORKER_BUSY; последовательные
+успешные trigger имеют независимые счётчики и общие pin/meta cache.
 Без настроенного положительного safe integer цикл отклоняется с `MAX_STEPS_REQUIRED`;
 невалидный заданный лимит — `INVALID_MAX_STEPS` при конфигурации.
 
@@ -568,15 +569,27 @@ interface SchemaSnapshot {
 
 ```typescript
 interface WorkerSnapshot {
+  schemaFingerprint: string; // Граф, типы, config и порядок значимых массивов
   pinCache: { uuid: string; cache: any }[]; // Кеш значений пинов
   metaCache: { uuid: string; cache: any }[]; // Кеш метаданных нод
 }
 ```
 
-Это только кеш, не checkpoint запуска. Счётчик, Promise, ожидания и продолжения
-callback не сохраняются. Новый trigger после restore начинает новый запуск.
-Durable recovery, дедупликация completion, stop/reconcile и поколения Join этим
-API не реализованы. Обычный fan-in не является Join.
+Snapshot содержит независимый конечный JSON; старый формат, неверные записи,
+дубликаты, чужой граф и не-JSON значения отклоняются целиком. Restore не запускает
+callbacks. Fingerprint учитывает живой граф, но не идентичность JS callbacks.
+Версии definitions закрепляет внешний consumer. Schema остаётся изменяемой.
+Input trigger копируется на API-границе; baseline и extract не раскрывают кеши.
+
+Snapshot сохраняется только после успешного полного trigger. Во время trigger
+extract и второй trigger отклоняются с WORKER_BUSY. После ошибки и drain детей
+Worker терминален: trigger/extract дают WORKER_FAILED. Закрытый exec даёт
+EXEC_CONTEXT_CLOSED без мутаций. Для retry нужен новый Worker из baseline.
+При crash в A → await exec(B) → tail повторяется весь trigger, а ранее сохранённые
+проходы не повторяются. JS-стек, потраченные при crash шаги и гонки не сохраняются.
+Внешний Flow отвечает за версии, лимиты попыток, атомарный commit, operationId,
+дедупликацию эффектов, receipts и stale-owner/unknown-outcome. Тестовый consumer
+находится в flow-consumer.test.ts. Обычный fan-in не является Join.
 
 **Использование:**
 
