@@ -119,22 +119,22 @@ const router = schema.createFunction("configurableRouter", { routeCount: 2 });
 console.log("✅ Пример 8: Callbacks конфигурации");
 
 // Проверка начальных пинов
-const initialPins = schema.getNodePins(router.instance.uuid);
+const initialPins = schema.getNodePins(router.uuid);
 console.log("\nНачальные пины router (routeCount: 2):");
 console.log("  ", initialPins.map((p) => p.name).join(", "));
 
 // Изменение конфигурации (вызовет onConfigChange)
-schema.updateNodeConfig(router.instance.uuid, { routeCount: 4 });
+schema.updateNodeConfig(router.uuid, { routeCount: 4 });
 
 // Проверка обновленных пинов
-const updatedPins = schema.getNodePins(router.instance.uuid);
+const updatedPins = schema.getNodePins(router.uuid);
 console.log("\nОбновлённые пины router (routeCount: 4):");
 console.log("  ", updatedPins.map((p) => p.name).join(", "));
 
 // Пример с динамическими входными пинами
 const dynamicInputs = schema.createPureFunction("dynamicInputs", { inputCount: 2 });
 
-const initialInputPins = schema.getNodePins(dynamicInputs.instance.uuid);
+const initialInputPins = schema.getNodePins(dynamicInputs.uuid);
 console.log("\nНачальные входные пины dynamicInputs (inputCount: 2):");
 console.log(
   "  ",
@@ -145,9 +145,9 @@ console.log(
 );
 
 // Увеличение количества входов
-schema.updateNodeConfig(dynamicInputs.instance.uuid, { inputCount: 5 });
+schema.updateNodeConfig(dynamicInputs.uuid, { inputCount: 5 });
 
-const finalInputPins = schema.getNodePins(dynamicInputs.instance.uuid);
+const finalInputPins = schema.getNodePins(dynamicInputs.uuid);
 console.log("\nФинальные входные пины dynamicInputs (inputCount: 5):");
 console.log(
   "  ",

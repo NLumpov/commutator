@@ -53,25 +53,25 @@ function createDoNGraph(onTail: () => Promise<void> = async () => {}) {
 
   enter.wire("n", doN, "n");
   schema.wire({
-    fromPinUuid: schema.getPin(enter.instance.uuid, "next").uuid,
-    toPinUuid: pin(doN.instance.uuid, "", PinInstanceType.InputExec).uuid,
+    fromPinUuid: schema.getPin(enter.uuid, "next").uuid,
+    toPinUuid: pin(doN.uuid, "", PinInstanceType.InputExec).uuid,
   });
   reset.wire("next", doN, "Reset");
   schema.wire({
-    fromPinUuid: pin(doN.instance.uuid, "", PinInstanceType.OutputExec).uuid,
-    toPinUuid: schema.getPin(capture.instance.uuid, "start").uuid,
+    fromPinUuid: pin(doN.uuid, "", PinInstanceType.OutputExec).uuid,
+    toPinUuid: schema.getPin(capture.uuid, "start").uuid,
   });
   doN.wire("Counter", capture, "counter");
   capture.wire("next", tail, "start");
 
-  const counterPin = pin(doN.instance.uuid, "Counter", PinInstanceType.Output);
+  const counterPin = pin(doN.uuid, "Counter", PinInstanceType.Output);
   const worker = schema.createWorker();
 
   function state() {
     const snapshot = worker.extract();
     return {
       counter: snapshot.pinCache.find((entry) => entry.uuid === counterPin.uuid)?.cache,
-      meta: snapshot.metaCache.find((entry) => entry.uuid === doN.instance.uuid)?.cache,
+      meta: snapshot.metaCache.find((entry) => entry.uuid === doN.uuid)?.cache,
     };
   }
 

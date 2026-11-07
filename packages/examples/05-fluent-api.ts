@@ -72,12 +72,12 @@ const log = schema.createFunction("log");
 // Использование Fluent API для подключения пинов
 onClick.wire("x", add, "a").wire("y", add, "b").wire("next", log, "start");
 schema.wire({
-  from: { node: add.instance.uuid, pin: "result" },
-  to: { node: multiply.instance.uuid, pin: "value" },
+  from: { node: add.uuid, pin: "result" },
+  to: { node: multiply.uuid, pin: "value" },
 });
 schema.wire({
-  from: { node: multiply.instance.uuid, pin: "result" },
-  to: { node: log.instance.uuid, pin: "value" },
+  from: { node: multiply.uuid, pin: "result" },
+  to: { node: log.uuid, pin: "value" },
 });
 
 console.log("✅ Пример 5: Fluent API");

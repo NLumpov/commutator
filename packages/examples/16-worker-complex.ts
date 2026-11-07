@@ -223,40 +223,40 @@ onPurchase.wire("process", inventory, "update");
 // productId передаётся через конфигурацию productRef при каждом вызове
 // Для упрощения используем один productRef с фиксированным productId
 schema.wire({
-  from: { node: onPurchase.instance.uuid, pin: "productId" },
-  to: { node: inventory.instance.uuid, pin: "productId" },
+  from: { node: onPurchase.uuid, pin: "productId" },
+  to: { node: inventory.uuid, pin: "productId" },
 });
 schema.wire({
-  from: { node: onPurchase.instance.uuid, pin: "quantity" },
-  to: { node: inventory.instance.uuid, pin: "quantity" },
+  from: { node: onPurchase.uuid, pin: "quantity" },
+  to: { node: inventory.uuid, pin: "quantity" },
 });
 schema.wire({
-  from: { node: productRef.instance.uuid, pin: "stock" },
-  to: { node: inventory.instance.uuid, pin: "initialStock" },
+  from: { node: productRef.uuid, pin: "stock" },
+  to: { node: inventory.uuid, pin: "initialStock" },
 });
 schema.wire({
-  from: { node: productRef.instance.uuid, pin: "product" },
-  to: { node: extractPrice.instance.uuid, pin: "product" },
+  from: { node: productRef.uuid, pin: "product" },
+  to: { node: extractPrice.uuid, pin: "product" },
 });
 schema.wire({
-  from: { node: extractPrice.instance.uuid, pin: "price" },
-  to: { node: calculateTotal.instance.uuid, pin: "price" },
+  from: { node: extractPrice.uuid, pin: "price" },
+  to: { node: calculateTotal.uuid, pin: "price" },
 });
 schema.wire({
-  from: { node: onPurchase.instance.uuid, pin: "quantity" },
-  to: { node: calculateTotal.instance.uuid, pin: "quantity" },
+  from: { node: onPurchase.uuid, pin: "quantity" },
+  to: { node: calculateTotal.uuid, pin: "quantity" },
 });
 schema.wire({
-  from: { node: calculateTotal.instance.uuid, pin: "total" },
-  to: { node: processPayment.instance.uuid, pin: "total" },
+  from: { node: calculateTotal.uuid, pin: "total" },
+  to: { node: processPayment.uuid, pin: "total" },
 });
 inventory.wire("success", processPayment, "start");
 inventory.wire("outOfStock", logOutOfStock, "start");
 processPayment.wire("success", logSuccess, "start");
 
 // Настройка сообщений для логирования через установку значений по умолчанию для пинов
-const logSuccessMessagePin = schema.getPin(logSuccess.instance.uuid, "message");
-const logOutOfStockMessagePin = schema.getPin(logOutOfStock.instance.uuid, "message");
+const logSuccessMessagePin = schema.getPin(logSuccess.uuid, "message");
+const logOutOfStockMessagePin = schema.getPin(logOutOfStock.uuid, "message");
 schema.setPinDefaultValue(logSuccessMessagePin.uuid, "Покупка успешно завершена!");
 schema.setPinDefaultValue(logOutOfStockMessagePin.uuid, "Товара нет в наличии!");
 

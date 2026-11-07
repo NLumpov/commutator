@@ -72,31 +72,31 @@ const multiply = schema.createPureFunction("multiply");
 const log = schema.createFunction("log");
 
 // Позиционирование нод в виде графа (слева направо)
-schema.moveNode(onClick.instance.uuid, 0, 0);
-schema.moveNode(add.instance.uuid, 200, 0);
-schema.moveNode(multiply.instance.uuid, 400, 0);
-schema.moveNode(log.instance.uuid, 600, 0);
+schema.moveNode(onClick.uuid, 0, 0);
+schema.moveNode(add.uuid, 200, 0);
+schema.moveNode(multiply.uuid, 400, 0);
+schema.moveNode(log.uuid, 600, 0);
 
 // Создание связей
 schema.wire({
-  from: { node: onClick.instance.uuid, pin: "x" },
-  to: { node: add.instance.uuid, pin: "a" },
+  from: { node: onClick.uuid, pin: "x" },
+  to: { node: add.uuid, pin: "a" },
 });
 schema.wire({
-  from: { node: onClick.instance.uuid, pin: "y" },
-  to: { node: add.instance.uuid, pin: "b" },
+  from: { node: onClick.uuid, pin: "y" },
+  to: { node: add.uuid, pin: "b" },
 });
 schema.wire({
-  from: { node: add.instance.uuid, pin: "result" },
-  to: { node: multiply.instance.uuid, pin: "value" },
+  from: { node: add.uuid, pin: "result" },
+  to: { node: multiply.uuid, pin: "value" },
 });
 schema.wire({
-  from: { node: multiply.instance.uuid, pin: "result" },
-  to: { node: log.instance.uuid, pin: "value" },
+  from: { node: multiply.uuid, pin: "result" },
+  to: { node: log.uuid, pin: "value" },
 });
 schema.wire({
-  from: { node: onClick.instance.uuid, pin: "next" },
-  to: { node: log.instance.uuid, pin: "start" },
+  from: { node: onClick.uuid, pin: "next" },
+  to: { node: log.uuid, pin: "start" },
 });
 
 console.log("✅ Пример 11: Позиционирование нод");
@@ -109,10 +109,10 @@ snapshot.nodes.forEach((node) => {
 });
 
 // Перемещение нод (например, для визуального редактора)
-schema.moveNode(onClick.instance.uuid, 100, 100);
-schema.moveNode(add.instance.uuid, 300, 100);
-schema.moveNode(multiply.instance.uuid, 500, 100);
-schema.moveNode(log.instance.uuid, 700, 100);
+schema.moveNode(onClick.uuid, 100, 100);
+schema.moveNode(add.uuid, 300, 100);
+schema.moveNode(multiply.uuid, 500, 100);
+schema.moveNode(log.uuid, 700, 100);
 
 console.log("\nПеремещение нод:");
 console.log("  onClick: (0, 0) -> (100, 100)");

@@ -87,15 +87,15 @@ const read = schema.createFunction("read");
 // Подключение
 onTick.wire("next", store, "start");
 schema.wire({
-  from: { node: onTick.instance.uuid, pin: "value" },
-  to: { node: multiply.instance.uuid, pin: "value" },
+  from: { node: onTick.uuid, pin: "value" },
+  to: { node: multiply.uuid, pin: "value" },
 });
 // Устанавливаем factor = 2
-const multiplyFactorPin = schema.getPin(multiply.instance.uuid, "factor");
+const multiplyFactorPin = schema.getPin(multiply.uuid, "factor");
 schema.setPinDefaultValue(multiplyFactorPin.uuid, 2);
 schema.wire({
-  from: { node: multiply.instance.uuid, pin: "result" },
-  to: { node: store.instance.uuid, pin: "value" },
+  from: { node: multiply.uuid, pin: "result" },
+  to: { node: store.uuid, pin: "value" },
 });
 // read будет читать из кеша store через exec-связь
 // Значение будет автоматически взято из кеша при выполнении

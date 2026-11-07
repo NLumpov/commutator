@@ -41,18 +41,18 @@ function createGateGraph(onTail: () => Promise<void> = async () => {}) {
   const tail = schema.createFunction("Tail");
 
   function gatePin(type: PinInstanceType) {
-    const pin = schema.getNodePins(gate.instance.uuid).find((p) => p.name === "" && p.type === type);
+    const pin = schema.getNodePins(gate.uuid).find((p) => p.name === "" && p.type === type);
     if (!pin) throw new Error(`Missing ${type} pin on Gate`);
     return pin;
   }
 
   schema.wire({
-    fromPinUuid: schema.getPin(tick.instance.uuid, "next").uuid,
+    fromPinUuid: schema.getPin(tick.uuid, "next").uuid,
     toPinUuid: gatePin(PinInstanceType.InputExec).uuid,
   });
   schema.wire({
     fromPinUuid: gatePin(PinInstanceType.OutputExec).uuid,
-    toPinUuid: schema.getPin(capture.instance.uuid, "start").uuid,
+    toPinUuid: schema.getPin(capture.uuid, "start").uuid,
   });
   schema.createEvent("Open").wire("next", gate, "Open");
   schema.createEvent("Close").wire("next", gate, "Close");
@@ -85,7 +85,7 @@ describe("Gate", () => {
     await worker.triggerEvent("Tick", {});
 
     expect(hits).toEqual([]);
-    expect(worker.extract().metaCache).toEqual([{ uuid: gate.instance.uuid, cache: false }]);
+    expect(worker.extract().metaCache).toEqual([{ uuid: gate.uuid, cache: false }]);
   });
 
   test("an open Gate forwards each sequential tick exactly once", async () => {
@@ -145,7 +145,7 @@ describe("Gate", () => {
 
     for (const [event, expected] of transitions) {
       await worker.triggerEvent(event, {});
-      expect(worker.extract().metaCache).toEqual([{ uuid: gate.instance.uuid, cache: expected }]);
+      expect(worker.extract().metaCache).toEqual([{ uuid: gate.uuid, cache: expected }]);
       expect(hits).toEqual([]);
     }
   });
@@ -157,7 +157,7 @@ describe("Gate", () => {
 
       await worker.triggerEvent(isOpen ? "Open" : "Close", {});
       const snapshot = worker.extract();
-      expect(snapshot.metaCache).toEqual([{ uuid: gate.instance.uuid, cache: isOpen }]);
+      expect(snapshot.metaCache).toEqual([{ uuid: gate.uuid, cache: isOpen }]);
 
       const restoredSchema = commutator.createSchema(schema.extract());
       const restored = restoredSchema.createWorker(snapshot);
@@ -165,7 +165,7 @@ describe("Gate", () => {
       await restored.triggerEvent("Tick", {});
 
       expect(hits).toEqual(isOpen ? ["capture"] : []);
-      expect(restored.extract().metaCache.find((entry) => entry.uuid === gate.instance.uuid)?.cache).toBe(
+      expect(restored.extract().metaCache.find((entry) => entry.uuid === gate.uuid)?.cache).toBe(
         isOpen,
       );
     });

@@ -80,9 +80,9 @@ const add = schema.createPureFunction("add");
 const router = schema.createFunction("router");
 
 // Получение конкретного пина
-const xPin = schema.getPin(onClick.instance.uuid, "x");
-const yPin = schema.getPin(onClick.instance.uuid, "y");
-const resultPin = schema.getPin(add.instance.uuid, "result");
+const xPin = schema.getPin(onClick.uuid, "x");
+const yPin = schema.getPin(onClick.uuid, "y");
+const resultPin = schema.getPin(add.uuid, "result");
 
 console.log("✅ Пример 12: Управление пинами");
 console.log("\nПолучение конкретных пинов:");
@@ -93,9 +93,9 @@ console.log(
 );
 
 // Получение всех пинов ноды
-const onClickPins = schema.getNodePins(onClick.instance.uuid);
-const addPins = schema.getNodePins(add.instance.uuid);
-const routerPins = schema.getNodePins(router.instance.uuid);
+const onClickPins = schema.getNodePins(onClick.uuid);
+const addPins = schema.getNodePins(add.uuid);
+const routerPins = schema.getNodePins(router.uuid);
 
 console.log("\nВсе пины нод:");
 console.log("  onClick:", onClickPins.map((p) => `${p.name} (${p.type})`).join(", "));
@@ -120,17 +120,17 @@ console.log("  router exec out pins:", routerExecOutPins.map((p) => p.name).join
 
 // Использование пинов для создания связей
 schema.wire({
-  from: { node: onClick.instance.uuid, pin: "x" },
-  to: { node: add.instance.uuid, pin: "a" },
+  from: { node: onClick.uuid, pin: "x" },
+  to: { node: add.uuid, pin: "a" },
 });
 schema.wire({
-  from: { node: onClick.instance.uuid, pin: "y" },
-  to: { node: add.instance.uuid, pin: "b" },
+  from: { node: onClick.uuid, pin: "y" },
+  to: { node: add.uuid, pin: "b" },
 });
 
 // Работа с exec-пинами
 const onClickNextExecPin = onClickExecPins.find((p) => p.name === "next");
-const routerStartExecPin = schema.getPin(router.instance.uuid, "start");
+const routerStartExecPin = schema.getPin(router.uuid, "start");
 
 if (onClickNextExecPin && routerStartExecPin) {
   schema.wire({

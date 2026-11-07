@@ -19,7 +19,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const add = schema.createPureFunction("add");
-      const pins = schema.getNodePins(add.instance.uuid);
+      const pins = schema.getNodePins(add.uuid);
 
       const pinA = pins.find((p) => p.name === "a" && p.type === PinInstanceType.Input);
       const pinB = pins.find((p) => p.name === "b" && p.type === PinInstanceType.Input);
@@ -42,7 +42,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const event = schema.createEvent("onClick");
-      const pins = schema.getNodePins(event.instance.uuid);
+      const pins = schema.getNodePins(event.uuid);
 
       const execPin = pins.find((p) => p.name === "next" && p.type === PinInstanceType.OutputExec);
       expect(execPin?.dataType).toBeNull();
@@ -61,9 +61,9 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const test = schema.createPureFunction("test");
-      schema.addPinIn(test.instance.uuid);
+      schema.addPinIn(test.uuid);
 
-      const pins = schema.getNodePins(test.instance.uuid);
+      const pins = schema.getNodePins(test.uuid);
       const dynamicPin = pins.find((p) => p.name === "dynamicPin");
       expect(dynamicPin?.dataType?.type).toBe(CommonDataType.Any);
     });
@@ -166,7 +166,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const test = schema.createPureFunction("test");
-      const pins = schema.getNodePins(test.instance.uuid);
+      const pins = schema.getNodePins(test.uuid);
 
       const valuePin = pins.find((p) => p.name === "value");
       expect(valuePin?.dataType?.type).toBe(CommonDataType.String);
@@ -189,7 +189,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const test = schema.createPureFunction("test");
-      const pins = schema.getNodePins(test.instance.uuid);
+      const pins = schema.getNodePins(test.uuid);
 
       const oldPin = pins.find((p) => p.name === "oldName");
       const newPin = pins.find((p) => p.name === "newName");
@@ -219,7 +219,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const test = schema.createPureFunction("test");
-      const pins = schema.getNodePins(test.instance.uuid);
+      const pins = schema.getNodePins(test.uuid);
 
       const newPin = pins.find((p) => p.name === "newName");
       expect(newPin).toBeDefined();
@@ -277,7 +277,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const test = schema.createPureFunction("test");
-      const pins = schema.getNodePins(test.instance.uuid);
+      const pins = schema.getNodePins(test.uuid);
 
       const newPin = pins.find((p) => p.name === "newPin");
       expect(newPin).toBeDefined();
@@ -298,7 +298,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const test = schema.createPureFunction("test");
-      const pins = schema.getNodePins(test.instance.uuid);
+      const pins = schema.getNodePins(test.uuid);
 
       const outputPin = pins.find((p) => p.name === "output");
       expect(outputPin).toBeDefined();
@@ -363,10 +363,10 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const add = schema.createPureFunction("add");
 
       const eventXPin = schema
-        .getNodePins(event.instance.uuid)
+        .getNodePins(event.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const addAPin = schema
-        .getNodePins(add.instance.uuid)
+        .getNodePins(add.uuid)
         .find((p) => p.name === "a" && p.type === PinInstanceType.Input);
 
       if (eventXPin && addAPin) {
@@ -406,7 +406,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const test = schema.createPureFunction("test");
-      const pins = schema.getNodePins(test.instance.uuid);
+      const pins = schema.getNodePins(test.uuid);
 
       // Лишний пин должен быть удален
       const extraPin = pins.find((p) => p.name === "extraPin");
@@ -444,7 +444,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const test = schema.createPureFunction("test");
-      const pins = schema.getNodePins(test.instance.uuid);
+      const pins = schema.getNodePins(test.uuid);
 
       const pin1 = pins.find((p) => p.name === "pin1");
       const pin2 = pins.find((p) => p.name === "pin2");
@@ -471,7 +471,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const test = schema.createPureFunction("test");
-      const pins = schema.getNodePins(test.instance.uuid);
+      const pins = schema.getNodePins(test.uuid);
 
       // Пин должен остаться, т.к. он есть в конфигурации
       const pin1 = pins.find((p) => p.name === "pin1");
@@ -503,7 +503,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
 
       const schema = commutator.createSchema();
       const test = schema.createPureFunction("test");
-      const pins = schema.getNodePins(test.instance.uuid);
+      const pins = schema.getNodePins(test.uuid);
 
       const pin1 = pins.find((p) => p.name === "pin1" && p.dataType?.type === CommonDataType.Number);
       expect(pin1).toBeDefined();
@@ -576,10 +576,10 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const test = schema.createPureFunction("test");
 
       const eventXPin = schema
-        .getNodePins(event.instance.uuid)
+        .getNodePins(event.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const testValuePin = schema
-        .getNodePins(test.instance.uuid)
+        .getNodePins(test.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       if (eventXPin && testValuePin) {
@@ -587,7 +587,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       }
 
       // Проверяем через callback после создания связи
-      const testPins = schema.getNodePins(test.instance.uuid);
+      const testPins = schema.getNodePins(test.uuid);
       const valuePin = testPins.find((p) => p.name === "value");
       expect(valuePin).toBeDefined();
     });
@@ -613,10 +613,10 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const test = schema.createPureFunction("test");
 
       const eventXPin = schema
-        .getNodePins(event.instance.uuid)
+        .getNodePins(event.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const testValuePin = schema
-        .getNodePins(test.instance.uuid)
+        .getNodePins(test.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       if (eventXPin && testValuePin) {
@@ -628,7 +628,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
           nodeConfig.onConfigChange({
             config: undefined,
             apis: {},
-            actions: schema["createNodeCallbackActions"](test.instance.uuid, nodeConfig),
+            actions: schema["createNodeCallbackActions"](test.uuid, nodeConfig),
           });
         }
       }
@@ -681,7 +681,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       expect(callbackCallCount).toBe(1);
       expect(lastConfig).toEqual({ value: 10 });
 
-      schema.updateNodeConfig(test.instance.uuid, { value: 20 });
+      schema.updateNodeConfig(test.uuid, { value: 20 });
 
       expect(callbackCallCount).toBe(2);
       expect(lastConfig).toEqual({ value: 20 });
@@ -706,7 +706,7 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const test = schema.createFunction("test", { value: 10 });
 
       expect(() => {
-        schema.updateNodeConfig(test.instance.uuid, { value: "invalid" });
+        schema.updateNodeConfig(test.uuid, { value: "invalid" });
       }).toThrow(CommutatorError);
     });
 
@@ -789,10 +789,10 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const add = schema.createPureFunction("add", { offset: 5 });
       const log = schema.createFunction("log", { prefix: "test" });
 
-      schema.updateNodeConfig(event.instance.uuid, { x: 2 });
-      schema.updateNodeConfig(ref.instance.uuid, { userId: "456" });
-      schema.updateNodeConfig(add.instance.uuid, { offset: 10 });
-      schema.updateNodeConfig(log.instance.uuid, { prefix: "updated" });
+      schema.updateNodeConfig(event.uuid, { x: 2 });
+      schema.updateNodeConfig(ref.uuid, { userId: "456" });
+      schema.updateNodeConfig(add.uuid, { offset: 10 });
+      schema.updateNodeConfig(log.uuid, { prefix: "updated" });
 
       expect(eventConfig).toEqual({ x: 2 });
       expect(refConfig).toEqual({ userId: "456" });
@@ -826,14 +826,14 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const test = schema1.createPureFunction("test");
 
       // Проверяем, что тип изменился
-      const pins1 = schema1.getNodePins(test.instance.uuid);
+      const pins1 = schema1.getNodePins(test.uuid);
       const valuePin1 = pins1.find((p) => p.name === "value");
       expect(valuePin1?.dataType?.type).toBe(CommonDataType.String);
 
       const snapshot = schema1.extract();
       const schema2 = commutator.createSchema(snapshot);
 
-      const pins2 = schema2.getNodePins(test.instance.uuid);
+      const pins2 = schema2.getNodePins(test.uuid);
       const valuePin2 = pins2.find((p) => p.name === "value");
       const resultPin2 = pins2.find((p) => p.name === "result");
 
@@ -872,10 +872,10 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const test = schema.createPureFunction("test");
 
       const eventXPin = schema
-        .getNodePins(event.instance.uuid)
+        .getNodePins(event.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const testValuePin = schema
-        .getNodePins(test.instance.uuid)
+        .getNodePins(test.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       if (eventXPin && testValuePin) {
@@ -914,10 +914,10 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const test = schema.createPureFunction("test");
 
       const eventXPin = schema
-        .getNodePins(event.instance.uuid)
+        .getNodePins(event.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const testValuePin = schema
-        .getNodePins(test.instance.uuid)
+        .getNodePins(test.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       if (eventXPin && testValuePin) {
@@ -949,10 +949,10 @@ describe("CommutatorSchema - Dynamic Pins", () => {
       const test = schema.createPureFunction("test");
 
       const eventXPin = schema
-        .getNodePins(event.instance.uuid)
+        .getNodePins(event.uuid)
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
       const testValuePin = schema
-        .getNodePins(test.instance.uuid)
+        .getNodePins(test.uuid)
         .find((p) => p.name === "value" && p.type === PinInstanceType.Input);
 
       if (eventXPin && testValuePin) {

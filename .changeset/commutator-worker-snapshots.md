@@ -24,6 +24,7 @@ cache membership and value types without serializing or comparing the graph.
 
 Replace positional initialization with one optional object containing dataTypes,
 events, refs, pureFunctions, functions, and apis. Reject extra arguments and unknown
-option keys. Fluent builders expose node properties only through instance; wire()
-continues to connect builders or node UUIDs. Remove forwarding aliases and update
-all repository consumers and examples to the single current API.
+option keys. Created nodes expose uuid, type, name, config, x, y and wire() on one
+object. Store node fields directly with no nested public instance or forwarding
+aliases; wire() connects nodes or node UUIDs. Repository consumers and examples
+use the flat node API.

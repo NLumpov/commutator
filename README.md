@@ -60,10 +60,10 @@ const add = schema.createPureFunction("add");
 
 // Создание связей между нодами
 const eventPin = schema
-  .getNodePins(event.instance.uuid)
+  .getNodePins(event.uuid)
   .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
 const addPin = schema
-  .getNodePins(add.instance.uuid)
+  .getNodePins(add.uuid)
   .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
 schema.wire({ fromPinUuid: eventPin!.uuid, toPinUuid: addPin!.uuid });
@@ -137,8 +137,9 @@ await worker.triggerEvent("start", payload);
 `initialize({ dataTypes, events, refs, pureFunctions, functions, apis })` registers
 definitions in bulk with inferred types; each section is optional and `initialize()`
 creates an empty registry. Positional arguments and unknown option keys are rejected.
-The `create*` methods return a builder with `wire()` and `instance`; node properties
-are accessed as `node.instance.uuid`, `node.instance.config`, etc.
+The `create*` methods return node fields and `wire()` on one object:
+`node.uuid`, `node.config`, `node.wire("next", otherNode, "in")`.
+To change the stored graph, use `schema.moveNode()` and `schema.updateNodeConfig()`.
 `configure({ maxSteps })` returns a new instance with the same registry types.
 It can be used before or after definitions without changing the original instance
 or existing schemas/workers. Definitions retain the limit;

@@ -75,12 +75,12 @@ const log = schema.createFunction("log");
 
 // Подключение data-пинов по именам.
 schema.wire({
-  from: { node: multiply.instance.uuid, pin: "result" },
-  to: { node: log.instance.uuid, pin: "value" },
+  from: { node: multiply.uuid, pin: "result" },
+  to: { node: log.uuid, pin: "value" },
 });
 // Подключение exec-пинов по UUID.
-const onClickExecPin = schema.getPin(onClick.instance.uuid, "next");
-const logExecPin = schema.getPin(log.instance.uuid, "start");
+const onClickExecPin = schema.getPin(onClick.uuid, "next");
+const logExecPin = schema.getPin(log.uuid, "start");
 
 schema.wire({
   fromPinUuid: onClickExecPin.uuid,
@@ -97,8 +97,8 @@ console.log("\nОтключение связей:");
 schema.unwire({ fromPinUuid: onClickExecPin.uuid, toPinUuid: logExecPin.uuid });
 console.log("  - onClick.next -> log.start (отключено)");
 schema.unwire({
-  from: { node: multiply.instance.uuid, pin: "result" },
-  to: { node: log.instance.uuid, pin: "value" },
+  from: { node: multiply.uuid, pin: "result" },
+  to: { node: log.uuid, pin: "value" },
 });
 console.log("  - multiply.result -> log.value (отключено)");
 console.log("✅ Подключение и отключение пинов работает!");

@@ -64,8 +64,8 @@ const log = schema.createFunction("log");
 // Подключение пинов
 onClick.wire("x", add, "a").wire("y", add, "b").wire("next", log, "start");
 schema.wire({
-  from: { node: add.instance.uuid, pin: "result" },
-  to: { node: log.instance.uuid, pin: "value" },
+  from: { node: add.uuid, pin: "result" },
+  to: { node: log.uuid, pin: "value" },
 });
 
 // Создание воркера

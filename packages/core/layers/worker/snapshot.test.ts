@@ -98,8 +98,8 @@ test("Worker snapshots serialize cache values without traversing graph configura
   const config = Object.defineProperty({}, "value", {
     enumerable: true, get() { reads++; throw new Error("configuration must not be serialized"); },
   });
-  schema.updateNodeConfig(node.instance.uuid, config);
-  schema.setPinDefaultValue(schema.getPin(node.instance.uuid, "value").uuid, { value: undefined });
+  schema.updateNodeConfig(node.uuid, config);
+  schema.setPinDefaultValue(schema.getPin(node.uuid, "value").uuid, { value: undefined });
   expect(worker.extract()).toEqual(baseline);
   expect(schema.createWorker(baseline).extract()).toEqual(baseline);
   expect(reads).toBe(0);

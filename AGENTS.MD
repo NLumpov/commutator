@@ -142,8 +142,8 @@ event.wire("x", add, "a").wire("next", log, "");
 
 // Или через именованные параметры
 schema.wire({
-  from: { node: event.instance.uuid, pin: "y" },
-  to: { node: add.instance.uuid, pin: "b" },
+  from: { node: event.uuid, pin: "y" },
+  to: { node: add.uuid, pin: "b" },
 });
 
 // Создание воркера для выполнения
@@ -481,8 +481,8 @@ interface Wire {
 ```typescript
 // 1. Через именованные параметры
 schema.wire({
-  from: { node: event.instance.uuid, pin: "x" },
-  to: { node: add.instance.uuid, pin: "a" },
+  from: { node: event.uuid, pin: "x" },
+  to: { node: add.uuid, pin: "a" },
 });
 
 // 2. Через UUID пинов
@@ -620,7 +620,7 @@ const restoredWorker = restoredSchema.createWorker(workerSnapshot);
 
 Методы `createEvent`, `createRef`, `createPureFunction`, `createFunction` возвращают `FluentNodeBuilder`, который:
 
-1. Предоставляет свойства ноды через `instance`
+1. Предоставляет поля ноды напрямую: `uuid`, `type`, `name`, `config`, `x`, `y`
 2. Предоставляет метод `wire` для цепочечного подключения пинов
 
 ```typescript
@@ -632,9 +632,12 @@ const event = schema
   .wire("next", logNode, "");
 
 // Доступ к свойствам ноды
-console.log(event.instance.uuid); // UUID ноды
-console.log(event.instance.name); // "onClick"
+console.log(event.uuid); // UUID ноды
+console.log(event.name); // "onClick"
 ```
+
+Для изменения сохранённого графа используйте `schema.moveNode()` и
+`schema.updateNodeConfig()`; результат `create*` содержит поля на момент создания.
 
 ## Расширения (Extensions)
 
@@ -801,8 +804,8 @@ const log = schema.createFunction("log");
 event.wire("x", add, "a").wire("y", add, "b").wire("next", log, "");
 
 schema.wire({
-  from: { node: add.instance.uuid, pin: "result" },
-  to: { node: log.instance.uuid, pin: "message" },
+  from: { node: add.uuid, pin: "result" },
+  to: { node: log.uuid, pin: "message" },
 });
 
 // 5. Создание воркера и выполнение

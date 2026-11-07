@@ -48,7 +48,7 @@ describe("FlipFlop", () => {
     await worker.triggerEvent("Tick", {});
 
     expect(hits).toEqual(["Flip", "Flop", "Flip", "Flop"]);
-    expect(worker.extract().metaCache).toEqual([{ uuid: flipFlop.instance.uuid, cache: false }]);
+    expect(worker.extract().metaCache).toEqual([{ uuid: flipFlop.uuid, cache: false }]);
   });
 
   test("restoring true after Flip preserves Flop as the next branch", async () => {
@@ -57,7 +57,7 @@ describe("FlipFlop", () => {
 
     await worker.triggerEvent("Tick", {});
     const snapshot = worker.extract();
-    expect(snapshot.metaCache).toEqual([{ uuid: flipFlop.instance.uuid, cache: true }]);
+    expect(snapshot.metaCache).toEqual([{ uuid: flipFlop.uuid, cache: true }]);
 
     const restoredSchema = commutator.createSchema(schema.extract());
     const restored = restoredSchema.createWorker(snapshot);
@@ -75,7 +75,7 @@ describe("FlipFlop", () => {
     await worker.triggerEvent("Tick", {});
     await worker.triggerEvent("Tick", {});
     const snapshot = worker.extract();
-    expect(snapshot.metaCache).toEqual([{ uuid: flipFlop.instance.uuid, cache: false }]);
+    expect(snapshot.metaCache).toEqual([{ uuid: flipFlop.uuid, cache: false }]);
 
     const restoredSchema = commutator.createSchema(schema.extract());
     const restored = restoredSchema.createWorker(snapshot);
