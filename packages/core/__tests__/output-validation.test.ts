@@ -91,7 +91,7 @@ describe("Worker output validation", () => {
       setOutput({ first: 2, value: "invalid" });
       const worker = schema.createWorker();
       await expect(worker.triggerEvent("Tick", {})).rejects.toBeInstanceOf(CommutatorError);
-      expect(worker.extract()).toEqual({ pinCache: [], metaCache: [] });
+      expect(worker.extract()).toEqual({ ...schema.createWorker().extract(), pinCache: [], metaCache: [] });
       expect(seen).toEqual([]);
     });
   }
@@ -162,6 +162,7 @@ describe("Worker output validation", () => {
     await expect(worker.triggerEvent("Tick", {})).rejects.toThrow(CommutatorError);
     expect(seen).toEqual([{ first: 1, value: 7 }]);
     expect(worker.extract()).toEqual({
+      schemaFingerprint: schema.createWorker().extract().schemaFingerprint,
       pinCache: [
         { uuid: schema.getPin(source.uuid, "first").uuid, cache: 1 },
         { uuid: schema.getPin(source.uuid, "value").uuid, cache: 7 },
@@ -336,7 +337,7 @@ describe("Worker output validation", () => {
     output = {};
     await worker.triggerEvent("Tick", {});
     expect(seen.at(-1)).toEqual({ first: null, value: null });
-    expect(worker.extract()).toEqual({ pinCache: [], metaCache: [] });
+    expect(worker.extract()).toEqual({ ...schema.createWorker().extract(), pinCache: [], metaCache: [] });
   });
 
   test("Refs retain valid values, null and missing-value behavior", async () => {
@@ -377,6 +378,6 @@ describe("Worker output validation", () => {
       { first: 2, value: null },
       { first: null, value: null },
     ]);
-    expect(worker.extract()).toEqual({ pinCache: [], metaCache: [] });
+    expect(worker.extract()).toEqual({ ...schema.createWorker().extract(), pinCache: [], metaCache: [] });
   });
 });

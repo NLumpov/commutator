@@ -1,0 +1,101 @@
+import { expect, test } from "bun:test";
+import { CommonDataType, Commutator } from "../commutator";
+
+function fixture() {
+  let callbacks = 0;
+  const commutator = Commutator.initialize()
+    .defineEvent("start", {
+      pinsOut: { value: { type: CommonDataType.Any } },
+      execPinsOut: { next: null },
+    })
+    .defineFunction("count", {
+      pinsIn: {}, pinsOut: {}, execPinsIn: { in: null }, execPinsOut: {},
+      meta: { type: CommonDataType.Object, properties: { count: { type: CommonDataType.Number } } },
+      exec: async ({ meta, exec }) => {
+        callbacks++;
+        await exec({ pinsOut: {}, execPinOut: null, meta: { count: (meta?.count ?? 0) + 1 } });
+      },
+    });
+  const schema = commutator.createSchema();
+  schema.createEvent("start").wire("next", schema.createFunction("count"), "in");
+  return { schema, commutator, callbacks: () => callbacks };
+}
+
+test("snapshot JSON roundtrip restores without callbacks and separates nested data", async () => {
+  const { schema, commutator, callbacks } = fixture();
+  const worker = schema.createWorker();
+  await worker.triggerEvent("start", { value: { nested: [1] } });
+  const baseline = worker.extract();
+  expect(baseline).toHaveProperty("schemaFingerprint");
+  const restored = commutator.createSchema(schema.extract()).createWorker(JSON.parse(JSON.stringify(baseline)));
+  expect(callbacks()).toBe(1);
+  expect(restored.extract()).toEqual(baseline);
+  baseline.pinCache[0]!.cache.nested.push(2);
+  baseline.metaCache[0]!.cache.count = 99;
+  expect(worker.extract().pinCache[0]!.cache).toEqual({ nested: [1] });
+  const input = worker.extract();
+  const isolated = schema.createWorker(input);
+  input.pinCache[0]!.cache.nested.push(3);
+  const extracted = isolated.extract();
+  extracted.metaCache[0]!.cache.count = 100;
+  expect(isolated.extract()).toEqual(worker.extract());
+});
+
+test("rejects damaged, foreign, duplicate, non-JSON and invalid typed snapshot records", async () => {
+  const { schema } = fixture();
+  const worker = schema.createWorker();
+  await worker.triggerEvent("start", { value: { nested: [1] } });
+  const baseline = worker.extract();
+  const invalid = [
+    { pinCache: [], metaCache: [] },
+    { ...baseline, schemaFingerprint: "foreign" },
+    { ...baseline, extra: true },
+    { ...baseline, pinCache: [...baseline.pinCache, ...baseline.pinCache] },
+    { ...baseline, pinCache: [{ uuid: "unknown", cache: 1 }] },
+    { ...baseline, metaCache: [{ ...baseline.metaCache[0], cache: { count: "bad" } }] },
+  ];
+  const cycle: Record<string, unknown> = {};
+  cycle.self = cycle;
+  for (const cache of [NaN, Infinity, undefined, () => 1, Promise.resolve(1), cycle, new Date(), { a: undefined }, [, 1]]) {
+    invalid.push({ ...baseline, pinCache: [{ ...baseline.pinCache[0]!, cache }] });
+  }
+  for (const snapshot of invalid) expect(() => schema.createWorker(snapshot as never)).toThrow();
+  expect(() => fixture().schema.createWorker(baseline)).toThrow();
+});
+
+test("fingerprint observes live graph array order and config values without owning Schema data", () => {
+  const { schema, commutator } = fixture();
+  schema.createEvent("start");
+  const snapshot = schema.createWorker().extract();
+  const graph = schema.extract();
+  const reversed = commutator.createSchema({ ...graph, nodes: [...graph.nodes].reverse() });
+  expect(() => reversed.createWorker(snapshot)).toThrow("schema mismatch");
+  const reversedPins = commutator.createSchema({ ...graph, pinInstances: [...graph.pinInstances].reverse() });
+  expect(() => reversedPins.createWorker(snapshot)).toThrow("schema mismatch");
+  const worker = schema.createWorker();
+  const node = graph.nodes[0]!;
+  Object.assign(node, { config: { values: [1, 2] } });
+  const first = worker.extract();
+  Object.assign(node, { config: { values: [2, 1] } });
+  expect(worker.extract().schemaFingerprint).not.toBe(first.schemaFingerprint);
+  expect(() => schema.createWorker(first)).toThrow("schema mismatch");
+});
+
+test("extract rejects non-JSON cache values and restore checks cache ownership", async () => {
+  const { schema } = fixture();
+  const worker = schema.createWorker();
+  await worker.triggerEvent("start", { value: NaN });
+  expect(() => worker.extract()).toThrow("non-JSON");
+  const snapshot = schema.createWorker().extract();
+  const graph = schema.extract();
+  const execPin = graph.pinInstances.find((pin) => pin.dataType === null)!;
+  expect(() => schema.createWorker({ ...snapshot, pinCache: [{ uuid: execPin.uuid, cache: null }] })).toThrow();
+  const event = graph.nodes.find((node) => node.name === "start")!;
+  expect(() => schema.createWorker({ ...snapshot, metaCache: [{ uuid: event.uuid, cache: null }] })).toThrow();
+  const count = graph.nodes.find((node) => node.name === "count")!;
+  expect(() => schema.createWorker({ ...snapshot, metaCache: [
+    { uuid: count.uuid, cache: { count: 1 } }, { uuid: count.uuid, cache: { count: 2 } },
+  ] })).toThrow();
+  const getter = Object.defineProperty({}, "value", { enumerable: true, get() { throw new Error("must not run"); } });
+  expect(() => schema.createWorker({ ...snapshot, pinCache: [{ uuid: "missing", cache: getter }] })).toThrow("accessor");
+});

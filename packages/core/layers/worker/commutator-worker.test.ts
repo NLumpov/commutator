@@ -1407,7 +1407,7 @@ describe("CommutatorWorker", () => {
       expect(metaCache?.cache).toBe(2);
     });
 
-    test("should skip invalid cache entries in snapshot", async () => {
+    test("should reject invalid cache entries in snapshot", async () => {
       const commutator = Commutator.initialize().defineEvent("onClick", {
         pinsOut: { x: { type: CommonDataType.Number } },
         execPinsOut: { next: null },
@@ -1421,6 +1421,7 @@ describe("CommutatorWorker", () => {
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
 
       const invalidSnapshot: WorkerSnapshot = {
+        schemaFingerprint: schema.createWorker().extract().schemaFingerprint,
         pinCache: [
           { uuid: eventXOut!.uuid, cache: "invalid string instead of number" },
           { uuid: "non-existent-uuid", cache: 42 },
@@ -1428,8 +1429,7 @@ describe("CommutatorWorker", () => {
         metaCache: [],
       };
 
-      const worker = schema.createWorker(invalidSnapshot);
-      await expect(worker.triggerEvent("onClick", { x: 5 })).resolves.toBeUndefined();
+      expect(() => schema.createWorker(invalidSnapshot)).toThrow(CommutatorError);
     });
   });
 

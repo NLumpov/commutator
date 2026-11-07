@@ -18,6 +18,7 @@ import {
   type PinsRegistry,
   type WiresRegistry,
 } from "../schema";
+import { copyJson, readSnapshot, snapshotError } from "./snapshot-json";
 import type { WorkerSnapshot } from "./types";
 
 interface ExecutionRun {
@@ -54,47 +55,72 @@ export class CommutatorWorker<
     private wiresRegistry: WiresRegistry<DataTypes>,
     snapshot?: WorkerSnapshot,
   ) {
-    if (!snapshot) {
-      return;
+    if (snapshot === undefined) return;
+    const restored = this.validateSnapshot(snapshot);
+    this.pinCache = new Map(restored.pinCache.map(({ uuid, cache }) => [uuid, cache]));
+    this.metaCache = new Map(restored.metaCache.map(({ uuid, cache }) => [uuid, cache]));
+  }
+
+  private schemaFingerprint(): string {
+    // Canonical graph encoding is collision-free. Array order is execution-significant;
+    // callbacks/API implementations are deliberately outside this identity contract.
+    const nodes = this.nodesRegistry.getAllNodes().map((node) => ({
+      uuid: node.uuid,
+      name: node.name,
+      type: node.type,
+      ...(node.config === undefined ? {} : { config: node.config }),
+      meta: this.config.getNodeConfigByName(node.name)?.meta ?? null,
+    }));
+    const pins = this.pinsRegistry.getAllPins().map((pin) => ({
+      uuid: pin.uuid,
+      nodeUuid: pin.nodeUuid,
+      name: pin.name,
+      type: pin.type,
+      dataType: pin.dataType,
+      ...(pin.default === undefined ? {} : { default: pin.default }),
+    }));
+    return `graph-v1:${JSON.stringify(
+      copyJson({
+        nodes,
+        pins,
+        wires: this.wiresRegistry.getAllWires(),
+        dataTypes: this.config.dataTypes,
+      }),
+    )}`;
+  }
+
+  private validateSnapshot(input: unknown): WorkerSnapshot {
+    const snapshot = readSnapshot(input);
+    if (snapshot.schemaFingerprint !== this.schemaFingerprint()) snapshotError("schema mismatch");
+    for (const { uuid, cache } of snapshot.pinCache) {
+      const pin = this.pinsRegistry.getPinByUuid(uuid);
+      const node = pin && this.nodesRegistry.getNodeByUuid(pin.nodeUuid);
+      if (
+        !pin ||
+        pin.type !== PinInstanceType.Output ||
+        !pin.dataType ||
+        !node ||
+        (node.type !== NodeType.Event && node.type !== NodeType.Function) ||
+        !this.validator.validateFieldValue(pin.dataType, cache)
+      ) {
+        snapshotError(`invalid persistent pin ${uuid}`);
+      }
     }
-
-    for (const pinCache of snapshot.pinCache) {
-      const pinInstance = this.pinsRegistry.getPinByUuid(pinCache.uuid);
-
-      // Если пин по uuid не нашёлся или это exec-пин, то пропускаем кешированное значение
-      if (!pinInstance || pinInstance.dataType === null) {
-        continue;
+    for (const { uuid, cache } of snapshot.metaCache) {
+      const node = this.nodesRegistry.getNodeByUuid(uuid);
+      const config = node && this.config.getNodeConfigByName(node.name);
+      if (
+        !node ||
+        node.type !== NodeType.Function ||
+        !config ||
+        (config.meta === undefined
+          ? cache !== null
+          : !this.validator.validateFieldValue(config.meta, cache))
+      ) {
+        snapshotError(`invalid metadata ${uuid}`);
       }
-
-      // Если данные из кеша не соответствуют типу данных пина, то пропускаем кешированное значение
-      if (!this.validator.validateFieldValue(pinInstance.dataType, pinCache.cache)) {
-        continue;
-      }
-
-      this.pinCache.set(pinCache.uuid, pinCache.cache);
     }
-
-    for (const metaCache of snapshot.metaCache) {
-      const nodeInstance = this.nodesRegistry.getNodeByUuid(metaCache.uuid);
-
-      // Если нода по uuid не нашлась то пропускаем кешированное значение
-      if (!nodeInstance) {
-        continue;
-      }
-
-      const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
-
-      if (!nodeConfig) {
-        continue;
-      }
-
-      // Если данные из кеша не соответствуют типу метаданных ноды, то пропускаем кешированное значение
-      if (!this.validator.validateFieldValue(nodeConfig.meta, metaCache.cache)) {
-        continue;
-      }
-
-      this.metaCache.set(metaCache.uuid, metaCache.cache);
-    }
+    return snapshot;
   }
 
   public static initialize<
@@ -643,9 +669,10 @@ export class CommutatorWorker<
   }
 
   extract(): WorkerSnapshot {
-    return {
+    return this.validateSnapshot({
+      schemaFingerprint: this.schemaFingerprint(),
       pinCache: Array.from(this.pinCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
       metaCache: Array.from(this.metaCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
-    };
+    });
   }
 }

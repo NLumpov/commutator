@@ -158,7 +158,7 @@ describe("execution budgets", () => {
     await expect(restored.triggerEvent("start", {})).rejects.toHaveProperty("code", "STEP_LIMIT");
     expect(fixture.visits()).toBe(9);
     expect(restored.extract().metaCache.map((entry) => entry.cache)).toEqual([9]);
-    expect(Object.keys(restored.extract()).sort()).toEqual(["metaCache", "pinCache"]);
+    expect(Object.keys(restored.extract()).sort()).toEqual(["metaCache", "pinCache", "schemaFingerprint"]);
   });
 
   test("inherits the receiving instance's limit through every fluent operation and inject", async () => {
