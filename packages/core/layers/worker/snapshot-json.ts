@@ -14,15 +14,10 @@ export function snapshotError(message: string): never {
 }
 
 /** Copy finite JSON data, preserving aliases but rejecting cycles and implicit conversions. */
-export function copyJson(value: unknown, canonical = false): JsonValue {
-  return createJsonCopier(canonical)(value);
-}
-
-/** Share copies within one synchronous API call, never across live Schema changes. */
-export function createJsonCopier(canonical = false): (value: unknown) => JsonValue {
+export function copyJson(value: unknown): JsonValue {
   const ancestors = new Set<object>();
   const copies = new Map<object, JsonValue>();
-  return visit;
+  return visit(value);
 
   function visit(value: unknown): JsonValue {
     if (value === null || typeof value === "string" || typeof value === "boolean") return value;
@@ -56,11 +51,6 @@ export function createJsonCopier(canonical = false): (value: unknown) => JsonVal
       }
       const result: Record<string, JsonValue> = {};
       copies.set(value, result);
-      if (canonical) {
-        // Check before sorting: converting a Symbol to a string would throw first.
-        for (const key of keys) if (typeof key !== "string") snapshotError("symbol property");
-        keys.sort();
-      }
       for (const key of keys) {
         if (typeof key !== "string") return snapshotError("symbol property");
         const descriptor = Object.getOwnPropertyDescriptor(value, key);
@@ -95,12 +85,11 @@ export function readSnapshot(input: unknown): WorkerSnapshot {
   const snapshot = copyJson(input);
   if (
     !isRecord(snapshot) ||
-    Object.keys(snapshot).length !== 3 ||
-    typeof snapshot.schemaFingerprint !== "string" ||
+    Object.keys(snapshot).length !== 2 ||
     !Array.isArray(snapshot.pinCache) ||
     !Array.isArray(snapshot.metaCache)
   ) {
-    return snapshotError("expected schemaFingerprint, pinCache and metaCache");
+    return snapshotError("expected pinCache and metaCache");
   }
   function validateEntries(
     items: JsonValue[],
@@ -122,7 +111,6 @@ export function readSnapshot(input: unknown): WorkerSnapshot {
   validateEntries(snapshot.pinCache);
   validateEntries(snapshot.metaCache);
   return {
-    schemaFingerprint: snapshot.schemaFingerprint,
     pinCache: snapshot.pinCache,
     metaCache: snapshot.metaCache,
   };

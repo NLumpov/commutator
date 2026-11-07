@@ -1422,7 +1422,6 @@ describe("CommutatorWorker", () => {
         .find((p) => p.name === "x" && p.type === PinInstanceType.Output);
 
       const invalidSnapshot: WorkerSnapshot = {
-        schemaFingerprint: schema.createWorker().extract().schemaFingerprint,
         pinCache: [
           { uuid: eventXOut!.uuid, cache: "invalid string instead of number" },
           { uuid: "non-existent-uuid", cache: 42 },

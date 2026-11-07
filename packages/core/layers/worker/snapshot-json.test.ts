@@ -14,15 +14,13 @@ test("JSON copies preserve own keys without invoking inherited setters or protot
   });
   try {
     const input = JSON.parse('{"__proto__":{"safe":true},"constructor":1,"snapshotSetter":2,"snapshotReadonly":3}');
-    for (const canonical of [false, true]) {
-      const result = copyJson(input, canonical);
-      if (result === null || typeof result !== "object") throw new Error("object expected");
-      expect(result).toEqual(input);
-      expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
-      expect(Object.hasOwn(result, "__proto__")).toBe(true);
-      expect(Object.hasOwn(result, "snapshotSetter")).toBe(true);
-      expect(Object.hasOwn(result, "snapshotReadonly")).toBe(true);
-    }
+    const result = copyJson(input);
+    if (result === null || typeof result !== "object") throw new Error("object expected");
+    expect(result).toEqual(input);
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    expect(Object.hasOwn(result, "__proto__")).toBe(true);
+    expect(Object.hasOwn(result, "snapshotSetter")).toBe(true);
+    expect(Object.hasOwn(result, "snapshotReadonly")).toBe(true);
     expect(writes).toBe(0);
   } finally {
     Reflect.deleteProperty(Object.prototype, "snapshotSetter");
@@ -37,10 +35,8 @@ test("JSON copies preserve aliases and reject symbols, hidden keys and extended 
   if (copied === null || typeof copied !== "object" || Array.isArray(copied)) throw new Error("object expected");
   expect(copied.a).toBe(copied.b);
   expect(copied.a).not.toBe(shared);
-  for (const canonical of [false, true]) {
-    expect(() => copyJson({ [Symbol("key")]: 1 }, canonical)).toThrow("symbol property");
-    expect(() => copyJson(Object.defineProperty({}, "hidden", { value: 1 }), canonical)).toThrow("hidden property");
-    expect(() => copyJson(Object.assign([1], { extra: 2 }), canonical)).toThrow();
-    expect(() => copyJson(Object.assign([, 1], { [Symbol("compensates hole")]: 2 }), canonical)).toThrow();
-  }
+  expect(() => copyJson({ [Symbol("key")]: 1 })).toThrow("symbol property");
+  expect(() => copyJson(Object.defineProperty({}, "hidden", { value: 1 }))).toThrow("hidden property");
+  expect(() => copyJson(Object.assign([1], { extra: 2 }))).toThrow();
+  expect(() => copyJson(Object.assign([, 1], { [Symbol("compensates hole")]: 2 }))).toThrow();
 });

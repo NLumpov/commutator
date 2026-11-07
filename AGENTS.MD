@@ -571,25 +571,22 @@ interface SchemaSnapshot {
 
 ```typescript
 interface WorkerSnapshot {
-  schemaFingerprint: string; // Граф, типы, config и порядок значимых массивов
   pinCache: { uuid: string; cache: any }[]; // Кеш значений пинов
   metaCache: { uuid: string; cache: any }[]; // Кеш метаданных нод
 }
 ```
 
-Snapshot содержит независимый конечный JSON; старый формат, неверные записи,
-дубликаты, чужой граф и не-JSON значения отклоняются целиком. Restore не запускает
-callbacks. Fingerprint учитывает живой граф, но не идентичность JS callbacks.
-Версии definitions закрепляет внешний consumer. Schema остаётся изменяемой.
+Snapshot содержит только pinCache и metaCache как независимый конечный JSON.
+Неверные записи, дубликаты, неизвестные UUID, неверные типы и не-JSON значения
+отклоняются целиком. Restore не запускает callbacks. Библиотека не отслеживает
+идентичность или версии графа. При изменении графа или definitions внешний consumer
+обязан отбросить сохранённые snapshots и существующие Workers, затем создать новый
+Worker без snapshot. Schema остаётся изменяемой.
 Input trigger проверяется как конечный JSON и копируется на API-границе до callbacks;
 общие ссылки и порядок ключей внутри прохода сохраняются. baseline и extract не
 раскрывают кеши. Явный undefined в outputs/meta отклоняется; отсутствие свойства
 сохраняет прежнее значение, null — значение. Array subclasses, как и custom objects,
 отклоняются, обычные массивы и plain/null-prototype objects поддерживаются.
-Optional Field.name: undefined нормализуется только в библиотечных descriptors,
-включая вложенные; пользовательские config/default остаются строгим JSON.
-Fingerprint содержит канонический текст графа O(graph-size), вычисляется один раз
-за extract и заново при restore, без кеширования поверх живой Schema.
 
 Snapshot сохраняется только после успешного полного trigger. Во время trigger
 extract и второй trigger отклоняются с WORKER_BUSY. После ошибки и drain детей

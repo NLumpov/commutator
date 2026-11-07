@@ -131,6 +131,7 @@ if (restoredUserRef) {
 }
 
 // WorkerSnapshot сохраняется отдельно от схемы, только после полного успешного trigger.
+// При изменении графа вызывающий код отбрасывает baseline и Worker и вызывает createWorker() заново.
 const worker = schema1.createWorker();
 await worker.triggerEvent("onClick", { x: 10, y: 20 });
 const baseline = worker.extract();

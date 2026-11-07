@@ -1,6 +1,5 @@
-/** Cache values only: does not persist a run, budget, callback, or pending continuation. */
+/** Cache values only. The caller must discard stale snapshots and Workers when the graph changes. */
 export interface WorkerSnapshot {
-  schemaFingerprint: string;
   pinCache: { uuid: string; cache: any }[];
   metaCache: { uuid: string; cache: any }[];
 }

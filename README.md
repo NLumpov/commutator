@@ -180,16 +180,12 @@ effects cannot be forcibly stopped or rolled back. Callbacks must await their ow
 asynchronous work. Awaited callback chains retain O(maxSteps) continuations until
 completion; this is not constant-memory tail-call execution.
 
-`WorkerSnapshot` contains independent finite JSON `pinCache`, `metaCache`, and a
-`schemaFingerprint`. Old snapshots are rejected. Restore validates the entire
-snapshot, duplicates, cache ownership, types, and graph identity without executing
-callbacks. The fingerprint preserves graph array order and observes the live
-Schema; it does not identify JavaScript callback implementations. The consumer
-must pin definition versions externally. Schema remains mutable through its existing APIs.
-Optional library `Field.name: undefined` is treated as an absent name, including
-nested descriptors. This exception never strips undefined from user config/default data.
-The fingerprint stores canonical graph text, so its size is proportional to the graph.
-It is recomputed once per extract and on restore; there is no cache across live Schema changes.
+`WorkerSnapshot` contains only independent finite JSON `pinCache` and `metaCache`.
+Restore validates the entire snapshot, duplicates, cache ownership and value types
+without executing callbacks. Snapshots do not contain graph identity or versions;
+the library does not detect graph changes. The caller must discard saved snapshots
+and existing Workers when the graph or its definitions change, then create a fresh
+Worker without a snapshot. Schema remains mutable through its existing APIs.
 
 ```ts
 const baseline = schema.createWorker().extract();

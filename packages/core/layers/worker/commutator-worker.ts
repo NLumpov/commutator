@@ -18,8 +18,7 @@ import {
   type PinsRegistry,
   type WiresRegistry,
 } from "../schema";
-import { snapshotField } from "./snapshot-field";
-import { copyJson, createJsonCopier, readSnapshot, snapshotError } from "./snapshot-json";
+import { copyJson, readSnapshot, snapshotError } from "./snapshot-json";
 import type { WorkerSnapshot } from "./types";
 
 interface ExecutionRun {
@@ -63,44 +62,8 @@ export class CommutatorWorker<
     for (const { uuid, cache } of restored.metaCache) this.metaCache.set(uuid, cache);
   }
 
-  private schemaFingerprint(): string {
-    // Canonical graph encoding is collision-free. Array order is execution-significant;
-    // callbacks/API implementations are deliberately outside this identity contract.
-    // Build owned containers in canonical key order; strictly copy every live value.
-    // A fresh copier observes mutations on every call and retains shared leaf copies.
-    const copy = createJsonCopier(true);
-    const nodes = this.nodesRegistry.getAllNodes().map((node) => ({
-      ...(node.config === undefined ? {} : { config: copy(node.config) }),
-      meta: copy(snapshotField(this.config.getNodeConfigByName(node.name)?.meta)),
-      name: copy(node.name),
-      type: copy(node.type),
-      uuid: copy(node.uuid),
-    }));
-    const pins = this.pinsRegistry.getAllPins().map((pin) => ({
-      dataType: copy(snapshotField(pin.dataType)),
-      ...(pin.default === undefined ? {} : { default: copy(pin.default) }),
-      name: copy(pin.name),
-      nodeUuid: copy(pin.nodeUuid),
-      type: copy(pin.type),
-      uuid: copy(pin.uuid),
-    }));
-    return `graph-v1:${JSON.stringify({
-      dataTypes: Object.fromEntries(
-        Object.keys(this.config.dataTypes)
-          .sort()
-          .map((name) => [name, copy(snapshotField(this.config.dataTypes[name]))]),
-      ),
-      nodes,
-      pins,
-      wires: copy(this.wiresRegistry.getAllWires()),
-    })}`;
-  }
-
-  private validateSnapshot(input: unknown, fingerprint?: string): WorkerSnapshot {
+  private validateSnapshot(input: unknown): WorkerSnapshot {
     const snapshot = readSnapshot(input);
-    if (snapshot.schemaFingerprint !== (fingerprint ?? this.schemaFingerprint())) {
-      snapshotError("schema mismatch");
-    }
     for (const { uuid, cache } of snapshot.pinCache) {
       const pin = this.pinsRegistry.getPinByUuid(uuid);
       const node = pin && this.nodesRegistry.getNodeByUuid(pin.nodeUuid);
@@ -721,15 +684,9 @@ export class CommutatorWorker<
 
   extract(): WorkerSnapshot {
     this.assertAvailable();
-    // Reuse identity only inside this call: Schema remains live between calls.
-    const schemaFingerprint = this.schemaFingerprint();
-    return this.validateSnapshot(
-      {
-        schemaFingerprint,
-        pinCache: Array.from(this.pinCache, ([uuid, cache]) => ({ uuid, cache })),
-        metaCache: Array.from(this.metaCache, ([uuid, cache]) => ({ uuid, cache })),
-      },
-      schemaFingerprint,
-    );
+    return this.validateSnapshot({
+      pinCache: Array.from(this.pinCache, ([uuid, cache]) => ({ uuid, cache })),
+      metaCache: Array.from(this.metaCache, ([uuid, cache]) => ({ uuid, cache })),
+    });
   }
 }
