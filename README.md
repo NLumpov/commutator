@@ -153,9 +153,10 @@ an exec cycle rejects with `MAX_STEPS_REQUIRED` before changing event caches.
 
 One `triggerEvent` call is one run. Every Function admission, including repeated
 visits, reserves one step before reading inputs or invoking a Ref. All matching
-Event instances and parallel branches share this counter. Concurrent or subsequent
+Event instances and parallel branches share this counter. Subsequent successful
 trigger calls get independent counters under the same configured limit; their
-pin/meta caches retain the existing shared behavior. Events, PureFunctions and
+pin/meta caches retain the existing shared behavior. A concurrent call on the
+same Worker rejects with `WORKER_BUSY` without affecting the active call. Events, PureFunctions and
 Refs do not consume separate steps. Exactly `maxSteps` admissions are allowed;
 the next attempt latches `CommutatorExecutionError` with `code: "STEP_LIMIT"`.
 Catching that error does not reset the budget. No further Function is admitted.
@@ -177,11 +178,50 @@ effects cannot be forcibly stopped or rolled back. Callbacks must await their ow
 asynchronous work. Awaited callback chains retain O(maxSteps) continuations until
 completion; this is not constant-memory tail-call execution.
 
-`WorkerSnapshot` still contains only `pinCache` and `metaCache`. Restoring it and
-triggering an event starts a new run. Durable budgets/checkpoints, crash recovery,
-human waits, completion deduplication, stop/reconciliation, and repeated Join
-generations require a separate runtime contract; they are not implemented here.
-Ordinary fan-in still executes once per incoming branch, not as a Join barrier.
+`WorkerSnapshot` contains independent finite JSON `pinCache`/`metaCache` arrays
+and a `schemaFingerprint`. `extract()` is available between successful triggers;
+while a trigger or its children/tails are active it rejects with `WORKER_BUSY`.
+A failed trigger drains its issued children before rejecting with its original
+error. The failed instance then rejects trigger/extract with `WORKER_FAILED`.
+Late `exec` calls after the callback and its children have settled reject with
+`EXEC_CLOSED` before changing caches. Detached external work must be awaited by
+the callback; Worker cannot cancel arbitrary background IO.
+
+`createWorker(snapshot)` validates the entire format, finite JSON, cache identities
+and types before installing either cache. Invalid values/format reject with
+`INVALID_JSON`/`INVALID_SNAPSHOT`; another graph rejects with `SCHEMA_MISMATCH`.
+There is no reader for the old fingerprint-free format. Extract also validates
+cache types, including objects mutated in place by callbacks. Snapshot restore,
+trigger input and extraction detach nested JSON at API boundaries; values remain
+shared by pin UUID inside a trigger, with no clone on each Function visit.
+
+The SHA-256 fingerprint covers the canonical SchemaSnapshot with sorted object
+keys and original array order (including roots, pins and wires). It observes
+live schema edits, including nested edits through public schema objects. It does
+not identify JS definitions, limits or client bindings: consumers must pin those
+independently. Do not edit the schema during a replayable trigger.
+
+A consumer can save a baseline, persist its pending event/input and replay the
+whole failed trigger in a new Worker. `A -> await exec(B) -> tail A` replays A,
+B and the tail; a completed child is not a durable checkpoint. Previously saved
+successful triggers are not replayed. The consumer must persist a stable external
+operation ID before RPC and reconcile lost responses, and atomically commit the
+next snapshot with command completion/next work. Worker never retries a trigger
+or rolls back external effects. `maxSteps` covers one attempt; lost in-memory
+steps are not restored. The consumer separately bounds attempts and treats
+`STEP_LIMIT` as terminal. Human waits, persistent receipts/leases, completion
+deduplication and stop/reconciliation remain consumer responsibilities.
+Ordinary fan-in still executes once per incoming branch, not as a Join barrier;
+repeated Join generations are a separate feature.
+
+```typescript
+const baseline = worker.extract(); // Already saved before dispatch.
+const attempt = pinnedSchema.createWorker(baseline);
+await attempt.triggerEvent(command.event, command.input);
+const next = attempt.extract();
+// Consumer atomically commits next + command receipt + next work.
+// On failure, discard attempt and reconcile effects before replay from baseline.
+```
 
 See [the development/review cycle example](packages/examples/17-exec-cycles.ts).
 

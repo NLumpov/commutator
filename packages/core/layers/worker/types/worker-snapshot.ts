@@ -1,5 +1,8 @@
-/** Cache values only: does not persist a run, budget, callback, or pending continuation. */
+import type { JsonValue } from "../snapshot-json";
+
+/** Independent JSON caches at a completed trigger boundary, never a JS continuation. */
 export interface WorkerSnapshot {
-  pinCache: { uuid: string; cache: any }[];
-  metaCache: { uuid: string; cache: any }[];
+  schemaFingerprint: string;
+  pinCache: { uuid: string; cache: JsonValue }[];
+  metaCache: { uuid: string; cache: JsonValue }[];
 }

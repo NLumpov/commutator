@@ -18,6 +18,7 @@ import {
   type PinsRegistry,
   type WiresRegistry,
 } from "../schema";
+import { cloneJson, schemaFingerprint } from "./snapshot-json";
 import type { WorkerSnapshot } from "./types";
 
 interface ExecutionRun {
@@ -45,6 +46,7 @@ export class CommutatorWorker<
 > {
   private pinCache: Map<string, unknown> = new Map();
   private metaCache: Map<string, unknown> = new Map();
+  private state: "idle" | "busy" | "failed" = "idle";
 
   private constructor(
     private config: CommutatorConfig<DataTypes, Events, Refs, PureFunctions, Functions, Apis>,
@@ -54,47 +56,92 @@ export class CommutatorWorker<
     private wiresRegistry: WiresRegistry<DataTypes>,
     snapshot?: WorkerSnapshot,
   ) {
-    if (!snapshot) {
-      return;
+    if (snapshot === undefined) return;
+    const detached = cloneJson(snapshot);
+    const invalid = (): never => {
+      throw new CommutatorExecutionError("INVALID_SNAPSHOT");
+    };
+    if (
+      !detached ||
+      typeof detached !== "object" ||
+      Object.keys(detached).length !== 3 ||
+      !Array.isArray(detached.pinCache) ||
+      !Array.isArray(detached.metaCache) ||
+      typeof detached.schemaFingerprint !== "string"
+    )
+      invalid();
+    if (detached.schemaFingerprint !== this.fingerprint()) {
+      throw new CommutatorExecutionError("SCHEMA_MISMATCH");
     }
-
-    for (const pinCache of snapshot.pinCache) {
-      const pinInstance = this.pinsRegistry.getPinByUuid(pinCache.uuid);
-
-      // Если пин по uuid не нашёлся или это exec-пин, то пропускаем кешированное значение
-      if (!pinInstance || pinInstance.dataType === null) {
-        continue;
+    const validateEntries = (
+      entries: WorkerSnapshot["pinCache"],
+      meta: boolean,
+    ): Map<string, unknown> => {
+      const cache = new Map<string, unknown>();
+      for (const entry of entries) {
+        if (
+          !entry ||
+          typeof entry !== "object" ||
+          Object.keys(entry).length !== 2 ||
+          typeof entry.uuid !== "string" ||
+          !("cache" in entry) ||
+          cache.has(entry.uuid)
+        )
+          invalid();
+        this.validateCacheEntry(entry.uuid, entry.cache, meta);
+        cache.set(entry.uuid, entry.cache);
       }
+      return cache;
+    };
+    // Validate both caches before installing either one.
+    const pins = validateEntries(detached.pinCache, false);
+    const metas = validateEntries(detached.metaCache, true);
+    this.pinCache = pins;
+    this.metaCache = metas;
+  }
 
-      // Если данные из кеша не соответствуют типу данных пина, то пропускаем кешированное значение
-      if (!this.validator.validateFieldValue(pinInstance.dataType, pinCache.cache)) {
-        continue;
-      }
-
-      this.pinCache.set(pinCache.uuid, pinCache.cache);
+  private validateCacheEntry(uuid: string, value: unknown, meta: boolean): void {
+    if (meta) {
+      const node = this.nodesRegistry.getNodeByUuid(uuid);
+      const definition = node && this.config.getNodeConfigByName(node.name);
+      if (
+        !node ||
+        node.type !== NodeType.Function ||
+        !definition ||
+        (definition.meta === undefined
+          ? value !== null
+          : !this.validator.validateFieldValue(definition.meta, value))
+      )
+        throw new CommutatorExecutionError("INVALID_SNAPSHOT");
+    } else {
+      const pin = this.pinsRegistry.getPinByUuid(uuid);
+      if (!pin) throw new CommutatorExecutionError("INVALID_SNAPSHOT");
+      if (
+        pin.type !== PinInstanceType.Output ||
+        pin.dataType === null ||
+        !this.validator.validateFieldValue(pin.dataType, value)
+      )
+        throw new CommutatorExecutionError("INVALID_SNAPSHOT");
+      const node = this.nodesRegistry.getNodeByUuid(pin.nodeUuid);
+      if (!node || (node.type !== NodeType.Event && node.type !== NodeType.Function))
+        throw new CommutatorExecutionError("INVALID_SNAPSHOT");
     }
+  }
 
-    for (const metaCache of snapshot.metaCache) {
-      const nodeInstance = this.nodesRegistry.getNodeByUuid(metaCache.uuid);
+  private fingerprint(): string {
+    return schemaFingerprint(
+      {
+        nodes: this.nodesRegistry.getAllNodes(),
+        pinInstances: this.pinsRegistry.getAllPins(),
+        wires: this.wiresRegistry.getAllWires(),
+      },
+      this.wiresRegistry,
+    );
+  }
 
-      // Если нода по uuid не нашлась то пропускаем кешированное значение
-      if (!nodeInstance) {
-        continue;
-      }
-
-      const nodeConfig = this.config.getNodeConfigByName(nodeInstance.name);
-
-      if (!nodeConfig) {
-        continue;
-      }
-
-      // Если данные из кеша не соответствуют типу метаданных ноды, то пропускаем кешированное значение
-      if (!this.validator.validateFieldValue(nodeConfig.meta, metaCache.cache)) {
-        continue;
-      }
-
-      this.metaCache.set(metaCache.uuid, metaCache.cache);
-    }
+  private assertIdle(): void {
+    if (this.state === "busy") throw new CommutatorExecutionError("WORKER_BUSY");
+    if (this.state === "failed") throw new CommutatorExecutionError("WORKER_FAILED");
   }
 
   public static initialize<
@@ -129,67 +176,76 @@ export class CommutatorWorker<
     event: Name,
     payload: Record<string, unknown>,
   ): Promise<void> {
-    const cyclic = this.wiresRegistry.hasCycle("exec");
-    if (cyclic && this.config.maxSteps === undefined) {
-      throw new CommutatorExecutionError("MAX_STEPS_REQUIRED");
-    }
-    const run: ExecutionRun = {
-      maxSteps: this.config.maxSteps,
-      cyclic,
-      steps: 0,
-      synchronousDepth: 0,
-    };
-    const runtimePinCache: Map<string, unknown> = new Map();
-
-    const events = this.nodesRegistry.getNodesByName(String(event));
-
-    const nodesToProcess: Queue<{ execPinIn: string; node: AbstractNodeInstance<string> }> =
-      new Queue();
-
-    for (const event of events) {
-      this.saveToPinCache(this.pinCache, event, payload);
-
-      // Берём все exec пины на выход из ивента
-      const eventExecPinsOut = this.pinsRegistry.getNodeOutExecPinsIndex().get(event.uuid);
-
-      if (!eventExecPinsOut) {
-        continue;
+    this.assertIdle();
+    this.state = "busy";
+    try {
+      const detachedPayload = cloneJson(payload);
+      const cyclic = this.wiresRegistry.hasCycle("exec");
+      if (cyclic && this.config.maxSteps === undefined) {
+        throw new CommutatorExecutionError("MAX_STEPS_REQUIRED");
       }
+      const run: ExecutionRun = {
+        maxSteps: this.config.maxSteps,
+        cyclic,
+        steps: 0,
+        synchronousDepth: 0,
+      };
+      const runtimePinCache: Map<string, unknown> = new Map();
 
-      // Бежим по всем exec-пинам ивента (обычно 1)
-      for (const execPinOut of eventExecPinsOut.values()) {
-        const wiresFromExecPin = this.wiresRegistry.getWiresByFromPin(execPinOut.uuid);
+      const events = this.nodesRegistry.getNodesByName(String(event));
 
-        // Бежим по всем проводам из exec-пина (обычно 1)
-        for (const wire of wiresFromExecPin) {
-          const execPinIn = this.pinsRegistry.getPinByUuid(wire.to);
+      const nodesToProcess: Queue<{ execPinIn: string; node: AbstractNodeInstance<string> }> =
+        new Queue();
 
-          if (execPinIn === undefined || execPinIn.type !== PinInstanceType.InputExec) {
-            continue;
-          }
+      for (const event of events) {
+        this.saveToPinCache(this.pinCache, event, detachedPayload);
 
-          const node = this.nodesRegistry.getNodeByUuid(execPinIn.nodeUuid);
+        // Берём все exec пины на выход из ивента
+        const eventExecPinsOut = this.pinsRegistry.getNodeOutExecPinsIndex().get(event.uuid);
 
-          if (node) {
-            nodesToProcess.enqueue({ execPinIn: execPinIn.name, node });
+        if (!eventExecPinsOut) {
+          continue;
+        }
+
+        // Бежим по всем exec-пинам ивента (обычно 1)
+        for (const execPinOut of eventExecPinsOut.values()) {
+          const wiresFromExecPin = this.wiresRegistry.getWiresByFromPin(execPinOut.uuid);
+
+          // Бежим по всем проводам из exec-пина (обычно 1)
+          for (const wire of wiresFromExecPin) {
+            const execPinIn = this.pinsRegistry.getPinByUuid(wire.to);
+
+            if (execPinIn === undefined || execPinIn.type !== PinInstanceType.InputExec) {
+              continue;
+            }
+
+            const node = this.nodesRegistry.getNodeByUuid(execPinIn.nodeUuid);
+
+            if (node) {
+              nodesToProcess.enqueue({ execPinIn: execPinIn.name, node });
+            }
           }
         }
       }
-    }
 
-    while (nodesToProcess.size > 0) {
-      const data = nodesToProcess.dequeue();
+      while (nodesToProcess.size > 0) {
+        const data = nodesToProcess.dequeue();
 
-      if (!data) break;
+        if (!data) break;
 
-      const { node, execPinIn } = data;
+        const { node, execPinIn } = data;
 
-      // Ивентов в очереди быть не может
-      if (node.type !== NodeType.Function) {
-        continue;
+        // Ивентов в очереди быть не может
+        if (node.type !== NodeType.Function) {
+          continue;
+        }
+
+        await this.processFunction(run, runtimePinCache, node, execPinIn);
       }
-
-      await this.processFunction(run, runtimePinCache, node, execPinIn);
+      this.state = "idle";
+    } catch (error) {
+      this.state = "failed";
+      throw error;
     }
   }
 
@@ -307,6 +363,7 @@ export class CommutatorWorker<
       meta = this.validator.buildDefaultValueFromField(functionConfig.meta);
     }
 
+    let open = true;
     let pendingExecCount = 0;
     let resolveDrain: (() => void) | undefined;
     let failed = false;
@@ -334,6 +391,14 @@ export class CommutatorWorker<
       pinsOut: Record<string, unknown>;
       execPinOut: string | null;
     }): Promise<void> => {
+      if (
+        args.meta !== undefined &&
+        (functionConfig.meta === undefined
+          ? args.meta !== null
+          : !this.validator.validateFieldValue(functionConfig.meta, args.meta))
+      ) {
+        throw new CommutatorError(`Invalid meta for node "${node.name}"`);
+      }
       if (args.pinsOut) {
         this.saveToPinCache(runtimePinCache, node, args.pinsOut, this.pinCache);
       }
@@ -380,6 +445,12 @@ export class CommutatorWorker<
     };
 
     const exec = (args: Parameters<typeof runExec>[0]): Promise<void> => {
+      if (!open) {
+        const rejected = Promise.reject<void>(new CommutatorExecutionError("EXEC_CLOSED"));
+        // Detached users may ignore this promise; still expose the rejection to awaiters.
+        void rejected.catch(() => {});
+        return rejected;
+      }
       // Start immediately, preserving continuation input reads and await exec ordering.
       const promise = runExec(args);
       pendingExecCount++;
@@ -426,6 +497,7 @@ export class CommutatorWorker<
       });
     }
 
+    open = false;
     if (run.limitError) throw run.limitError;
     if (failed) throw failure;
 
@@ -643,9 +715,14 @@ export class CommutatorWorker<
   }
 
   extract(): WorkerSnapshot {
-    return {
+    this.assertIdle();
+    const snapshot = cloneJson({
+      schemaFingerprint: this.fingerprint(),
       pinCache: Array.from(this.pinCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
       metaCache: Array.from(this.metaCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
-    };
+    }) as WorkerSnapshot;
+    for (const { uuid, cache } of snapshot.pinCache) this.validateCacheEntry(uuid, cache, false);
+    for (const { uuid, cache } of snapshot.metaCache) this.validateCacheEntry(uuid, cache, true);
+    return snapshot;
   }
 }

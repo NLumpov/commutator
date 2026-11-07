@@ -568,15 +568,25 @@ interface SchemaSnapshot {
 
 ```typescript
 interface WorkerSnapshot {
+  schemaFingerprint: string; // Canonical graph SHA-256; semantic array order is preserved
   pinCache: { uuid: string; cache: any }[]; // Кеш значений пинов
   metaCache: { uuid: string; cache: any }[]; // Кеш метаданных нод
 }
 ```
 
-Это только кеш, не checkpoint запуска. Счётчик, Promise, ожидания и продолжения
-callback не сохраняются. Новый trigger после restore начинает новый запуск.
-Durable recovery, дедупликация completion, stop/reconcile и поколения Join этим
-API не реализованы. Обычный fan-in не является Join.
+This is an independent finite JSON boundary between complete successful triggers,
+not a saved JS stack. Restore validates the entire format, graph fingerprint and
+cache types. Trigger input and restored/extracted snapshots never alias caller JSON.
+One trigger per Worker: concurrent trigger/extract rejects WORKER_BUSY without
+poisoning the active call. Own failure drains children, then future trigger/extract
+rejects WORKER_FAILED. Recreate from the saved baseline to replay the entire event,
+including nested exec and parent tails; never resume a child in isolation. Late
+exec after callback completion and drain rejects EXEC_CLOSED before mutation.
+Counter, Promise, waits and continuations are not saved. maxSteps starts anew for
+each attempt; consumers bound attempts separately and reconcile external operations
+by stable operationId. The fingerprint identifies graph JSON, not JS definitions
+or service clients; consumers pin them. Durable receipts/leases/stop and repeated
+Join generations remain outside Worker. Ordinary fan-in is not Join.
 
 **Использование:**
 

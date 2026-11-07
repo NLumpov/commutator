@@ -79,7 +79,7 @@ describe("execution budgets", () => {
       "code",
       "MAX_STEPS_REQUIRED",
     );
-    expect(worker.extract()).toEqual(before);
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
     expect(fixture.visits()).toBe(0);
   });
 
@@ -146,19 +146,17 @@ describe("execution budgets", () => {
     );
   });
 
-  test("admits exactly N visits, preserves outputs, and resets only for a new trigger", async () => {
+  test("admits exactly N visits per attempt restored from a saved baseline", async () => {
     const fixture = loopFixture(3);
-    const worker = fixture.schema.createWorker();
-    await expect(worker.triggerEvent("start", {})).rejects.toHaveProperty("code", "STEP_LIMIT");
-    expect(fixture.visits()).toBe(3);
-    expect(worker.extract().pinCache.map((entry) => entry.cache)).toEqual([3]);
-    await expect(worker.triggerEvent("start", {})).rejects.toHaveProperty("code", "STEP_LIMIT");
-    expect(fixture.visits()).toBe(6);
-    const restored = fixture.schema.createWorker(worker.extract());
-    await expect(restored.triggerEvent("start", {})).rejects.toHaveProperty("code", "STEP_LIMIT");
-    expect(fixture.visits()).toBe(9);
-    expect(restored.extract().metaCache.map((entry) => entry.cache)).toEqual([9]);
-    expect(Object.keys(restored.extract()).sort()).toEqual(["metaCache", "pinCache"]);
+    const baseline = fixture.schema.createWorker().extract();
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      const worker = fixture.schema.createWorker(baseline);
+      await expect(worker.triggerEvent("start", {})).rejects.toHaveProperty("code", "STEP_LIMIT");
+      expect(fixture.visits()).toBe(attempt * 3);
+      expect(() => worker.extract()).toThrow("WORKER_FAILED");
+      await expect(worker.triggerEvent("start", {})).rejects.toHaveProperty("code", "WORKER_FAILED");
+    }
+    expect(Object.keys(baseline).sort()).toEqual(["metaCache", "pinCache", "schemaFingerprint"]);
   });
 
   test("inherits the receiving instance's limit through every fluent operation and inject", async () => {
@@ -244,8 +242,8 @@ describe("execution budgets", () => {
     expect(fixture.visits()).toBe(3);
     await expect(other.triggerEvent("start", {})).rejects.toHaveProperty("code", "STEP_LIMIT");
     expect(fixture.visits()).toBe(4);
-    await expect(worker.triggerEvent("start", {})).rejects.toHaveProperty("code", "STEP_LIMIT");
-    expect(fixture.visits()).toBe(7);
+    await expect(worker.triggerEvent("start", {})).rejects.toHaveProperty("code", "WORKER_FAILED");
+    expect(fixture.visits()).toBe(4);
   });
 
   test("counts all parallel branches in one run and latches the same failure", async () => {
@@ -305,7 +303,7 @@ describe("execution budgets", () => {
     expect(failures.every((error) => error === failures[0])).toBe(true);
   });
 
-  test("concurrent triggers have independent counters, including multiple event instances", async () => {
+  test("independent workers have independent counters, including multiple event instances", async () => {
     let visits = 0;
     const commutator = Commutator.initialize()
       .configure({ maxSteps: 2 })
@@ -325,7 +323,7 @@ describe("execution budgets", () => {
     schema.createEvent("start").wire("next", read, "enter");
     schema.createEvent("start").wire("next", read, "enter");
     const worker = schema.createWorker();
-    await Promise.all([worker.triggerEvent("start", {}), worker.triggerEvent("start", {})]);
+    await Promise.all([worker.triggerEvent("start", {}), schema.createWorker().triggerEvent("start", {})]);
     expect(visits).toBe(4);
     schema.createEvent("start").wire("next", read, "enter");
     await expect(worker.triggerEvent("start", {})).rejects.toHaveProperty("code", "STEP_LIMIT");
@@ -423,7 +421,7 @@ describe("execution budgets", () => {
     }
     expect(await running).toHaveProperty("code", "STEP_LIMIT");
     expect(siblingFinished).toBe(true);
-    expect(worker.extract().pinCache.map((entry) => entry.cache)).toEqual([42]);
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
   });
 
   test("captures direct inputs before a cyclic yield and preserves await exec tails", async () => {
