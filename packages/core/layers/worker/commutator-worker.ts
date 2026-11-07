@@ -667,6 +667,7 @@ export class CommutatorWorker<
       const pinData = value[pin.name];
 
       if (pinData === undefined) {
+        if (Object.hasOwn(value, pin.name)) snapshotError(`non-JSON output ${pin.name}`);
         continue;
       }
 

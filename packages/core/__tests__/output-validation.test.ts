@@ -95,12 +95,27 @@ describe("Worker output validation", () => {
     });
   }
 
+  test("explicit undefined output rejects instead of preserving stale data", async () => {
+    const { schema, seen, setOutput } = createFunctionGraph();
+    const worker = schema.createWorker();
+    await worker.triggerEvent("Tick", {});
+    const baseline = worker.extract();
+    const before = structuredClone(baseline);
+    setOutput({ first: 2, value: undefined });
+    await expect(worker.triggerEvent("Tick", {})).rejects.toThrow("non-JSON");
+    expect(seen).toEqual([{ first: 1, value: 7 }]);
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
+    await expect(worker.triggerEvent("Read", {})).rejects.toThrow("WORKER_FAILED");
+    expect(baseline).toEqual(before);
+    expect(schema.createWorker(baseline).extract()).toEqual(before);
+  });
+
   test("valid partial, empty and null outputs preserve the shared pin cache and snapshot", async () => {
     const { commutator, schema, source, seen, trace, setOutput } = createFunctionGraph();
     const worker = schema.createWorker();
     await worker.triggerEvent("Tick", {});
-    // Unspecified/undefined outputs retain their previous values; extra keys are ignored.
-    setOutput({ first: undefined, value: 8, extra: "ignored" });
+    // Omitted outputs retain their previous values; extra keys are ignored.
+    setOutput({ value: 8, extra: "ignored" });
     await worker.triggerEvent("Tick", {});
     setOutput({});
     await worker.triggerEvent("Tick", {});
@@ -248,7 +263,7 @@ describe("Worker output validation", () => {
     expect(() => worker.extract()).toThrow("WORKER_FAILED");
     expect(seen).toEqual([{ first: 1, missing: null, third: 3, last: 4 }]);
     worker = schema.createWorker(before);
-    output = { first: undefined, third: null, last: 9 };
+    output = { third: null, last: 9 };
     await worker.triggerEvent("Tick", {});
     expect(seen.at(-1)).toEqual({ first: 1, missing: null, third: null, last: 9 });
   });
