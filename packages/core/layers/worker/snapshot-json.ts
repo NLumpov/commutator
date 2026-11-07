@@ -13,49 +13,63 @@ export function snapshotError(message: string): never {
   throw new CommutatorError(`Invalid worker snapshot: ${message}`);
 }
 
-/** Copy JSON without invoking getters/toJSON or silently dropping unsupported values. */
-export function copyJson(value: unknown, ancestors = new Set<object>()): JsonValue {
-  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value !== "object" || value === null) return snapshotError("non-JSON value");
-  if (ancestors.has(value)) return snapshotError("cyclic value");
-  const array = Array.isArray(value);
-  const prototype = Object.getPrototypeOf(value);
-  if (!array && prototype !== Object.prototype && prototype !== null) {
-    return snapshotError("non-JSON object");
-  }
-  const keys = Reflect.ownKeys(value);
-  if (keys.some((key) => typeof key !== "string")) return snapshotError("symbol property");
-  ancestors.add(value);
-  try {
-    if (array) {
-      if (keys.length !== value.length + 1) return snapshotError("sparse or extended array");
-      const result: JsonValue[] = [];
-      for (let index = 0; index < value.length; index++) {
-        const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
-        if (!descriptor || !descriptor.enumerable || !("value" in descriptor)) {
-          return snapshotError("sparse array or accessor");
+/** Copy finite JSON data, preserving aliases but rejecting cycles and implicit conversions. */
+export function copyJson(value: unknown, canonical = false): JsonValue {
+  const ancestors = new Set<object>();
+  const copies = new Map<object, JsonValue>();
+  return visit(value);
+
+  function visit(value: unknown): JsonValue {
+    if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value !== "object" || value === null) return snapshotError("non-JSON value");
+    if (ancestors.has(value)) return snapshotError("cyclic value");
+    const previous = copies.get(value);
+    if (previous !== undefined) return previous;
+    const array = Array.isArray(value);
+    const prototype = Object.getPrototypeOf(value);
+    if (
+      array ? prototype !== Array.prototype : prototype !== Object.prototype && prototype !== null
+    ) {
+      return snapshotError("non-JSON object");
+    }
+    const keys = Reflect.ownKeys(value);
+    if (keys.some((key) => typeof key !== "string")) return snapshotError("symbol property");
+    ancestors.add(value);
+    try {
+      if (array) {
+        if (keys.length !== value.length + 1) return snapshotError("sparse or extended array");
+        const result: JsonValue[] = [];
+        copies.set(value, result);
+        for (let index = 0; index < value.length; index++) {
+          const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+          if (!descriptor || !descriptor.enumerable || !("value" in descriptor)) {
+            return snapshotError("sparse array or accessor");
+          }
+          result.push(visit(descriptor.value));
         }
-        result.push(copyJson(descriptor.value, ancestors));
+        return result;
+      }
+      const result: Record<string, JsonValue> = {};
+      copies.set(value, result);
+      const names = Object.getOwnPropertyNames(value);
+      if (canonical) names.sort();
+      for (const key of names) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, key);
+        if (!descriptor || !descriptor.enumerable || !("value" in descriptor)) {
+          return snapshotError("hidden property or accessor");
+        }
+        Object.defineProperty(result, key, {
+          value: visit(descriptor.value),
+          enumerable: true,
+          writable: true,
+          configurable: true,
+        });
       }
       return result;
+    } finally {
+      ancestors.delete(value);
     }
-    const result: Record<string, JsonValue> = {};
-    for (const key of Object.getOwnPropertyNames(value).sort()) {
-      const descriptor = Object.getOwnPropertyDescriptor(value, key);
-      if (!descriptor || !descriptor.enumerable || !("value" in descriptor)) {
-        return snapshotError("hidden property or accessor");
-      }
-      Object.defineProperty(result, key, {
-        value: copyJson(descriptor.value, ancestors),
-        enumerable: true,
-        writable: true,
-        configurable: true,
-      });
-    }
-    return result;
-  } finally {
-    ancestors.delete(value);
   }
 }
 

@@ -81,12 +81,15 @@ export class CommutatorWorker<
       ...(pin.default === undefined ? {} : { default: pin.default }),
     }));
     return `graph-v1:${JSON.stringify(
-      copyJson({
-        nodes,
-        pins,
-        wires: this.wiresRegistry.getAllWires(),
-        dataTypes: this.config.dataTypes,
-      }),
+      copyJson(
+        {
+          nodes,
+          pins,
+          wires: this.wiresRegistry.getAllWires(),
+          dataTypes: this.config.dataTypes,
+        },
+        true,
+      ),
     )}`;
   }
 
@@ -178,7 +181,10 @@ export class CommutatorWorker<
     payload: Record<string, unknown>,
   ): Promise<void> {
     // Own the input once per API call; Function callbacks share the run's values.
-    const input = structuredClone(payload);
+    const input = copyJson(payload);
+    if (input === null || typeof input !== "object" || Array.isArray(input)) {
+      snapshotError("expected event payload object");
+    }
     const cyclic = this.wiresRegistry.hasCycle("exec");
     if (cyclic && this.config.maxSteps === undefined) {
       throw new CommutatorExecutionError("MAX_STEPS_REQUIRED");

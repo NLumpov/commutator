@@ -84,8 +84,18 @@ test("fingerprint observes live graph array order and config values without owni
 test("extract rejects non-JSON cache values and restore checks cache ownership", async () => {
   const { schema } = fixture();
   const worker = schema.createWorker();
-  await worker.triggerEvent("start", { value: NaN });
-  expect(() => worker.extract()).toThrow("non-JSON");
+  // A callback can still produce invalid JSON internally; extract must reject it.
+  const outputSchema = Commutator.initialize()
+    .defineEvent("run", { pinsOut: {}, execPinsOut: { next: null } })
+    .defineFunction("produce", {
+      pinsIn: {}, pinsOut: { value: { type: CommonDataType.Any } },
+      execPinsIn: { in: null }, execPinsOut: {},
+      exec: async ({ exec }) => exec({ pinsOut: { value: NaN }, meta: null, execPinOut: null }),
+    }).createSchema();
+  outputSchema.createEvent("run").wire("next", outputSchema.createFunction("produce"), "in");
+  const invalidWorker = outputSchema.createWorker();
+  await invalidWorker.triggerEvent("run", {});
+  expect(() => invalidWorker.extract()).toThrow("non-JSON");
   const snapshot = schema.createWorker().extract();
   const graph = schema.extract();
   const execPin = graph.pinInstances.find((pin) => pin.dataType === null)!;
@@ -98,4 +108,26 @@ test("extract rejects non-JSON cache values and restore checks cache ownership",
   ] })).toThrow();
   const getter = Object.defineProperty({}, "value", { enumerable: true, get() { throw new Error("must not run"); } });
   expect(() => schema.createWorker({ ...snapshot, pinCache: [{ uuid: "missing", cache: getter }] })).toThrow("accessor");
+});
+
+test("JSON boundaries reject custom array prototypes instead of silently converting them", async () => {
+  class CustomArray extends Array<number> {}
+  let output: unknown = [1, 2];
+  const schema = Commutator.initialize()
+    .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
+    .defineFunction("produce", {
+      pinsIn: {}, pinsOut: { value: { type: CommonDataType.Any } },
+      execPinsIn: { in: null }, execPinsOut: {},
+      exec: async ({ exec }) => exec({ pinsOut: { value: output }, meta: null, execPinOut: null }),
+    }).createSchema();
+  schema.createEvent("start").wire("next", schema.createFunction("produce"), "in");
+  const worker = schema.createWorker();
+  await worker.triggerEvent("start", {});
+  const baseline = worker.extract();
+  expect(schema.createWorker(baseline).extract()).toEqual(baseline);
+  baseline.pinCache[0]!.cache = new CustomArray(1, 2);
+  expect(() => schema.createWorker(baseline)).toThrow("non-JSON");
+  output = new CustomArray(1, 2);
+  await worker.triggerEvent("start", {});
+  expect(() => worker.extract()).toThrow("non-JSON");
 });

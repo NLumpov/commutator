@@ -103,3 +103,62 @@ test("boundary copy preserves shared values throughout the Function chain", asyn
   expect(firstValue).not.toBe(shared);
   expect(shared).toEqual({ nested: [1] });
 });
+
+class CustomArray extends Array<number> {}
+
+for (const [label, makeValue] of Object.entries({
+  undefined: (): undefined => undefined,
+  nestedUndefined: () => ({ nested: undefined }),
+  nan: () => NaN,
+  infinity: () => Infinity,
+  function: () => () => 1,
+  promise: () => Promise.resolve(1),
+  date: () => new Date(),
+  customObject: () => new (class { value = 1; })(),
+  customArray: () => new CustomArray(1, 2),
+  sparseArray: () => [, 1],
+  cycle: () => { const value: Record<string, unknown> = {}; value.self = value; return value; },
+  accessor: () => Object.defineProperty({}, "value", {
+    enumerable: true, get() { throw new Error("getter must not execute"); },
+  }),
+})) {
+  test(`event JSON boundary rejects ${label} before callbacks and preserves baseline`, async () => {
+    let calls = 0;
+    const schema = Commutator.initialize()
+      .defineEvent("start", { pinsOut: { value: { type: CommonDataType.Any } }, execPinsOut: { next: null } })
+      .defineFunction("observe", {
+        pinsIn: {}, pinsOut: {}, execPinsIn: { in: null }, execPinsOut: {},
+        exec: async () => { calls++; },
+      }).createSchema();
+    schema.createEvent("start").wire("next", schema.createFunction("observe"), "in");
+    const seed = schema.createWorker();
+    await seed.triggerEvent("start", { value: 1 });
+    const baseline = seed.extract();
+    const before = structuredClone(baseline);
+    const worker = schema.createWorker(baseline);
+    await expect(worker.triggerEvent("start", { value: makeValue() })).rejects.toThrow("Invalid worker snapshot");
+    expect(calls).toBe(1);
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
+    await expect(worker.triggerEvent("start", { value: 2 })).rejects.toThrow("WORKER_FAILED");
+    expect(baseline).toEqual(before);
+    expect(seed.extract()).toEqual(before);
+  });
+}
+
+test("event JSON boundary preserves object key order and checks unused payload values", async () => {
+  let keys: string[] = [];
+  const schema = Commutator.initialize()
+    .defineEvent("start", { pinsOut: { value: { type: CommonDataType.Any } }, execPinsOut: { next: null } })
+    .defineFunction("read", {
+      pinsIn: { value: { type: CommonDataType.Any } }, pinsOut: {}, execPinsIn: { in: null }, execPinsOut: {},
+      exec: async ({ pinsIn }) => {
+        if (pinsIn.value !== null && typeof pinsIn.value === "object") keys = Object.keys(pinsIn.value);
+      },
+    }).createSchema();
+  const read = schema.createFunction("read");
+  schema.createEvent("start").wire("next", read, "in").wire("value", read, "value");
+  const worker = schema.createWorker();
+  await worker.triggerEvent("start", { value: { z: 1, a: 2 } });
+  expect(keys).toEqual(["z", "a"]);
+  await expect(worker.triggerEvent("start", { value: 2, unused: undefined })).rejects.toThrow("non-JSON");
+});
