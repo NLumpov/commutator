@@ -76,15 +76,13 @@ a prerequisite for continuing permitted internal work. Architecture is unchanged
   pilot does not prove a causal effect of the skill; prior context, coordinator
   feedback and extra review attention are confounds. No approve/merge/release.
 
-## Earlier performance follow-up (historical)
-
-## Performance follow-up: PERF_NOT_ACCEPTED
+## Earlier performance follow-up (historical, PERF_NOT_ACCEPTED)
 
 The PR is draft. The earlier correctness review did not establish acceptable
 performance. The remaining snapshot regression against master is **not accepted**;
 the stronger snapshot contract is not a performance approval. No merge or publish.
 
-Current correctness commit: `4eda88a551cc74ca6ac5d0b8f4ef3963385e8bf7`. The full
+Correctness commit in this earlier follow-up: `4eda88a551cc74ca6ac5d0b8f4ef3963385e8bf7`. The full
 guarded suite has 343 PASS / 0 FAIL; targeted boundary tests have 41 PASS / 0 FAIL.
 Typecheck and ordinary commit hooks exit 0. Coverage has not been rerun on this
 follow-up code. The exception-mapping fix received an independent scoped
