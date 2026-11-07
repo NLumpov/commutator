@@ -399,13 +399,17 @@ export class CommutatorWorker<
       pinsOut: Record<string, unknown>;
       execPinOut: string | null;
     }): Promise<void> => {
+      const nextMeta = args.meta;
+      if (nextMeta === undefined && Object.hasOwn(args, "meta")) {
+        snapshotError("non-JSON metadata");
+      }
       if (args.pinsOut) {
         this.saveToPinCache(runtimePinCache, node, args.pinsOut, this.pinCache);
       }
 
       // Publish meta only after every supplied output has passed validation.
-      if (args.meta !== undefined) {
-        this.metaCache.set(node.uuid, args.meta);
+      if (nextMeta !== undefined) {
+        this.metaCache.set(node.uuid, nextMeta);
       }
 
       // Если вызывается execPinOut – находим подключенные ноды и вызываем processFunction для них

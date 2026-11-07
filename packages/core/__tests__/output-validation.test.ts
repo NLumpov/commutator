@@ -110,6 +110,62 @@ describe("Worker output validation", () => {
     expect(schema.createWorker(baseline).extract()).toEqual(before);
   });
 
+  test("explicit undefined metadata rejects before output publication and preserves baseline", async () => {
+    let metadata: unknown = 1;
+    const seen: unknown[] = [];
+    const schema = Commutator.initialize()
+      .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
+      .defineFunction("source", {
+        pinsIn: {}, pinsOut: { value: { type: CommonDataType.Number } },
+        meta: { type: CommonDataType.Any }, execPinsIn: { in: null }, execPinsOut: { next: null },
+        exec: async ({ exec }) => { await exec({ pinsOut: { value: 1 }, meta: metadata, execPinOut: "next" }); },
+      })
+      .defineFunction("sink", {
+        pinsIn: { value: { type: CommonDataType.Number } }, pinsOut: {}, execPinsIn: { in: null }, execPinsOut: {},
+        exec: async ({ pinsIn }) => { seen.push(pinsIn.value); },
+      }).createSchema();
+    const source = schema.createFunction("source");
+    const sink = schema.createFunction("sink");
+    schema.createEvent("start").wire("next", source, "in");
+    source.wire("value", sink, "value").wire("next", sink, "in");
+    const worker = schema.createWorker();
+    await worker.triggerEvent("start", {});
+    const baseline = worker.extract();
+    const before = structuredClone(baseline);
+    metadata = undefined;
+    await expect(worker.triggerEvent("start", {})).rejects.toThrow("non-JSON");
+    expect(seen).toEqual([1]);
+    expect(() => worker.extract()).toThrow("WORKER_FAILED");
+    expect(baseline).toEqual(before);
+    expect(schema.createWorker(baseline).extract()).toEqual(before);
+  });
+
+  test("metadata omission, null and read-once getters retain their distinct meanings", async () => {
+    let args: any = { pinsOut: {}, execPinOut: null, meta: 1 };
+    let reads = 0;
+    const schema = Commutator.initialize()
+      .defineEvent("start", { pinsOut: {}, execPinsOut: { next: null } })
+      .defineFunction("state", {
+        pinsIn: {}, pinsOut: {}, meta: { type: CommonDataType.Any }, execPinsIn: { in: null }, execPinsOut: {},
+        exec: async ({ exec }) => exec(args),
+      }).createSchema();
+    const state = schema.createFunction("state");
+    schema.createEvent("start").wire("next", state, "in");
+    const worker = schema.createWorker();
+    await worker.triggerEvent("start", {});
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: 1 }]);
+    args = { pinsOut: {}, execPinOut: null }; // A dynamic JS caller omits the metadata update.
+    await worker.triggerEvent("start", {});
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: 1 }]);
+    args = { pinsOut: {}, execPinOut: null, get meta() { reads++; return 2; } };
+    await worker.triggerEvent("start", {});
+    expect(reads).toBe(1);
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: 2 }]);
+    args = { pinsOut: {}, execPinOut: null, meta: null };
+    await worker.triggerEvent("start", {});
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: null }]);
+  });
+
   test("valid partial, empty and null outputs preserve the shared pin cache and snapshot", async () => {
     const { commutator, schema, source, seen, trace, setOutput } = createFunctionGraph();
     const worker = schema.createWorker();
