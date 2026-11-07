@@ -18,7 +18,7 @@ import {
   type PinsRegistry,
   type WiresRegistry,
 } from "../schema";
-import { cloneJson, schemaFingerprint } from "./snapshot-json";
+import { cloneJson, type JsonValue, schemaFingerprint } from "./snapshot-json";
 import type { WorkerSnapshot } from "./types";
 
 interface ExecutionRun {
@@ -716,13 +716,21 @@ export class CommutatorWorker<
 
   extract(): WorkerSnapshot {
     this.assertIdle();
-    const snapshot = cloneJson({
+    const snapshot: WorkerSnapshot = {
       schemaFingerprint: this.fingerprint(),
-      pinCache: Array.from(this.pinCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
-      metaCache: Array.from(this.metaCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
-    }) as WorkerSnapshot;
-    for (const { uuid, cache } of snapshot.pinCache) this.validateCacheEntry(uuid, cache, false);
-    for (const { uuid, cache } of snapshot.metaCache) this.validateCacheEntry(uuid, cache, true);
+      pinCache: [],
+      metaCache: [],
+    };
+    for (const [uuid, value] of this.pinCache) {
+      const cache = cloneJson(value) as JsonValue;
+      this.validateCacheEntry(uuid, cache, false);
+      snapshot.pinCache.push({ uuid, cache });
+    }
+    for (const [uuid, value] of this.metaCache) {
+      const cache = cloneJson(value) as JsonValue;
+      this.validateCacheEntry(uuid, cache, true);
+      snapshot.metaCache.push({ uuid, cache });
+    }
     return snapshot;
   }
 }

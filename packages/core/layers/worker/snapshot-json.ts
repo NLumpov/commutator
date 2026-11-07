@@ -14,6 +14,13 @@ export type JsonValue =
 
 /** Validate and detach without JSON.stringify silently dropping unsupported values. */
 export function cloneJson<T>(value: T): T {
+  if (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    (typeof value === "number" && Number.isFinite(value))
+  )
+    return value;
   const ancestors = new Set<object>();
   const invalid = (): never => {
     throw new CommutatorExecutionError("INVALID_JSON");
@@ -125,17 +132,87 @@ function serializeSchema(schema: SchemaSnapshot): string {
   }
 }
 
-// One entry per live schema, shared across its workers; never a history of graphs.
-const fingerprints = new WeakMap<object, { serialized: string; fingerprint: string }>();
+/** Compare live descriptors with one detached graph; never read getters/toJSON. */
+function matchesSchema(schema: SchemaSnapshot, previous: SchemaSnapshot): boolean {
+  const strictRoots = new WeakSet<object>();
+  for (const node of schema.nodes) {
+    const value = Object.getOwnPropertyDescriptor(node, "config")?.value;
+    if (value !== null && typeof value === "object") strictRoots.add(value);
+  }
+  for (const pin of schema.pinInstances) {
+    const value = Object.getOwnPropertyDescriptor(pin, "default")?.value;
+    if (value !== null && typeof value === "object") strictRoots.add(value);
+  }
+  const same = (value: unknown, baseline: unknown, strict: boolean): boolean => {
+    if (value === null || typeof value === "string" || typeof value === "boolean")
+      return value === baseline;
+    if (typeof value === "number") return Number.isFinite(value) && value === baseline;
+    if (
+      typeof value !== "object" ||
+      value === null ||
+      baseline === null ||
+      typeof baseline !== "object"
+    )
+      return false;
+    const array = Array.isArray(value);
+    if (array !== Array.isArray(baseline)) return false;
+    const prototype = Object.getPrototypeOf(value);
+    if (
+      array ? prototype !== Array.prototype : prototype !== Object.prototype && prototype !== null
+    )
+      return false;
+    const strictValue = strict || strictRoots.has(value);
+    const keys = Reflect.ownKeys(value);
+    if (array && Array.isArray(baseline)) {
+      if (value.length !== baseline.length || keys.length !== value.length + 1) return false;
+      for (let index = 0; index < value.length; index++) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, index);
+        if (
+          !descriptor?.enumerable ||
+          !("value" in descriptor) ||
+          !same(descriptor.value, baseline[index], strictValue)
+        )
+          return false;
+      }
+      return true;
+    }
+    const baselineKeys = Object.keys(baseline);
+    let count = keys.length;
+    if (count !== baselineKeys.length) {
+      for (const key of keys) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, key);
+        if (typeof key !== "string" || !descriptor?.enumerable || !("value" in descriptor))
+          return false;
+        if (descriptor.value === undefined && !strictValue) count--;
+      }
+      if (count !== baselineKeys.length) return false;
+    }
+    for (const key of baselineKeys) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (
+        !descriptor?.enumerable ||
+        !("value" in descriptor) ||
+        !same(descriptor.value, (baseline as Record<string, unknown>)[key], strictValue)
+      )
+        return false;
+    }
+    return true;
+  };
+  return same(schema, previous, false);
+}
+
+// One detached graph per live schema, shared across workers; no history.
+const fingerprints = new WeakMap<object, { graph: SchemaSnapshot; fingerprint: string }>();
 
 /** Object key order is irrelevant; array order (roots, pins and wires) is semantic. */
 export function schemaFingerprint(schema: SchemaSnapshot, identity: object): string {
-  // Always observe current values: public schema objects support in-place edits.
-  const serialized = serializeSchema(schema);
   const previous = fingerprints.get(identity);
-  if (previous?.serialized === serialized) return previous.fingerprint;
-  const canonical = stringify(schema);
+  if (previous && matchesSchema(schema, previous.graph)) return previous.fingerprint;
+  // A mismatch may be invalid, including beyond the first differing value.
+  // Validate the whole graph before canonicalization can observe any hooks.
+  const graph: SchemaSnapshot = JSON.parse(serializeSchema(schema));
+  const canonical = stringify(graph);
   const fingerprint = `sha256:${bytesToHex(sha256(utf8ToBytes(canonical)))}`;
-  fingerprints.set(identity, { serialized, fingerprint });
+  fingerprints.set(identity, { graph, fingerprint });
   return fingerprint;
 }

@@ -275,6 +275,50 @@ describe("independent finite JSON snapshots", () => {
     }
   });
 
+  test("changed graph still validates the entire remainder without invoking hooks", () => {
+    const { schema } = fixture();
+    const worker = schema.createWorker();
+    const pin = schema.extract().pinInstances.find((item) => item.dataType !== null)!;
+    pin.default = { first: 1, tail: { value: 2 } };
+    const baseline = worker.extract();
+    let called = false;
+    pin.default = { first: 2, tail: { toJSON() { called = true; return null; } } };
+    expect(() => worker.extract()).toThrow("INVALID_JSON");
+    expect(called).toBe(false);
+    pin.default = { first: 2, tail: Object.defineProperty({}, "value", { enumerable: true, get() { called = true; return 2; } }) };
+    expect(() => worker.extract()).toThrow("INVALID_JSON");
+    expect(called).toBe(false);
+    pin.default = { first: 1, tail: { value: 2 } };
+    expect(worker.extract()).toEqual(baseline);
+  });
+
+  test("graph comparison handles shared subtrees, rejects cycles and keeps its last valid state", () => {
+    const { schema } = fixture();
+    const worker = schema.createWorker();
+    const pin = schema.extract().pinInstances.find((item) => item.dataType !== null)!;
+    const shared: any = { value: 1 };
+    pin.default = { a: shared, b: shared };
+    const first = worker.extract();
+    expect(worker.extract()).toEqual(first);
+    shared.value = 2;
+    const second = worker.extract();
+    expect(second.schemaFingerprint).not.toBe(first.schemaFingerprint);
+    shared.self = shared;
+    expect(() => worker.extract()).toThrow("INVALID_JSON");
+    delete shared.self;
+    expect(worker.extract()).toEqual(second);
+  });
+
+  test("warm graph comparison ignores object key order and plain/null prototype differences", () => {
+    const { schema } = fixture();
+    const worker = schema.createWorker();
+    const pin = schema.extract().pinInstances.find((item) => item.dataType !== null)!;
+    pin.default = { a: 1, b: 2 };
+    const baseline = worker.extract();
+    pin.default = Object.assign(Object.create(null), { b: 2, a: 1 });
+    expect(worker.extract()).toEqual(baseline);
+  });
+
   test("node config nested undefined is rejected while optional config absence stays valid", () => {
     const { schema } = fixture();
     const worker = schema.createWorker();
