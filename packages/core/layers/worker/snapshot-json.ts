@@ -97,17 +97,24 @@ function serializeSchema(schema: SchemaSnapshot): string {
     return JSON.stringify(schema, (_key, value: unknown) => {
       if (value !== null && typeof value === "object") {
         const array = Array.isArray(value);
+        const strict = strictValues.has(value);
         const keys = Reflect.ownKeys(value);
-        if (array && keys.length !== value.length + 1) return invalid();
-        for (const key of keys) {
-          if (array && key === "length") continue;
-          const descriptor = Object.getOwnPropertyDescriptor(value, key);
-          if (typeof key !== "string" || !descriptor?.enumerable || !("value" in descriptor))
-            return invalid();
-          if (array && (!/^(0|[1-9][0-9]*)$/.test(key) || Number(key) >= value.length))
-            return invalid();
-          inspect(descriptor.value, !array && !strictValues.has(value));
-          if (strictValues.has(value)) markStrict(descriptor.value);
+        if (array) {
+          if (keys.length !== value.length + 1) return invalid();
+          for (let index = 0; index < value.length; index++) {
+            const descriptor = Object.getOwnPropertyDescriptor(value, index);
+            if (!descriptor?.enumerable || !("value" in descriptor)) return invalid();
+            inspect(descriptor.value, false);
+            if (strict) markStrict(descriptor.value);
+          }
+        } else {
+          for (const key of keys) {
+            const descriptor = Object.getOwnPropertyDescriptor(value, key);
+            if (typeof key !== "string" || !descriptor?.enumerable || !("value" in descriptor))
+              return invalid();
+            inspect(descriptor.value, !strict);
+            if (strict) markStrict(descriptor.value);
+          }
         }
       }
       return value;
