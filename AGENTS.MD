@@ -28,7 +28,7 @@
 **Ключевые методы:**
 
 ```typescript
-Commutator.initialize() // Прежние позиционные аргументы dataTypes/events/refs/pureFunctions/functions/apis
+Commutator.initialize({ dataTypes, events, refs, pureFunctions, functions, apis }) // Все секции опциональны
 .configure({ maxSteps: 10_000 }) // Общий лимит каждого запуска; для DAG настройка необязательна
 .defineDataType(name, field) // Определение пользовательского типа данных
 .defineEvent(name, config) // Определение типа события
@@ -142,8 +142,8 @@ event.wire("x", add, "a").wire("next", log, "");
 
 // Или через именованные параметры
 schema.wire({
-  from: { node: event.uuid, pin: "y" },
-  to: { node: add.uuid, pin: "b" },
+  from: { node: event.instance.uuid, pin: "y" },
+  to: { node: add.instance.uuid, pin: "b" },
 });
 
 // Создание воркера для выполнения
@@ -195,8 +195,10 @@ await worker.triggerEvent("onClick", { x: 10, y: 20 });
    - Выполняет функцию и кеширует результаты
    - `exec` немедленно начинает дочернюю ветку; `await exec` ждёт её завершения
 
-`initialize(dataTypes, events, refs, pureFunctions, functions, apis)` сохраняет
-прежние позиционные аргументы и типовывод. `.configure({ maxSteps })` возвращает
+`initialize({ dataTypes, events, refs, pureFunctions, functions, apis })` регистрирует
+definitions одним объектом с типовыводом; все секции опциональны. `initialize()`
+создаёт пустой registry. Позиционные аргументы и неизвестные ключи отклоняются.
+`.configure({ maxSteps })` возвращает
 новый экземпляр того же generic-типа, не меняя исходный экземпляр или уже созданные
 schemas/workers. Все `define` сохраняют настройку; `host.inject(extension)` сохраняет
 лимит host. `triggerEvent(name, payload)` не принимает переопределение лимита.
@@ -479,8 +481,8 @@ interface Wire {
 ```typescript
 // 1. Через именованные параметры
 schema.wire({
-  from: { node: event.uuid, pin: "x" },
-  to: { node: add.uuid, pin: "a" },
+  from: { node: event.instance.uuid, pin: "x" },
+  to: { node: add.instance.uuid, pin: "a" },
 });
 
 // 2. Через UUID пинов
@@ -621,7 +623,7 @@ const restoredWorker = restoredSchema.createWorker(workerSnapshot);
 
 Методы `createEvent`, `createRef`, `createPureFunction`, `createFunction` возвращают `FluentNodeBuilder`, который:
 
-1. Реализует интерфейс `AbstractNodeInstance` для обратной совместимости
+1. Предоставляет свойства ноды через `instance`
 2. Предоставляет метод `wire` для цепочечного подключения пинов
 
 ```typescript
@@ -633,8 +635,8 @@ const event = schema
   .wire("next", logNode, "");
 
 // Доступ к свойствам ноды
-console.log(event.uuid); // UUID ноды
-console.log(event.name); // "onClick"
+console.log(event.instance.uuid); // UUID ноды
+console.log(event.instance.name); // "onClick"
 ```
 
 ## Расширения (Extensions)
@@ -802,8 +804,8 @@ const log = schema.createFunction("log");
 event.wire("x", add, "a").wire("y", add, "b").wire("next", log, "");
 
 schema.wire({
-  from: { node: add.uuid, pin: "result" },
-  to: { node: log.uuid, pin: "message" },
+  from: { node: add.instance.uuid, pin: "result" },
+  to: { node: log.instance.uuid, pin: "message" },
 });
 
 // 5. Создание воркера и выполнение

@@ -210,34 +210,34 @@ const processPayment = schema.createFunction("processPayment", { apiKey: "api-ke
 
 // Создание связей
 schema.wire({
-  from: { node: orderRef.uuid, pin: "order" },
-  to: { node: extractItems.uuid, pin: "order" },
+  from: { node: orderRef.instance.uuid, pin: "order" },
+  to: { node: extractItems.instance.uuid, pin: "order" },
 });
 schema.wire({
-  from: { node: extractItems.uuid, pin: "items" },
-  to: { node: calculateTotal.uuid, pin: "items" },
+  from: { node: extractItems.instance.uuid, pin: "items" },
+  to: { node: calculateTotal.instance.uuid, pin: "items" },
 });
 schema.wire({
-  from: { node: calculateTotal.uuid, pin: "total" },
-  to: { node: applyDiscount.uuid, pin: "amount" },
+  from: { node: calculateTotal.instance.uuid, pin: "total" },
+  to: { node: applyDiscount.instance.uuid, pin: "amount" },
 });
 schema.wire({
-  from: { node: orderRef.uuid, pin: "order" },
-  to: { node: validateOrder.uuid, pin: "order" },
+  from: { node: orderRef.instance.uuid, pin: "order" },
+  to: { node: validateOrder.instance.uuid, pin: "order" },
 });
 schema.wire({
-  from: { node: applyDiscount.uuid, pin: "finalAmount" },
-  to: { node: processPayment.uuid, pin: "amount" },
+  from: { node: applyDiscount.instance.uuid, pin: "finalAmount" },
+  to: { node: processPayment.instance.uuid, pin: "amount" },
 });
 
 // Exec-связи
 schema.wire({
-  from: { node: orderCreated.uuid, pin: "process" },
-  to: { node: validateOrder.uuid, pin: "start" },
+  from: { node: orderCreated.instance.uuid, pin: "process" },
+  to: { node: validateOrder.instance.uuid, pin: "start" },
 });
 schema.wire({
-  from: { node: validateOrder.uuid, pin: "valid" },
-  to: { node: processPayment.uuid, pin: "start" },
+  from: { node: validateOrder.instance.uuid, pin: "valid" },
+  to: { node: processPayment.instance.uuid, pin: "start" },
 });
 
 // Экспорт в снапшот

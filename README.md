@@ -60,13 +60,13 @@ const add = schema.createPureFunction("add");
 
 // Создание связей между нодами
 const eventPin = schema
-  .getNodePins(event.uuid)
+  .getNodePins(event.instance.uuid)
   .find((pin) => pin.name === "x" && pin.type === PinInstanceType.Output);
 const addPin = schema
-  .getNodePins(add.uuid)
+  .getNodePins(add.instance.uuid)
   .find((pin) => pin.name === "a" && pin.type === PinInstanceType.Input);
 
-schema.wire(eventPin.uuid, addPin.uuid);
+schema.wire({ fromPinUuid: eventPin!.uuid, toPinUuid: addPin!.uuid });
 ```
 
 ### @commutator/flow-control
@@ -134,8 +134,11 @@ const commutator = Commutator.initialize().configure({ maxSteps: 10_000 });
 await worker.triggerEvent("start", payload);
 ```
 
-`initialize(dataTypes, events, refs, pureFunctions, functions, apis)` keeps its
-existing positional arguments and type inference; `initialize()` remains valid.
+`initialize({ dataTypes, events, refs, pureFunctions, functions, apis })` registers
+definitions in bulk with inferred types; each section is optional and `initialize()`
+creates an empty registry. Positional arguments and unknown option keys are rejected.
+The `create*` methods return a builder with `wire()` and `instance`; node properties
+are accessed as `node.instance.uuid`, `node.instance.config`, etc.
 `configure({ maxSteps })` returns a new instance with the same registry types.
 It can be used before or after definitions without changing the original instance
 or existing schemas/workers. Definitions retain the limit;

@@ -199,11 +199,11 @@ describe("execution budgets", () => {
     );
   });
 
-  test("preserves positional initialization and inferred types through configure", async () => {
+  test("preserves bulk initialization and inferred types through configure", async () => {
     let value: unknown;
-    const original = Commutator.initialize(
-      { Text: { type: CommonDataType.String } },
-      {
+    const original = Commutator.initialize({
+      dataTypes: { Text: { type: CommonDataType.String } },
+      events: {
         start: {
           type: NodeType.Event,
           pinsIn: {},
@@ -212,11 +212,8 @@ describe("execution budgets", () => {
           execPinsOut: { next: null },
         },
       },
-      {},
-      {},
-      {},
-      { example: { value: "positional" } },
-    );
+      apis: { example: { value: "bulk" } },
+    });
     const configured: typeof original = original.configure({ maxSteps: 1 });
     const commutator = configured.defineFunction("Read", {
       pinsIn: { value: { type: "Text" } },
@@ -230,8 +227,8 @@ describe("execution budgets", () => {
     const schema = commutator.createSchema();
     const read = schema.createFunction("Read");
     schema.createEvent("start").wire("next", read, "enter").wire("value", read, "value");
-    await schema.createWorker().triggerEvent("start", { value: "positional" });
-    expect(value).toBe("positional");
+    await schema.createWorker().triggerEvent("start", { value: "bulk" });
+    expect(value).toBe("bulk");
   });
 
   test("configure returns a new instance without changing existing schemas or workers", async () => {

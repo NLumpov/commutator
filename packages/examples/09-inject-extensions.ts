@@ -152,8 +152,11 @@ const logUser = schema.createFunction("logUser");
 
 // Создание связей между нодами из разных расширений
 // userRef получает userId через конфигурацию, поэтому обновляем конфигурацию
-schema.updateNodeConfig(userRef.uuid, { userId: "user-from-action" });
-schema.wire({ from: { node: userRef.uuid, pin: "user" }, to: { node: logUser.uuid, pin: "user" } });
+schema.updateNodeConfig(userRef.instance.uuid, { userId: "user-from-action" });
+schema.wire({
+  from: { node: userRef.instance.uuid, pin: "user" },
+  to: { node: logUser.instance.uuid, pin: "user" },
+});
 userAction.wire("next", logUser, "start");
 
 console.log("✅ Пример 9: Инъекция расширений");
@@ -163,11 +166,11 @@ console.log("  - mathExtension (add, multiply, subtract)");
 console.log("  - stringExtension (concat, toUpperCase)");
 console.log("  - userExtension (userRef, logUser)");
 console.log("\nСозданы ноды из разных расширений:");
-console.log(`  - Event: ${userAction.name} (из baseCommutator)`);
-console.log(`  - PureFunction: ${add.name}, ${multiply.name} (из mathExtension)`);
-console.log(`  - PureFunction: ${concat.name} (из stringExtension)`);
-console.log(`  - Ref: ${userRef.name} (из userExtension)`);
-console.log(`  - Function: ${logUser.name} (из userExtension)`);
+console.log(`  - Event: ${userAction.instance.name} (из baseCommutator)`);
+console.log(`  - PureFunction: ${add.instance.name}, ${multiply.instance.name} (из mathExtension)`);
+console.log(`  - PureFunction: ${concat.instance.name} (из stringExtension)`);
+console.log(`  - Ref: ${userRef.instance.name} (из userExtension)`);
+console.log(`  - Function: ${logUser.instance.name} (из userExtension)`);
 console.log("\nСозданы связи между нодами из разных расширений");
 console.log("✅ Инъекция расширений работает!");
 

@@ -9,7 +9,7 @@
  * - Все методы CommutatorSchema (createEvent, wire, unwire, etc.)
  * - Все типы данных (String, Number, Boolean, Date, Object, Array, Enum, Any)
  * - Динамические пины (addPinIn, addPinOut, addExecPinIn, addExecPinOut)
- * - Fluent API (FluentNodeBuilder, NodeBuilder, PinBuilder)
+ * - Fluent API (FluentNodeBuilder)
  * - Снапшоты (extract, createSchema with snapshot)
  * - Callbacks (onConfigChange)
  * - Расширения (inject)

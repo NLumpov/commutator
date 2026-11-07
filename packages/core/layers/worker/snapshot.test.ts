@@ -154,7 +154,7 @@ for (const field of [
       expect(schema.createWorker(baseline).extract()).toEqual(baseline);
       expect(Object.hasOwn(field, "name")).toBe(true);
       expect(field.name).toBeUndefined();
-      const pin = schema.getPin(event.uuid, "value");
+      const pin = schema.getPin(event.instance.uuid, "value");
       if (pin.dataType) pin.dataType.name = "visible name";
       expect(schema.createWorker().extract().schemaFingerprint).not.toBe(baseline.schemaFingerprint);
       expect(() => schema.createWorker(baseline)).toThrow("schema mismatch");
@@ -174,10 +174,10 @@ test("descriptor normalization does not erase undefined in user config or pin de
   const node = schema.createFunction("read");
   const worker = schema.createWorker();
   const baseline = worker.extract();
-  schema.updateNodeConfig(node.uuid, { nested: { value: undefined } });
+  schema.updateNodeConfig(node.instance.uuid, { nested: { value: undefined } });
   expect(() => worker.extract()).toThrow("non-JSON");
-  schema.updateNodeConfig(node.uuid, null);
-  schema.setPinDefaultValue(schema.getPin(node.uuid, "value").uuid, { nested: { value: undefined } });
+  schema.updateNodeConfig(node.instance.uuid, null);
+  schema.setPinDefaultValue(schema.getPin(node.instance.uuid, "value").uuid, { nested: { value: undefined } });
   expect(() => worker.extract()).toThrow("non-JSON");
   expect(baseline.pinCache).toEqual([]);
 });
@@ -217,4 +217,70 @@ test("extract computes graph identity once per call and still observes every liv
   } finally {
     identity.mockRestore();
   }
+});
+
+test("canonical graph projection preserves object identity across key order and detects live leaf changes", () => {
+  const { schema } = fixture();
+  const worker = schema.createWorker();
+  const graph = schema.extract();
+  const node = graph.nodes[0]!;
+  const pin = graph.pinInstances.find((pin) => pin.dataType !== null)!;
+  Object.assign(node, { config: { z: [1, 2], a: { second: 2, first: 1 } } });
+  const first = worker.extract();
+  Object.assign(node, { config: { a: { first: 1, second: 2 }, z: [1, 2] } });
+  expect(worker.extract().schemaFingerprint).toBe(first.schemaFingerprint);
+  expect(schema.createWorker(first).extract()).toEqual(first);
+  Object.assign(pin.dataType!, { name: "changed after fingerprint" });
+  const second = worker.extract();
+  expect(second.schemaFingerprint).not.toBe(first.schemaFingerprint);
+  expect(() => schema.createWorker(first)).toThrow("schema mismatch");
+  Object.assign(graph.wires[0]!, { annotation: { later: 2, earlier: 1 } });
+  const third = worker.extract();
+  Object.assign(graph.wires[0]!, { annotation: { earlier: 1, later: 2 } });
+  expect(worker.extract().schemaFingerprint).toBe(third.schemaFingerprint);
+  expect(third.schemaFingerprint).not.toBe(second.schemaFingerprint);
+});
+
+test("canonical graph projection rejects non-JSON live values and never evaluates leaf getters", () => {
+  const { schema } = fixture();
+  const worker = schema.createWorker();
+  const baseline = worker.extract();
+  const graph = schema.extract();
+  let reads = 0;
+  const accessor = Object.defineProperty({}, "value", { enumerable: true, get() { reads++; return 1; } });
+  const targets: [object, string][] = [
+    [graph.nodes[0]!, "uuid"], [graph.nodes[0]!, "name"], [graph.nodes[0]!, "type"], [graph.nodes[0]!, "config"],
+    [graph.pinInstances[0]!, "uuid"], [graph.pinInstances[0]!, "nodeUuid"], [graph.pinInstances[0]!, "name"],
+    [graph.pinInstances[0]!, "type"], [graph.pinInstances[0]!, "default"], [graph.wires[0]!, "annotation"],
+  ];
+  for (const [target, key] of targets) {
+    const original = Object.getOwnPropertyDescriptor(target, key);
+    try {
+      for (const value of [NaN, accessor]) {
+        Object.defineProperty(target, key, { value, enumerable: true, configurable: true, writable: true });
+        expect(() => worker.extract()).toThrow();
+        expect(() => schema.createWorker(baseline)).toThrow();
+      }
+    } finally {
+      if (original) Object.defineProperty(target, key, original);
+      else Reflect.deleteProperty(target, key);
+    }
+  }
+  expect(reads).toBe(0);
+  expect(worker.extract()).toEqual(baseline);
+});
+
+test("scalar descriptor fast path rejects malformed live Field values", () => {
+  const { schema } = fixture();
+  const worker = schema.createWorker();
+  const baseline = worker.extract();
+  const pin = schema.extract().pinInstances.find((pin) => pin.dataType !== null)!;
+  const original = pin.dataType;
+  for (const dataType of [7, "bad", false, [], () => 1]) {
+    Object.assign(pin, { dataType });
+    expect(() => worker.extract()).toThrow("non-JSON");
+    expect(() => schema.createWorker(baseline)).toThrow("non-JSON");
+  }
+  pin.dataType = original;
+  expect(worker.extract()).toEqual(baseline);
 });

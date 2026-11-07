@@ -153,17 +153,17 @@ describe("Worker output validation", () => {
     schema.createEvent("start").wire("next", state, "in");
     const worker = schema.createWorker();
     await worker.triggerEvent("start", {});
-    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: 1 }]);
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.instance.uuid, cache: 1 }]);
     args = { pinsOut: {}, execPinOut: null }; // A dynamic JS caller omits the metadata update.
     await worker.triggerEvent("start", {});
-    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: 1 }]);
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.instance.uuid, cache: 1 }]);
     args = { pinsOut: {}, execPinOut: null, get meta() { reads++; return 2; } };
     await worker.triggerEvent("start", {});
     expect(reads).toBe(1);
-    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: 2 }]);
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.instance.uuid, cache: 2 }]);
     args = { pinsOut: {}, execPinOut: null, meta: null };
     await worker.triggerEvent("start", {});
-    expect(worker.extract().metaCache).toEqual([{ uuid: state.uuid, cache: null }]);
+    expect(worker.extract().metaCache).toEqual([{ uuid: state.instance.uuid, cache: null }]);
   });
 
   test("valid partial, empty and null outputs preserve the shared pin cache and snapshot", async () => {
@@ -188,10 +188,10 @@ describe("Worker output validation", () => {
     expect(trace.slice(0, 4)).toEqual(["source", "sink", "source:called", "source:tail"]);
     const snapshot = worker.extract();
     expect(snapshot.pinCache).toEqual([
-      { uuid: schema.getPin(source.uuid, "first").uuid, cache: 1 },
-      { uuid: schema.getPin(source.uuid, "value").uuid, cache: null },
+      { uuid: schema.getPin(source.instance.uuid, "first").uuid, cache: 1 },
+      { uuid: schema.getPin(source.instance.uuid, "value").uuid, cache: null },
     ]);
-    expect(snapshot.metaCache).toEqual([{ uuid: source.uuid, cache: 2 }]);
+    expect(snapshot.metaCache).toEqual([{ uuid: source.instance.uuid, cache: 2 }]);
     const restored = commutator.createSchema(schema.extract()).createWorker(snapshot);
     expect(restored.extract()).toEqual(snapshot);
     await restored.triggerEvent("Read", {});

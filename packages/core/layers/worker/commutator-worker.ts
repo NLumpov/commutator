@@ -19,7 +19,7 @@ import {
   type WiresRegistry,
 } from "../schema";
 import { snapshotField } from "./snapshot-field";
-import { copyJson, readSnapshot, snapshotError } from "./snapshot-json";
+import { copyJson, createJsonCopier, readSnapshot, snapshotError } from "./snapshot-json";
 import type { WorkerSnapshot } from "./types";
 
 interface ExecutionRun {
@@ -59,44 +59,41 @@ export class CommutatorWorker<
   ) {
     if (snapshot === undefined) return;
     const restored = this.validateSnapshot(snapshot);
-    this.pinCache = new Map(restored.pinCache.map(({ uuid, cache }) => [uuid, cache]));
-    this.metaCache = new Map(restored.metaCache.map(({ uuid, cache }) => [uuid, cache]));
+    for (const { uuid, cache } of restored.pinCache) this.pinCache.set(uuid, cache);
+    for (const { uuid, cache } of restored.metaCache) this.metaCache.set(uuid, cache);
   }
 
   private schemaFingerprint(): string {
     // Canonical graph encoding is collision-free. Array order is execution-significant;
     // callbacks/API implementations are deliberately outside this identity contract.
+    // Build owned containers in canonical key order; strictly copy every live value.
+    // A fresh copier observes mutations on every call and retains shared leaf copies.
+    const copy = createJsonCopier(true);
     const nodes = this.nodesRegistry.getAllNodes().map((node) => ({
-      uuid: node.uuid,
-      name: node.name,
-      type: node.type,
-      ...(node.config === undefined ? {} : { config: node.config }),
-      meta: snapshotField(this.config.getNodeConfigByName(node.name)?.meta),
+      ...(node.config === undefined ? {} : { config: copy(node.config) }),
+      meta: copy(snapshotField(this.config.getNodeConfigByName(node.name)?.meta)),
+      name: copy(node.name),
+      type: copy(node.type),
+      uuid: copy(node.uuid),
     }));
     const pins = this.pinsRegistry.getAllPins().map((pin) => ({
-      uuid: pin.uuid,
-      nodeUuid: pin.nodeUuid,
-      name: pin.name,
-      type: pin.type,
-      dataType: snapshotField(pin.dataType),
-      ...(pin.default === undefined ? {} : { default: pin.default }),
+      dataType: copy(snapshotField(pin.dataType)),
+      ...(pin.default === undefined ? {} : { default: copy(pin.default) }),
+      name: copy(pin.name),
+      nodeUuid: copy(pin.nodeUuid),
+      type: copy(pin.type),
+      uuid: copy(pin.uuid),
     }));
-    return `graph-v1:${JSON.stringify(
-      copyJson(
-        {
-          nodes,
-          pins,
-          wires: this.wiresRegistry.getAllWires(),
-          dataTypes: Object.fromEntries(
-            Object.entries(this.config.dataTypes).map(([name, field]) => [
-              name,
-              snapshotField(field),
-            ]),
-          ),
-        },
-        true,
+    return `graph-v1:${JSON.stringify({
+      dataTypes: Object.fromEntries(
+        Object.keys(this.config.dataTypes)
+          .sort()
+          .map((name) => [name, copy(snapshotField(this.config.dataTypes[name]))]),
       ),
-    )}`;
+      nodes,
+      pins,
+      wires: copy(this.wiresRegistry.getAllWires()),
+    })}`;
   }
 
   private validateSnapshot(input: unknown, fingerprint?: string): WorkerSnapshot {
@@ -729,8 +726,8 @@ export class CommutatorWorker<
     return this.validateSnapshot(
       {
         schemaFingerprint,
-        pinCache: Array.from(this.pinCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
-        metaCache: Array.from(this.metaCache.entries()).map(([uuid, cache]) => ({ uuid, cache })),
+        pinCache: Array.from(this.pinCache, ([uuid, cache]) => ({ uuid, cache })),
+        metaCache: Array.from(this.metaCache, ([uuid, cache]) => ({ uuid, cache })),
       },
       schemaFingerprint,
     );

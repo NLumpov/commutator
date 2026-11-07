@@ -112,15 +112,15 @@ const conditionalLog = schema.createFunction("conditionalLog", { logLevel: "DEBU
 
 console.log("✅ Пример 3: Создание нод в схеме");
 console.log("Созданы ноды:");
-console.log(`  - Event: ${startEvent.name} (UUID: ${startEvent.uuid})`);
+console.log(`  - Event: ${startEvent.instance.name} (UUID: ${startEvent.instance.uuid})`);
 console.log(
-  `  - Ref: ${userRef.name} (UUID: ${userRef.uuid}, config: ${JSON.stringify(userRef.config)})`,
+  `  - Ref: ${userRef.instance.name} (UUID: ${userRef.instance.uuid}, config: ${JSON.stringify(userRef.instance.config)})`,
 );
 console.log(
-  `  - PureFunction: ${multiply.name} (UUID: ${multiply.uuid}, config: ${JSON.stringify(multiply.config)})`,
+  `  - PureFunction: ${multiply.instance.name} (UUID: ${multiply.instance.uuid}, config: ${JSON.stringify(multiply.instance.config)})`,
 );
 console.log(
-  `  - Function: ${conditionalLog.name} (UUID: ${conditionalLog.uuid}, config: ${JSON.stringify(conditionalLog.config)})`,
+  `  - Function: ${conditionalLog.instance.name} (UUID: ${conditionalLog.instance.uuid}, config: ${JSON.stringify(conditionalLog.instance.config)})`,
 );
 console.log("✅ Все ноды созданы успешно!");
 

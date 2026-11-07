@@ -4,14 +4,24 @@ import { snapshotError } from "./snapshot-json";
 /** Only library descriptor names are optional; user JSON stays untouched. */
 export function snapshotField<DataTypes extends Record<string, Field<DataTypes>>>(
   field: Field<DataTypes> | null | undefined,
-  ancestors = new Set<object>(),
+  ancestors?: Set<object>,
 ): unknown {
   if (field == null) return null;
+  if (typeof field !== "object" || Array.isArray(field)) {
+    return snapshotError("non-JSON field descriptor");
+  }
+  const name = Object.getOwnPropertyDescriptor(field, "name");
+  const type = Object.getOwnPropertyDescriptor(field, "type")?.value;
+  const omitName = name && "value" in name && name.value === undefined;
+  if (!omitName && type !== CommonDataType.Object && type !== CommonDataType.Array) {
+    return field;
+  }
+  ancestors ??= new Set<object>();
   if (ancestors.has(field)) return snapshotError("cyclic field descriptor");
   ancestors.add(field);
   try {
     const descriptors = Object.getOwnPropertyDescriptors(field);
-    if (descriptors.name && "value" in descriptors.name && descriptors.name.value === undefined) {
+    if (omitName) {
       delete descriptors.name;
     }
     // Retain descriptors/prototypes so the strict JSON copy still rejects accessors,
