@@ -1,5 +1,83 @@
 # COM-0008 verification
 
+## Workflow pilot: bounded improvements, PERF_NOT_ACCEPTED
+
+Production: `e3e851911db9ca793a55334e3bb8231966457451`; fixed master:
+`af9ce9bcded35b5ead9020215cf24f2f2ba7f51a`; pilot start:
+`d6a2a9ae77eba67fe9f4c73d7a21db21c44e075b`. Post-hook hashes match the
+measured source. The PR remains draft. No Schema ownership/live-reference, public
+API, snapshot JSON, detachment or exec guarantee changed.
+
+Two small changes were retained: avoid rereading known descriptors while counting
+extra optional metadata, and delay creating a validation worklist until nested or
+custom work exists. Field/property read order, errors and LIFO order are preserved.
+No source alias memo or persistent key cache was added.
+
+### Independent master/start/candidate results
+
+Five rotating-order triples / 240 sequential children and the guard exited 0.
+The same fixed SchemaSnapshots and graph/pin/meta hashes were used. Seven timed
+samples follow warmup in each child. Times below are medians of child medians.
+[Sanitized pilot evidence](com0008-workflow-pilot.json) contains all 240 raw runs,
+paired ranges, warmup/counts, bytes, RSS and the full 16-scenario summary.
+
+| Checkpoint | Master us | Start us | Candidate us | vs master | vs start | Candidate RSS MiB |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| number-32 | 21.343 | 129.662 | 129.136 | 6.051x | 0.996x | 72.5 |
+| wide-32x8 | 61.915 | 532.878 | 527.968 | 8.527x | 0.991x | 80.8 |
+| nested-128x8 | 26.750 | 178.124 | 181.423 | 6.782x | 1.019x | 67.8 |
+
+Against start, ordinary number/wide/event/Pure triggers improve in every pair:
+candidate/start ranges 0.956-0.989 / 0.945-0.989 / 0.916-0.956 / 0.948-0.971.
+Unawaited pairs are mixed; empty/nested do not establish improvement. Snapshot
+differences are mostly noise. Checkpoint still costs 6.05-8.53x master; event-only
+and nested triggers remain about 1.31x and 1.44x master. Performance/task acceptance
+is not claimed. RSS is a child endpoint observation, not a memory bound.
+
+### Experiments, remaining cost and options
+
+- H1 helps API-built graphs retaining optional undefined fields (~0.725x in the
+  256-node comparison). JSON-loaded fixtures already omit those fields; no general
+  checkpoint gain is attributed to H1.
+- H2 scalar/null/Any micro cases consistently improved (~4-5 ns vs ~8-10 ns).
+  Nested/custom aggregate medians reflect JIT convergence and are not stable gains.
+  Getter/error/LIFO observation traces matched.
+- H3 private previous-object key memo regressed the wide case in every pair and
+  was rejected. Earlier fused-visitor/bulk-descriptor variants remain rejected.
+
+Indicative components still put warm graph comparison near 42/176/17 us for
+number/wide/nested and nested cache detachment near 45 us. These independent micro
+operations have different optimizer/retention conditions: they are not additive,
+an exact savings bound, or proof of optimality/impossibility. Current code still
+inspects live graph descriptors and independently copies cache values.
+
+Next permitted options are further internal comparison/detachment work under the
+same guarantees, or a separately tested restore-envelope codec preserving complete
+validation/error order. No codec was implemented or gain promised. A decision on
+cost/guarantee tradeoffs or a controlled ownership proposal is another option, not
+a prerequisite for continuing permitted internal work. Architecture is unchanged.
+
+### Verification and limits
+
+- Full guarded suite: 348 PASS / 0 FAIL / 4095 assertions. Typecheck, browser-target
+  bundle and normal commit hooks exit 0. Browser runtime itself is NOT_RUN.
+- Mac/POSIX recovery: 18 settled children, five intentional SIGKILL barriers,
+  identical recovered snapshots and one fake agent effect; exit 0.
+- Memory: 12 sequential children exit 0; fixed-size graph replacement ran 13
+  epochs per mode. No linear Promise/history accumulation was observed in these
+  bounded probes. RSS increases and raw endpoints remain visible.
+- Worker coverage: 27/27 functions, 516/516 lines; helper: 11/11 and 186/186.
+  Validator: 10/13 functions, 430/431 lines. Existing gaps and unavailable Bun
+  branch/statement metrics mean no all-file/all-metric 80% acceptance.
+- Windows/Linux and real Flow/Agents remain NOT_RUN.
+- Initial archive setup could not resolve ulid. The failed run is retained; its
+  dependency link was repaired without package changes.
+- Independent review accepts correctness/scope, not performance. One ordered
+  pilot does not prove a causal effect of the skill; prior context, coordinator
+  feedback and extra review attention are confounds. No approve/merge/release.
+
+## Earlier performance follow-up (historical)
+
 ## Performance follow-up: PERF_NOT_ACCEPTED
 
 The PR is draft. The earlier correctness review did not establish acceptable
@@ -100,7 +178,7 @@ performance acceptance. [Follow-up data](com0008-performance-followup.json)
 preserves all component samples, comparison variants, rejected experiments and
 pair ranges. The prior report/data below remain historical evidence.
 
-### Retention and pending ownership decision
+### Retention and historical optional ownership proposal
 
 Two fixed-size graph/default replacement probes ran 13 epochs of 200 mutations.
 API replacement retained +79,759 heap bytes (Promises 177 -> 178); direct alias
@@ -115,9 +193,9 @@ heap changes ranged from -793 to +83,540 bytes; Promise counts stayed near
 exception-mapping commit and are not reported as a universal memory proof.
 
 The current Schema exposes mutable references as well as explicit edit methods.
-A revision counter alone cannot detect edits through those references. A narrow
-ownership decision is pending with the user; no ownership, live-edit or public API
-guarantee has been changed. Windows/Linux and real Flow/Agents acceptance remain
+A revision counter alone cannot detect edits through those references. An ownership option was raised at that checkpoint; it was not approved and is
+not a prerequisite for permitted internal optimization. No ownership, live-edit
+or public API guarantee was changed. Windows/Linux and real Flow/Agents acceptance remain
 NOT_RUN.
 
 ## Historical verification: 94b9401
