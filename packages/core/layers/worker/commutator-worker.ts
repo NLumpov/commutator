@@ -155,6 +155,8 @@ export class CommutatorWorker<
     event: Name,
     payload: Record<string, unknown>,
   ): Promise<void> {
+    // Own the input once per API call; Function callbacks share the run's values.
+    const input = structuredClone(payload);
     const cyclic = this.wiresRegistry.hasCycle("exec");
     if (cyclic && this.config.maxSteps === undefined) {
       throw new CommutatorExecutionError("MAX_STEPS_REQUIRED");
@@ -173,7 +175,7 @@ export class CommutatorWorker<
       new Queue();
 
     for (const event of events) {
-      this.saveToPinCache(this.pinCache, event, payload);
+      this.saveToPinCache(this.pinCache, event, input);
 
       // Берём все exec пины на выход из ивента
       const eventExecPinsOut = this.pinsRegistry.getNodeOutExecPinsIndex().get(event.uuid);
